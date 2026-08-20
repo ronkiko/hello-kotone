@@ -127,8 +127,8 @@
   window.addEventListener("burned-letter-dialogue", () => {
     if (dialogue.hidden) showDialogue(burnedLetterLine, "burned-letter");
   });
-  window.addEventListener("dialogue:complete", (event) => {
-    if (event.detail && event.detail.type === "burned-letter") showDialogue(henshinLine, "henshin");
+  window.addEventListener("henshin-dialogue", () => {
+    if (dialogue.hidden) showDialogue(henshinLine, "henshin");
   });
 
   window.addEventListener("rush-warning", () => {

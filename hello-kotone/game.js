@@ -74,6 +74,7 @@ let roomMode = "hall";
 let roomTransition = null;
 let roomPlayerX = 112;
 let kotoneV2Active = false;
+let henshinPending = false;
 const POP_DURATION = 420;
 const INTERACTION_NOTICE_DURATION = 1500;
 const ROOM_FADE_OUT = 320;
@@ -859,6 +860,11 @@ function updateRoomTransition(deltaMs) {
   }
   if (roomTransition.phase === "fade-in" && roomTransition.elapsed >= ROOM_FADE_IN) {
     roomTransition = null;
+    if (roomMode === "3C" && henshinPending) {
+      henshinPending = false;
+      dialogueActive = true;
+      window.dispatchEvent(new Event("henshin-dialogue"));
+    }
   }
 }
 
@@ -1004,6 +1010,7 @@ function restart() {
   schoolBellTriggered = false;
   lettersBurned = false;
   burnedLetterDialogueTriggered = false;
+  henshinPending = false;
   if (clock) {
     clock.classList.remove("rush-blink", "rush-red", "late");
     clock.textContent = formatClock(CLOCK_START_SECONDS);
@@ -1138,7 +1145,14 @@ window.addEventListener("game:start", () => {
 window.addEventListener("dialogue:complete", (event) => {
   const type = event.detail && event.detail.type;
   if (type === "burned-letter") {
-    dialogueActive = true;
+    henshinPending = true;
+    if (roomMode === "3C") {
+      henshinPending = false;
+      dialogueActive = true;
+      window.dispatchEvent(new Event("henshin-dialogue"));
+    } else {
+      dialogueActive = false;
+    }
     return;
   }
   dialogueActive = false;
