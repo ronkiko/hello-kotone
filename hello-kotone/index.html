@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e9d7be" />
+    <title>Morning Bell</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="masthead">
+        <a class="title" href="./"><span>朝</span> MORNING BELL</a>
+        <p>SAKURA SENIOR HIGH / 07:42</p>
+      </header>
+
+      <section class="game" aria-label="Morning Bell game">
+        <canvas id="hall" width="960" height="540" aria-label="Morning Japanese school hallway"></canvas>
+        <div class="hud">
+          <p id="objective">Find the letters before the bell.</p>
+          <div id="word" class="word"><span>H</span><span>E</span><span>L</span><span>L</span><span>O</span></div>
+        </div>
+        <div class="keys">MOVE <b>A</b><b>D</b> <i>or</i> <b>←</b><b>→</b> <span>VIEW</span> <b>↑</b><b>↓</b></div>
+        <div class="mobile-controls">
+          <button type="button" data-key="left" aria-label="Move left">←</button>
+          <button type="button" data-key="right" aria-label="Move right">→</button>
+          <button type="button" data-key="up" aria-label="Turn back to camera">↑</button>
+          <button type="button" data-key="down" aria-label="Turn toward camera">↓</button>
+        </div>
+
+      </section>
+
+      <footer>
+        <span id="message">East hallway, second floor.</span>
+        <span>PIXEL ART: KYUSON</span>
+      </footer>
+    </main>
+    <script src="rooms/2C.js"></script>
+    <script src="rooms/3C.js"></script>
+    <script src="game.js?v=door-audio-5"></script>
+  </body>
+</html>
