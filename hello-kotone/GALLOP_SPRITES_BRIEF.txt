@@ -11,12 +11,19 @@
 Должно быть сразу понятно, что это Котоне из существующих walking-спрайтов,
 а не новый персонаж и не случайная похожая школьница.
 
-Перед созданием обязательно изучи в репозитории существующие файлы:
+Перед созданием обязательно изучи в репозитории существующие файлы во временной
+папке reference pack:
 
-    .local/kotone-sasaki-v1/frames/walking_front.png
-    .local/kotone-sasaki-v1/frames/walking_back.png
-    .local/kotone-sasaki-v1/frames/walking_left.png
-    .local/kotone-sasaki-v1/frames/walking_right.png
+    hello-kotone/kotone-sprites-reference/frames/walking_front.png
+    hello-kotone/kotone-sprites-reference/frames/walking_back.png
+    hello-kotone/kotone-sprites-reference/frames/walking_left.png
+    hello-kotone/kotone-sprites-reference/frames/walking_right.png
+
+В этой же временной папке доступны все остальные исходные материалы Котоне:
+idle-спрайты, GIF-анимации, preview, общий sprite sheet, metadata и license.
+Изучи их тоже, если это помогает точно сохранить внешность и стиль персонажа.
+Папка добавлена в репозиторий только как reference для этой задачи и может быть
+удалена после получения и проверки новых running-спрайтов.
 
 Каждый существующий walking-файл имеет формат PNG RGBA, размер 780x130 и
 содержит шесть последовательных кадров размером 130x130. Эти файлы являются

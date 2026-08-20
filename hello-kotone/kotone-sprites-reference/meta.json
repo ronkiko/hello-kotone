@@ -1,0 +1,118 @@
+{
+  "name": "Kotone Sasaki",
+  "version": "v1",
+  "tagline": "Ethereal Pixel Art · Office Bishoujo Character Pack",
+  "cell_size": {
+    "w": 130,
+    "h": 130
+  },
+  "anchor": "feet-bottom",
+  "license": {
+    "commercial": true,
+    "modify": true,
+    "resale": false,
+    "credit_required": false
+  },
+  "engine_support": [
+    "Ren'Py",
+    "Unity",
+    "Godot",
+    "RPG Maker",
+    "Phaser.js",
+    "Construct",
+    "GameMaker"
+  ],
+  "palette": {
+    "Soft Pink": "#ffb3d1",
+    "Deep Pink": "#e08bb0",
+    "Lavender": "#c9a3ff",
+    "Sky Blue": "#a3d5ff",
+    "Cream": "#fef9f4",
+    "Charcoal": "#3a2a3a",
+    "Hair Brown": "#6b4a3a",
+    "Skin Warm": "#fbd5b8"
+  },
+  "animations": {
+    "walking": [
+      {
+        "name": "walking_front",
+        "frames": 6,
+        "duration_ms": 150,
+        "loop": true
+      },
+      {
+        "name": "walking_back",
+        "frames": 6,
+        "duration_ms": 150,
+        "loop": true
+      },
+      {
+        "name": "walking_left",
+        "frames": 6,
+        "duration_ms": 150,
+        "loop": true
+      },
+      {
+        "name": "walking_right",
+        "frames": 6,
+        "duration_ms": 150,
+        "loop": true
+      }
+    ],
+    "idle": [
+      {
+        "name": "idle_clap",
+        "loop": true
+      },
+      {
+        "name": "idle_foldarm",
+        "loop": true
+      },
+      {
+        "name": "idle_heart",
+        "loop": true
+      },
+      {
+        "name": "idle_heel",
+        "loop": true
+      },
+      {
+        "name": "idle_idea",
+        "loop": true
+      },
+      {
+        "name": "idle_ipad",
+        "loop": true
+      },
+      {
+        "name": "idle_thinking",
+        "loop": true
+      },
+      {
+        "name": "idle_waving",
+        "loop": true
+      }
+    ]
+  },
+  "sprite_sheets": {
+    "walking_directional": {
+      "image": "sprite-sheets/walking_directional.png",
+      "atlas": "sprite-sheets/walking_directional.json",
+      "format": "Phaser 3 atlas",
+      "size": {
+        "w": 520,
+        "h": 130
+      },
+      "cells": 4,
+      "cell_size": {
+        "w": 130,
+        "h": 130
+      }
+    }
+  },
+  "files": {
+    "animations_count": 12,
+    "frames_count": 12
+  },
+  "generated_at": "2026-07-17T03:42:09.520686+00:00"
+}

@@ -1,0 +1,57 @@
+{
+  "frames": [
+    {
+      "filename": "walking_front.png",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 130,
+        "h": 130
+      },
+      "duration": 150,
+      "idx": 0
+    },
+    {
+      "filename": "walking_back.png",
+      "frame": {
+        "x": 130,
+        "y": 0,
+        "w": 130,
+        "h": 130
+      },
+      "duration": 150,
+      "idx": 1
+    },
+    {
+      "filename": "walking_left.png",
+      "frame": {
+        "x": 260,
+        "y": 0,
+        "w": 130,
+        "h": 130
+      },
+      "duration": 150,
+      "idx": 2
+    },
+    {
+      "filename": "walking_right.png",
+      "frame": {
+        "x": 390,
+        "y": 0,
+        "w": 130,
+        "h": 130
+      },
+      "duration": 150,
+      "idx": 3
+    }
+  ],
+  "meta": {
+    "image": "walking_directional.png",
+    "size": {
+      "w": 520,
+      "h": 130
+    },
+    "scale": 1,
+    "format": "RGBA8888"
+  }
+}
