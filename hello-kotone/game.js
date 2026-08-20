@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 const wordCells = [...document.querySelectorAll("#word span")];
 const message = document.querySelector("#message");
 const objective = document.querySelector("#objective");
+const clock = document.querySelector("#clock");
 
 const scene = document.createElement("canvas");
 scene.width = 482;
@@ -31,6 +32,7 @@ const roomModules = {
   "3C": window.rooms.class3C,
 };
 const sheets = { front: null, back: null, left: null, right: null };
+const kotoneV2Sheets = { front: null, back: null, left: null, right: null };
 const idleSheets = {};
 let cameraX = 0;
 let renderCameraX = 0;
@@ -43,9 +45,11 @@ let doorHandleBuffer = null;
 let doorHandleLoad = null;
 let doorSlamBuffer = null;
 let doorSlamLoad = null;
+let rushWarningAudio = null;
 const DOOR_OPEN_URL = new URL("sounds/door-open.mp3", document.baseURI).href;
 const DOOR_HANDLE_URL = new URL("sounds/door-handle-cc0.mp3", document.baseURI).href;
 const DOOR_SLAM_URL = new URL("sounds/door-close.mp3", document.baseURI).href;
+const RUSH_WARNING_URL = new URL("sounds/hurry-alarm-cc0.ogg", document.baseURI).href;
 const DOOR_OPEN_OFFSET = 0.1;
 const DOOR_HANDLE_OFFSET = 0.14;
 const DOOR_HANDLE_PULL_DURATION = 0.22;
@@ -57,9 +61,19 @@ let fanfarePlayed = false;
 let celebrationTime = -1;
 let interactionNotice = "";
 let interactionNoticeTime = 0;
+let gameStarted = false;
+let dialogueActive = false;
+let clockTimer = null;
+let clockStartedAt = 0;
+let lastClockElapsed = -1;
+let rushWarningTriggered = false;
+let schoolBellTriggered = false;
+let lettersBurned = false;
+let burnedLetterDialogueTriggered = false;
 let roomMode = "hall";
 let roomTransition = null;
 let roomPlayerX = 112;
+let kotoneV2Active = false;
 const POP_DURATION = 420;
 const INTERACTION_NOTICE_DURATION = 1500;
 const ROOM_FADE_OUT = 320;
@@ -69,6 +83,9 @@ const ROOM_PLAYER_MIN = 76;
 const ROOM_PLAYER_START = 112;
 const ROOM_PLAYER_MAX = 408;
 const ROOM_DOOR_INTERACTION_MAX = 118;
+const CLOCK_START_SECONDS = 7 * 60 * 60 + 58 * 60;
+const RUSH_WARNING_SECONDS = 90;
+const SCHOOL_BELL_SECONDS = 120;
 
 function block(x, y, width, height, color) {
   paint.fillStyle = color;
@@ -102,7 +119,7 @@ function visible(worldX, width) {
 
 function loadWalk(direction) {
   const image = new Image();
-  image.src = `../.local/kotone-sasaki-v1/frames/walking_${direction}.png`;
+  image.src = `assets/kotone-v1/frames/walking_${direction}.png`;
   image.addEventListener("load", () => {
     sheets[direction] = { image, frameCount: image.naturalWidth / 130 };
   });
@@ -110,9 +127,17 @@ function loadWalk(direction) {
 
 function loadIdle(pose) {
   const image = new Image();
-  image.src = `../.local/kotone-sasaki-v1/frames/idle_${pose}.png`;
+  image.src = `assets/kotone-v1/frames/idle_${pose}.png`;
   image.addEventListener("load", () => {
     idleSheets[pose] = { image, frameCount: image.naturalWidth / 130 };
+  });
+}
+
+function loadKotoneV2(direction) {
+  const image = new Image();
+  image.src = `assets/kotone-v2/running_${direction}.png`;
+  image.addEventListener("load", () => {
+    kotoneV2Sheets[direction] = { image, frameCount: image.naturalWidth / 130 };
   });
 }
 
@@ -415,17 +440,17 @@ function paintWaterCooler(worldX) {
 }
 
 function paintElevator(worldX) {
-  if (!visible(worldX, 136)) return;
+  if (!visible(worldX, 170)) return;
   const x = screenX(worldX);
   block(x, 54, 136, 137, "#303846");
   block(x + 5, 59, 126, 128, "#9ca1a5");
-  block(x + 14, 73, 94, 96, "#555e6c");
-  block(x + 17, 76, 41, 90, "#707986");
-  block(x + 64, 76, 41, 90, "#707986");
-  block(x + 59, 76, 5, 90, "#414b58");
-  block(x + 105, 107, 16, 34, "#c1c7c4");
-  block(x + 109, 112, 8, 8, "#d3a84c");
-  block(x + 109, 127, 8, 8, "#5b6570");
+  block(x + 20, 73, 96, 96, "#555e6c");
+  block(x + 22, 76, 46, 90, "#707986");
+  block(x + 68, 76, 46, 90, "#707986");
+  block(x + 66, 76, 4, 90, "#414b58");
+  block(x + 143, 107, 16, 34, "#c1c7c4");
+  block(x + 146, 112, 10, 8, "#d3a84c");
+  block(x + 146, 127, 10, 8, "#5b6570");
   block(x + 36, 37, 50, 13, "#242b36");
   paint.fillStyle = "#e5c65d";
   paint.textAlign = "center";
@@ -486,6 +511,10 @@ function paintCorridor(time) {
 
 function paintPickup(item, time) {
   if (item.room || !visible(item.worldX, 32) || (item.collected && item.popTime >= POP_DURATION)) return;
+  if (item.burned && !item.collected) {
+    paintBurnedPickup(item, time);
+    return;
+  }
   const x = screenX(item.worldX);
   const lift = Math.round(Math.sin(time / 260 + item.worldX) * 2);
   const popping = item.collected;
@@ -524,11 +553,37 @@ function paintPickup(item, time) {
   paint.restore();
 }
 
+function paintBurnedPickup(item, time) {
+  const x = screenX(item.worldX);
+  const flicker = Math.round(Math.sin(time / 90 + item.worldX) * 2);
+  paint.save();
+  paint.shadowColor = "#e45f4f";
+  paint.shadowBlur = 5;
+  disk(x, 185 + flicker, 11, "#493a3d");
+  paint.shadowBlur = 0;
+  paint.fillStyle = "#151820";
+  paint.textAlign = "center";
+  paint.textBaseline = "middle";
+  paint.font = "900 13px Georgia, serif";
+  paint.fillText(item.value, x, 186 + flicker);
+  paint.fillStyle = "#ef7652";
+  paint.fillRect(x - 2, 168 + flicker, 3, 5);
+  paint.fillStyle = "#f2bf62";
+  paint.fillRect(x + 4, 171 + flicker, 2, 3);
+  paint.fillStyle = "#74636a";
+  paint.fillRect(x - 8, 164 + flicker, 2, 2);
+  paint.fillRect(x + 8, 160 + flicker, 2, 2);
+  paint.restore();
+}
+
 function paintPlayerAt(x) {
   const walking = input.left !== input.right;
-  const idleSheet = automaticPose ? idleSheets[automaticPose] || sheets.front : sheets.front;
-  const walkingSheet = sheets[player.direction] || sheets.front;
-  const sheet = walking ? walkingSheet : (player.view === "back" ? sheets.back || sheets.front : idleSheet);
+  const activeSheets = kotoneV2Active ? kotoneV2Sheets : sheets;
+  const idleSheet = kotoneV2Active
+    ? activeSheets.front || sheets.front
+    : automaticPose ? idleSheets[automaticPose] || sheets.front : sheets.front;
+  const walkingSheet = activeSheets[player.direction] || sheets.front;
+  const sheet = walking ? walkingSheet : (player.view === "back" ? activeSheets.back || sheets.back || sheets.front : idleSheet);
   const animationTime = walking ? player.animationTime : (automaticPose ? player.idleTime : 0);
   const frameDuration = walking ? 150 : 140;
   const frame = sheet ? Math.floor(animationTime / frameDuration) % sheet.frameCount : 0;
@@ -626,6 +681,97 @@ function syncHud() {
   message.textContent = count ? `${count} of 5 letters found.` : "Walk into the east wing.";
 }
 
+function formatClock(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600) % 24;
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function syncGameClock(elapsedSeconds) {
+  if (!clock) return;
+  clock.textContent = formatClock(CLOCK_START_SECONDS + elapsedSeconds);
+  if (elapsedSeconds >= RUSH_WARNING_SECONDS && !rushWarningTriggered) triggerRushWarning();
+  if (elapsedSeconds >= SCHOOL_BELL_SECONDS && !schoolBellTriggered) {
+    triggerSchoolBell();
+  }
+}
+
+function startGameClock() {
+  stopGameClock();
+  clockStartedAt = performance.now();
+  lastClockElapsed = -1;
+  rushWarningTriggered = false;
+  schoolBellTriggered = false;
+  clock.classList.remove("rush-blink", "rush-red", "late");
+  syncGameClock(0);
+  clockTimer = window.setInterval(() => {
+    const elapsedSeconds = Math.floor((performance.now() - clockStartedAt) / 1000);
+    if (elapsedSeconds === lastClockElapsed) return;
+    lastClockElapsed = elapsedSeconds;
+    syncGameClock(elapsedSeconds);
+  }, 250);
+}
+
+function stopGameClock() {
+  if (clockTimer) window.clearInterval(clockTimer);
+  clockTimer = null;
+}
+
+function triggerSchoolBell() {
+  schoolBellTriggered = true;
+  lettersBurned = true;
+  burnedLetterDialogueTriggered = false;
+  for (const item of pickups) {
+    if (!item.collected) item.burned = true;
+  }
+  if (!complete) {
+    objective.textContent = "Too late. The letters burned away.";
+    message.textContent = "The bell has rung.";
+  }
+  stopGameClock();
+  clock.classList.remove("rush-blink", "rush-red");
+  clock.classList.add("late");
+  clock.textContent = "KOTONE IS LATE.";
+  window.dispatchEvent(new Event("school-bell"));
+}
+
+function checkBurnedLetterEncounter(item, playerX) {
+  if (!lettersBurned || burnedLetterDialogueTriggered || !item || !item.burned) return;
+  const targetX = item.room ? 368 : item.worldX;
+  if (Math.abs(playerX - targetX) >= 22) return;
+  burnedLetterDialogueTriggered = true;
+  dialogueActive = true;
+  input.left = false;
+  input.right = false;
+  input.up = false;
+  input.down = false;
+  player.animationTime = 0;
+  window.dispatchEvent(new Event("burned-letter-dialogue"));
+}
+
+function playRushWarningSound() {
+  if (!rushWarningAudio) {
+    rushWarningAudio = new Audio(RUSH_WARNING_URL);
+    rushWarningAudio.volume = 0.85;
+  }
+  rushWarningAudio.currentTime = 0;
+  const playback = rushWarningAudio.play();
+  if (playback) playback.catch(() => {});
+}
+
+function triggerRushWarning() {
+  rushWarningTriggered = true;
+  playRushWarningSound();
+  clock.classList.remove("rush-red");
+  clock.classList.add("rush-blink");
+  window.setTimeout(() => {
+    clock.classList.remove("rush-blink");
+    clock.classList.add("rush-red");
+  }, 1800);
+  window.dispatchEvent(new Event("rush-warning"));
+}
+
 function showInteractionNotice(text) {
   interactionNotice = text;
   interactionNoticeTime = INTERACTION_NOTICE_DURATION;
@@ -657,6 +803,16 @@ function interact() {
   } else if (target.event === "room-3C") {
     beginRoomTransition("3C");
   }
+}
+
+function inspectRoom() {
+  const room = roomModules[roomMode];
+  if (!room || typeof room.interact !== "function") {
+    showInteractionNotice("Nothing to inspect here.");
+    return;
+  }
+  player.view = "back";
+  showInteractionNotice(room.interact(roomPlayerX));
 }
 
 function beginRoomTransition(target) {
@@ -739,7 +895,8 @@ function updateRoomPlayer(delta) {
   if (walking && currentStep !== previousStep && currentStep % 3 === 0) playFootstep();
 
   const roomLetter = pickups.find((item) => item.room === "2C");
-  if (roomLetter && !roomLetter.collected && Math.abs(roomPlayerX - 368) < 22) {
+  checkBurnedLetterEncounter(roomLetter, roomPlayerX);
+  if (!lettersBurned && roomLetter && !roomLetter.collected && Math.abs(roomPlayerX - 368) < 22) {
     roomLetter.collected = true;
     roomLetter.popTime = 0;
     playCollectSound();
@@ -800,14 +957,15 @@ function update(delta) {
   renderCameraX = Math.floor(cameraX);
 
   for (const item of pickups) {
-    if (!item.room && !item.collected && Math.abs(player.worldX - item.worldX) < 22) {
+    if (!item.room) checkBurnedLetterEncounter(item, player.worldX);
+    if (!lettersBurned && !item.room && !item.collected && Math.abs(player.worldX - item.worldX) < 22) {
       item.collected = true;
       item.popTime = 0;
       playCollectSound();
       syncHud();
     }
   }
-  if (pickups.every((item) => item.collected)) {
+  if (!lettersBurned && pickups.every((item) => item.collected)) {
     complete = true;
     input.left = false;
     input.right = false;
@@ -824,6 +982,7 @@ function update(delta) {
 }
 
 function restart() {
+  stopGameClock();
   player.worldX = 70;
   player.direction = "right";
   player.view = null;
@@ -838,8 +997,17 @@ function restart() {
   complete = false;
   fanfarePlayed = false;
   celebrationTime = -1;
+  kotoneV2Active = false;
   interactionNotice = "";
   interactionNoticeTime = 0;
+  rushWarningTriggered = false;
+  schoolBellTriggered = false;
+  lettersBurned = false;
+  burnedLetterDialogueTriggered = false;
+  if (clock) {
+    clock.classList.remove("rush-blink", "rush-red", "late");
+    clock.textContent = formatClock(CLOCK_START_SECONDS);
+  }
   roomMode = "hall";
   roomTransition = null;
   roomModules["2C"].reset();
@@ -850,16 +1018,18 @@ function restart() {
   input.down = false;
   for (const item of pickups) {
     item.collected = false;
+    item.burned = false;
     item.popTime = -1;
   }
   objective.textContent = "Find the letters before the bell.";
   syncHud();
+  if (gameStarted && !dialogueActive) startGameClock();
 }
 
 function render(time) {
   const delta = Math.min((time - previousTime) / 16.67 || 1, 2);
   previousTime = time;
-  update(delta);
+  if (gameStarted) update(delta);
   if (roomMode === "hall") {
     paintCorridor(time);
     for (const item of pickups) paintPickup(item, time);
@@ -873,6 +1043,7 @@ function render(time) {
     paintRoomPlayer();
     room.drawForeground(paint);
     room.paintLighting(paint, scene.width, scene.height, roomPlayerX, player.view);
+    paintInteractionNotice();
   }
   paintTransitionOverlay();
   ctx.imageSmoothingEnabled = false;
@@ -883,7 +1054,13 @@ function render(time) {
 }
 
 function changeInput(key, pressed) {
-  if (complete || roomTransition) return;
+  if (!gameStarted || dialogueActive || complete || roomTransition) return;
+  if (pressed && key === "e") {
+    enableAudio();
+    resetIdleTimer();
+    if (roomMode !== "hall") inspectRoom();
+    return;
+  }
   if (roomMode !== "hall") {
     if (pressed) {
       enableAudio();
@@ -938,14 +1115,14 @@ function changeInput(key, pressed) {
 window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
   if (["arrowleft", "arrowright", "arrowup", "arrowdown", "a", "d", "w", "s", "r"].includes(key)) event.preventDefault();
-  if (key === "r") restart();
+  if (key === "r" && gameStarted) restart();
   changeInput(key, true);
 });
 window.addEventListener("keyup", (event) => changeInput(event.key.toLowerCase(), false));
 window.addEventListener("blur", () => { input.left = false; input.right = false; input.up = false; input.down = false; });
 
 for (const button of document.querySelectorAll("[data-key]")) {
-  const keyMap = { left: "arrowleft", right: "arrowright", up: "arrowup", down: "arrowdown" };
+  const keyMap = { left: "arrowleft", right: "arrowright", up: "arrowup", down: "arrowdown", inspect: "e" };
   const key = keyMap[button.dataset.key];
   button.addEventListener("pointerdown", (event) => { event.preventDefault(); changeInput(key, true); });
   button.addEventListener("pointerup", (event) => { event.preventDefault(); changeInput(key, false); });
@@ -953,10 +1130,36 @@ for (const button of document.querySelectorAll("[data-key]")) {
   button.addEventListener("pointercancel", (event) => { event.preventDefault(); changeInput(key, false); });
 }
 
+window.addEventListener("game:start", () => {
+  gameStarted = true;
+  dialogueActive = true;
+  restart();
+});
+window.addEventListener("dialogue:complete", (event) => {
+  const type = event.detail && event.detail.type;
+  if (type === "burned-letter") {
+    dialogueActive = true;
+    return;
+  }
+  dialogueActive = false;
+  enableAudio();
+  if (type === "henshin") {
+    kotoneV2Active = true;
+    player.animationTime = 0;
+    player.idleTime = 0;
+    return;
+  }
+  if (!event.detail || type === "intro") startGameClock();
+});
+
 loadWalk("front");
 loadWalk("back");
 loadWalk("left");
 loadWalk("right");
+loadKotoneV2("front");
+loadKotoneV2("back");
+loadKotoneV2("left");
+loadKotoneV2("right");
 for (const pose of ["foldarm", "clap", "heart", "heel", "idea", "ipad", "thinking", "waving"]) loadIdle(pose);
 syncHud();
 requestAnimationFrame(render);
