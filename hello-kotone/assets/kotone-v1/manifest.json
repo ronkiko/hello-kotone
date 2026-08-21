@@ -1,0 +1,36 @@
+{
+  "model": "kotone-v1",
+  "version": "legacy",
+  "cellSize": {
+    "w": 130,
+    "h": 130
+  },
+  "anchor": "feet-bottom",
+  "basePath": "assets/kotone-v1/frames",
+  "actions": {
+    "walking": {
+      "durationMs": 150,
+      "loop": true,
+      "directions": {
+        "front": { "file": "walking_front.png", "frames": 6 },
+        "back": { "file": "walking_back.png", "frames": 6 },
+        "left": { "file": "walking_left.png", "frames": 6 },
+        "right": { "file": "walking_right.png", "frames": 6 }
+      }
+    },
+    "idle": {
+      "durationMs": 180,
+      "loop": true,
+      "poses": {
+        "clap": { "file": "idle_clap.png", "frames": 15 },
+        "foldarm": { "file": "idle_foldarm.png", "frames": 15 },
+        "heart": { "file": "idle_heart.png", "frames": 13 },
+        "heel": { "file": "idle_heel.png", "frames": 15 },
+        "idea": { "file": "idle_idea.png", "frames": 15 },
+        "ipad": { "file": "idle_ipad.png", "frames": 15 },
+        "thinking": { "file": "idle_thinking.png", "frames": 15 },
+        "waving": { "file": "idle_waving.png", "frames": 10 }
+      }
+    }
+  }
+}

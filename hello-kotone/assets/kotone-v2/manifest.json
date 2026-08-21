@@ -1,0 +1,32 @@
+{
+  "model": "kotone-v2",
+  "version": "rc2",
+  "cellSize": {
+    "w": 130,
+    "h": 130
+  },
+  "anchor": "feet-bottom",
+  "basePath": "assets/kotone-v2/rc2/frames",
+  "actions": {
+    "walking": {
+      "durationMs": 120,
+      "loop": true,
+      "directions": {
+        "front": { "file": "walking_front.png", "frames": 6 },
+        "back": { "file": "walking_back.png", "frames": 6 },
+        "left": { "file": "walking_left.png", "frames": 6 },
+        "right": { "file": "walking_right.png", "frames": 6 }
+      }
+    },
+    "idle": {
+      "durationMs": 180,
+      "loop": true,
+      "directions": {
+        "front": { "file": "idle_front.png", "frames": 6 },
+        "back": { "file": "idle_back.png", "frames": 6 },
+        "left": { "file": "idle_left.png", "frames": 6 },
+        "right": { "file": "idle_right.png", "frames": 6 }
+      }
+    }
+  }
+}

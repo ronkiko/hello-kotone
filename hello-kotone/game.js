@@ -33,12 +33,14 @@ const roomModules = {
 };
 const sheets = { front: null, back: null, left: null, right: null };
 const kotoneV2Sheets = { front: null, back: null, left: null, right: null };
+const kotoneV2IdleSheets = { front: null, back: null, left: null, right: null };
 const idleSheets = {};
 let cameraX = 0;
 let renderCameraX = 0;
 let previousTime = 0;
 let complete = false;
 let audioContext;
+let audioMasterGain = null;
 let doorOpenBuffer = null;
 let doorOpenLoad = null;
 let doorHandleBuffer = null;
@@ -73,7 +75,8 @@ let burnedLetterDialogueTriggered = false;
 let roomMode = "hall";
 let roomTransition = null;
 let roomPlayerX = 112;
-let kotoneV2Active = false;
+let kotoneV2Active = selectedModelIsV2();
+let graphicsStyle = "pixel";
 let henshinPending = false;
 const POP_DURATION = 420;
 const INTERACTION_NOTICE_DURATION = 1500;
@@ -87,6 +90,31 @@ const ROOM_DOOR_INTERACTION_MAX = 118;
 const CLOCK_START_SECONDS = 7 * 60 * 60 + 58 * 60;
 const RUSH_WARNING_SECONDS = 90;
 const SCHOOL_BELL_SECONDS = 120;
+
+function selectedModelIsV2() {
+  return window.gameSettings && window.gameSettings.get().model === "v2";
+}
+
+function syncGraphicsSettings() {
+  graphicsStyle = window.gameSettings ? window.gameSettings.get().graphics : "pixel";
+  document.body.classList.toggle("graphics-smooth", graphicsStyle === "smooth");
+}
+
+function audioOutput() {
+  if (!audioContext) return null;
+  if (!audioMasterGain) {
+    audioMasterGain = audioContext.createGain();
+    audioMasterGain.connect(audioContext.destination);
+  }
+  return audioMasterGain;
+}
+
+function syncAudioSettings() {
+  if (!audioMasterGain || !audioContext) return;
+  const volume = window.gameSettings ? window.gameSettings.masterVolume() : 0.7;
+  audioMasterGain.gain.setTargetAtTime(volume, audioContext.currentTime, 0.02);
+  if (rushWarningAudio) rushWarningAudio.volume = 0.85 * volume;
+}
 
 function block(x, y, width, height, color) {
   paint.fillStyle = color;
@@ -118,28 +146,56 @@ function visible(worldX, width) {
   return x + width > 0 && x < scene.width;
 }
 
-function loadWalk(direction) {
+function loadSpriteSheet(target, key, manifest, action, entry) {
+  const frameWidth = Number(manifest.cellSize && manifest.cellSize.w);
+  const frameHeight = Number(manifest.cellSize && manifest.cellSize.h);
+  const frameCount = Number(entry.frames);
+  const frameDuration = Number(entry.durationMs || action.durationMs);
+  if (!Number.isInteger(frameWidth) || !Number.isInteger(frameHeight) || !Number.isInteger(frameCount) || frameCount < 1 || !Number.isFinite(frameDuration)) {
+    console.error("Invalid sprite manifest entry", manifest.model, key, entry);
+    return;
+  }
   const image = new Image();
-  image.src = `assets/kotone-v1/frames/walking_${direction}.png`;
+  image.src = new URL(`${manifest.basePath}/${entry.file}`, document.baseURI).href;
   image.addEventListener("load", () => {
-    sheets[direction] = { image, frameCount: image.naturalWidth / 130 };
+    const expectedWidth = frameWidth * frameCount;
+    if (image.naturalWidth !== expectedWidth || image.naturalHeight !== frameHeight) {
+      console.error("Sprite sheet does not match its manifest", image.src, {
+        expectedWidth,
+        expectedHeight: frameHeight,
+        actualWidth: image.naturalWidth,
+        actualHeight: image.naturalHeight,
+      });
+      return;
+    }
+    target[key] = { image, frameCount, frameDuration, frameWidth, frameHeight };
   });
 }
 
-function loadIdle(pose) {
-  const image = new Image();
-  image.src = `assets/kotone-v1/frames/idle_${pose}.png`;
-  image.addEventListener("load", () => {
-    idleSheets[pose] = { image, frameCount: image.naturalWidth / 130 };
-  });
+function loadSpriteManifest(url, onLoad) {
+  fetch(url)
+    .then((response) => {
+      if (!response.ok) throw new Error(`Sprite manifest request failed: ${response.status}`);
+      return response.json();
+    })
+    .then(onLoad)
+    .catch((error) => console.error("Unable to load sprite manifest", url, error));
 }
 
-function loadKotoneV2(direction) {
-  const image = new Image();
-  image.src = `assets/kotone-v2/running_${direction}.png`;
-  image.addEventListener("load", () => {
-    kotoneV2Sheets[direction] = { image, frameCount: image.naturalWidth / 130 };
-  });
+function loadWalk(manifest, direction, entry) {
+  loadSpriteSheet(sheets, direction, manifest, manifest.actions.walking, entry);
+}
+
+function loadIdle(manifest, pose, entry) {
+  loadSpriteSheet(idleSheets, pose, manifest, manifest.actions.idle, entry);
+}
+
+function loadKotoneV2(manifest, direction, entry) {
+  loadSpriteSheet(kotoneV2Sheets, direction, manifest, manifest.actions.walking, entry);
+}
+
+function loadKotoneV2Idle(manifest, direction, entry) {
+  loadSpriteSheet(kotoneV2IdleSheets, direction, manifest, manifest.actions.idle, entry);
 }
 
 function resetIdleTimer() {
@@ -161,8 +217,10 @@ function enableAudio() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     audioContext = new AudioContext();
+    audioOutput();
   }
   if (audioContext.state === "suspended") audioContext.resume();
+  syncAudioSettings();
   loadDoorOpen();
   loadDoorHandle();
   loadDoorSlam();
@@ -226,7 +284,7 @@ function scheduleNoise(start, duration, filterType, frequency, resonance, peak) 
   volume.gain.exponentialRampToValueAtTime(peak, start + 0.006);
   volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   noise.buffer = buffer;
-  noise.connect(filter).connect(volume).connect(audioContext.destination);
+  noise.connect(filter).connect(volume).connect(audioOutput());
   noise.start(start);
   noise.stop(start + duration);
 }
@@ -247,7 +305,7 @@ function scheduleTone(frequency, start, duration, type, volume) {
   gain.gain.setValueAtTime(0.0001, start);
   gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  oscillator.connect(gain).connect(audioContext.destination);
+  oscillator.connect(gain).connect(audioOutput());
   oscillator.start(start);
   oscillator.stop(start + duration + 0.02);
 }
@@ -290,7 +348,7 @@ function playDoorHandleSound() {
       volume.gain.linearRampToValueAtTime(pull.gain, pullStart + 0.006);
       volume.gain.exponentialRampToValueAtTime(0.0001, pullStart + duration);
       source.buffer = doorHandleBuffer;
-      source.connect(volume).connect(audioContext.destination);
+      source.connect(volume).connect(audioOutput());
       source.start(pullStart, DOOR_HANDLE_OFFSET, duration);
     }
     return;
@@ -315,7 +373,7 @@ function playDoorOpenSound() {
     volume.gain.linearRampToValueAtTime(1.05, start + 0.008);
     volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     source.buffer = doorOpenBuffer;
-    source.connect(volume).connect(audioContext.destination);
+    source.connect(volume).connect(audioOutput());
     source.start(start, DOOR_OPEN_OFFSET, duration);
     return;
   }
@@ -330,7 +388,7 @@ function playDoorOpenSound() {
   volume.gain.setValueAtTime(0.0001, start);
   volume.gain.exponentialRampToValueAtTime(0.06, start + 0.035);
   volume.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
-  oscillator.connect(volume).connect(audioContext.destination);
+  oscillator.connect(volume).connect(audioOutput());
   oscillator.start(start);
   oscillator.stop(start + 0.45);
   scheduleTone(1250, start, 0.05, "square", 0.045);
@@ -353,7 +411,7 @@ function playDoorCloseSound() {
   volume.gain.linearRampToValueAtTime(1.15, start + 0.004);
   volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   source.buffer = doorSlamBuffer;
-  source.connect(volume).connect(audioContext.destination);
+  source.connect(volume).connect(audioOutput());
   source.start(start, DOOR_CLOSE_OFFSET, duration);
 }
 
@@ -461,7 +519,7 @@ function paintElevator(worldX) {
 
 function paintCorridor(time) {
   paint.clearRect(0, 0, scene.width, scene.height);
-  paint.imageSmoothingEnabled = false;
+  paint.imageSmoothingEnabled = graphicsStyle === "smooth";
   block(0, 0, scene.width, 270, "#111720");
   block(12, 14, scene.width - 24, 225, "#a7adb7");
   block(12, 14, scene.width - 24, 29, "#465161");
@@ -580,14 +638,19 @@ function paintBurnedPickup(item, time) {
 function paintPlayerAt(x) {
   const walking = input.left !== input.right;
   const activeSheets = kotoneV2Active ? kotoneV2Sheets : sheets;
+  const idleDirection = player.view === "back" ? "back" : "front";
   const idleSheet = kotoneV2Active
-    ? activeSheets.front || sheets.front
+    ? kotoneV2IdleSheets[idleDirection] || kotoneV2IdleSheets.front
     : automaticPose ? idleSheets[automaticPose] || sheets.front : sheets.front;
-  const walkingSheet = activeSheets[player.direction] || sheets.front;
-  const sheet = walking ? walkingSheet : (player.view === "back" ? activeSheets.back || sheets.back || sheets.front : idleSheet);
-  const animationTime = walking ? player.animationTime : (automaticPose ? player.idleTime : 0);
-  const frameDuration = walking ? 150 : 140;
-  const frame = sheet ? Math.floor(animationTime / frameDuration) % sheet.frameCount : 0;
+  const walkingSheet = activeSheets[player.direction] || activeSheets.front;
+  const stationarySheet = player.view === "back"
+    ? kotoneV2Active ? kotoneV2IdleSheets.back : sheets.back
+    : idleSheet;
+  const sheet = walking ? walkingSheet : stationarySheet;
+  const animationTime = walking ? player.animationTime : (kotoneV2Active || automaticPose ? player.idleTime : 0);
+  const frame = sheet ? Math.floor(animationTime / sheet.frameDuration) % sheet.frameCount : 0;
+  const frameWidth = sheet ? sheet.frameWidth : 130;
+  const frameHeight = sheet ? sheet.frameHeight : 130;
   const spriteY = HERO_FOOT_Y - HERO_SIZE * HERO_ALPHA_BOTTOM;
 
   paint.save();
@@ -595,7 +658,7 @@ function paintPlayerAt(x) {
   paint.beginPath();
   paint.ellipse(x, HERO_FOOT_Y, 32, 5, 0, 0, Math.PI * 2);
   paint.fill();
-  if (sheet) paint.drawImage(sheet.image, frame * 130, 0, 130, 130, x - HERO_SIZE / 2, spriteY, HERO_SIZE, HERO_SIZE);
+  if (sheet) paint.drawImage(sheet.image, frame * frameWidth, 0, frameWidth, frameHeight, x - HERO_SIZE / 2, spriteY, HERO_SIZE, HERO_SIZE);
   paint.restore();
 }
 
@@ -754,8 +817,8 @@ function checkBurnedLetterEncounter(item, playerX) {
 function playRushWarningSound() {
   if (!rushWarningAudio) {
     rushWarningAudio = new Audio(RUSH_WARNING_URL);
-    rushWarningAudio.volume = 0.85;
   }
+  rushWarningAudio.volume = 0.85 * (window.gameSettings ? window.gameSettings.masterVolume() : 0.7);
   rushWarningAudio.currentTime = 0;
   const playback = rushWarningAudio.play();
   if (playback) playback.catch(() => {});
@@ -886,7 +949,6 @@ function paintTransitionOverlay() {
 
 function updateRoomPlayer(delta) {
   const walking = input.left !== input.right;
-  const previousStep = Math.floor(player.animationTime / 150);
   if (input.left) {
     roomPlayerX = Math.max(ROOM_PLAYER_MIN, roomPlayerX - 1.7 * delta);
     player.direction = "left";
@@ -895,9 +957,13 @@ function updateRoomPlayer(delta) {
     roomPlayerX = Math.min(ROOM_PLAYER_MAX, roomPlayerX + 1.7 * delta);
     player.direction = "right";
   }
+  const walkingSheet = (kotoneV2Active ? kotoneV2Sheets : sheets)[player.direction];
+  const frameDuration = walkingSheet ? walkingSheet.frameDuration : (kotoneV2Active ? 120 : 150);
+  const previousStep = Math.floor(player.animationTime / frameDuration);
   player.animationTime = walking ? player.animationTime + delta * 16.67 : 0;
+  player.idleTime = walking ? 0 : player.idleTime + delta * 16.67;
   if (walking) player.view = null;
-  const currentStep = Math.floor(player.animationTime / 150);
+  const currentStep = Math.floor(player.animationTime / frameDuration);
   if (walking && currentStep !== previousStep && currentStep % 3 === 0) playFootstep();
 
   const roomLetter = pickups.find((item) => item.room === "2C");
@@ -936,10 +1002,12 @@ function update(delta) {
     player.direction = "right";
   }
   player.worldX = Math.max(66, Math.min(WORLD_WIDTH - 70, player.worldX));
-  const previousStep = Math.floor(player.animationTime / 150);
+  const walkingSheet = (kotoneV2Active ? kotoneV2Sheets : sheets)[player.direction];
+  const frameDuration = walkingSheet ? walkingSheet.frameDuration : (kotoneV2Active ? 120 : 150);
+  const previousStep = Math.floor(player.animationTime / frameDuration);
   player.animationTime = walking ? player.animationTime + delta * 16.67 : 0;
   player.idleTime = walking ? 0 : player.idleTime + delta * 16.67;
-  const currentStep = Math.floor(player.animationTime / 150);
+  const currentStep = Math.floor(player.animationTime / frameDuration);
   if (walking && currentStep !== previousStep && currentStep % 3 === 0) playFootstep();
 
   if (!walking && player.view !== "back" && !automaticPose) {
@@ -949,7 +1017,7 @@ function update(delta) {
   if (automaticPose && !walking) {
     automaticPoseTime += delta * 16.67;
     const automaticSheet = idleSheets[automaticPose];
-    const automaticDuration = automaticSheet ? automaticSheet.frameCount * 140 : 1800;
+    const automaticDuration = automaticSheet ? automaticSheet.frameCount * automaticSheet.frameDuration : 1800;
     if (automaticPoseTime >= automaticDuration) {
       automaticPose = null;
       automaticPoseTime = 0;
@@ -1003,7 +1071,7 @@ function restart() {
   complete = false;
   fanfarePlayed = false;
   celebrationTime = -1;
-  kotoneV2Active = false;
+  kotoneV2Active = selectedModelIsV2();
   interactionNotice = "";
   interactionNoticeTime = 0;
   rushWarningTriggered = false;
@@ -1053,7 +1121,7 @@ function render(time) {
     paintInteractionNotice();
   }
   paintTransitionOverlay();
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = graphicsStyle === "smooth";
   const fractionalCamera = roomMode === "hall" ? cameraX - renderCameraX : 0;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(scene, -fractionalCamera * 2, 0, scene.width * 2, scene.height * 2);
@@ -1142,6 +1210,10 @@ window.addEventListener("game:start", () => {
   dialogueActive = true;
   restart();
 });
+window.addEventListener("game:settings-change", () => {
+  syncGraphicsSettings();
+  syncAudioSettings();
+});
 window.addEventListener("dialogue:complete", (event) => {
   const type = event.detail && event.detail.type;
   if (type === "burned-letter") {
@@ -1166,14 +1238,14 @@ window.addEventListener("dialogue:complete", (event) => {
   if (!event.detail || type === "intro") startGameClock();
 });
 
-loadWalk("front");
-loadWalk("back");
-loadWalk("left");
-loadWalk("right");
-loadKotoneV2("front");
-loadKotoneV2("back");
-loadKotoneV2("left");
-loadKotoneV2("right");
-for (const pose of ["foldarm", "clap", "heart", "heel", "idea", "ipad", "thinking", "waving"]) loadIdle(pose);
+loadSpriteManifest("assets/kotone-v1/manifest.json", (manifest) => {
+  for (const [direction, entry] of Object.entries(manifest.actions.walking.directions)) loadWalk(manifest, direction, entry);
+  for (const [pose, entry] of Object.entries(manifest.actions.idle.poses)) loadIdle(manifest, pose, entry);
+});
+loadSpriteManifest("assets/kotone-v2/manifest.json", (manifest) => {
+  for (const [direction, entry] of Object.entries(manifest.actions.walking.directions)) loadKotoneV2(manifest, direction, entry);
+  for (const [direction, entry] of Object.entries(manifest.actions.idle.directions)) loadKotoneV2Idle(manifest, direction, entry);
+});
 syncHud();
+syncGraphicsSettings();
 requestAnimationFrame(render);

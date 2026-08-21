@@ -1,30 +1,17 @@
 # Kotone v2
 
-Это набор спрайтов новой формы Котоне после henshin.
+RC2-ассеты улучшенной модели Kotone от Dorisu для exploration-сценариев.
 
 ## Ready For Use
 
-Файлы `running_*.png` подготовлены для текущего canvas-рендера:
+Игровые листы находятся в `rc2/frames/`. Их размеры, anchor, frame counts и
+timing описаны в `manifest.json`:
 
-- `running_front.png`
-- `running_back.png`
-- `running_left.png`
-- `running_right.png`
+- `idle_front.png`, `idle_back.png`, `idle_left.png`, `idle_right.png`
+- `walking_front.png`, `walking_back.png`, `walking_left.png`, `walking_right.png`
 
-Каждый файл имеет формат PNG RGBA, размер `780x130` и шесть кадров по
-`130x130`. Фон прозрачен, подписи удалены, кадры выровнены по единому размеру.
+Idle-листы содержат шесть кадров `130x130`, walking-листы содержат шесть
+кадров `130x130`. Все подключённые листы имеют прозрачный RGBA-фон и
+подключаются напрямую canvas-рендером. Running-листы пока не подключены.
 
-## Reference
-
-`reference/renew-all-states.png` сохраняет исходный лист ChatGPT со всеми
-показанными состояниями: dash, skid, jump, landing, hurt и victory.
-
-Эти дополнительные состояния пока не вынесены в отдельные production-ready
-PNG: в исходном листе они перекрываются, имеют разный размер и содержат
-встроенные эффекты. Не использовать их напрямую как sprite sheet.
-
-## Source
-
-Исходный reference-пакет находится в `kotone-sprites-reference/renew/` и может
-быть удалён после проверки этого набора. Игровой код загружает этот набор после
-henshin-диалога, который следует за диалогом о сгоревшей букве.
+Боевые, jump, hurt и другие состояния RC2 пока не подключены.
