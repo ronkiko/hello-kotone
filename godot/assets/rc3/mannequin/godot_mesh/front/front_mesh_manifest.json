@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "character": "kotone",
+  "release": "rc3",
+  "view": "front",
+  "rest_pose": "t_pose",
+  "technical_model": "KTN-RC3-M01",
+  "successor_model": "KTN-RC3-M02",
+  "method_reference": "official_godot_4_7_skeleton2d_demo",
+  "status": "m01_six_rgba_assets_ready_editor_mesh_authoring_pending",
+  "asset_directory": "m01",
+  "asset_manifest": "m01/m01_asset_manifest.json",
+  "atlas": "m01/ktn_rc3_m01_front_atlas.png",
+  "polygon_assets": [
+    {"name": "arm_right", "region": "shoulder_to_hand", "status": "rgba_ready"},
+    {"name": "leg_right", "region": "hip_to_foot", "status": "rgba_ready"},
+    {"name": "body", "region": "pelvis_and_chest", "status": "rgba_ready"},
+    {"name": "leg_left", "region": "hip_to_foot", "status": "rgba_ready"},
+    {"name": "head", "region": "head_and_neck", "status": "rgba_ready"},
+    {"name": "arm_left", "region": "shoulder_to_hand", "status": "rgba_ready"}
+  ],
+  "draw_order": [
+    "arm_right",
+    "leg_right",
+    "body",
+    "leg_left",
+    "head",
+    "arm_left"
+  ],
+  "binding_authoring": "godot_editor_sync_bones_to_polygon",
+  "rest_pose_authoring": "godot_editor_overwrite_rest_pose",
+  "source_registration": "../source/kotone_front_mannequin_t_pose.png",
+  "legacy_cutouts": "../../parts/front",
+  "legacy_cutout_role": "registration_and_joint_center_reference_only"
+}

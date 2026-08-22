@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "front_articulation_spike_visually_rejected",
+  "status": "ktn_rc3_m01_assets_ready_full_editor_mesh_pending",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -160,12 +160,37 @@
     "bone_path_contract": "relative_to_skeleton2d_root",
     "poses_degrees": [0, 30, 60, 90],
     "empty_render_is_fatal": true,
-    "status": "prepared_needs_godot_runtime_review"
+    "runtime_commit": "899345da00152c84f6a7db6409e91c6340c810e2",
+    "binding_status": "passed_visible_polygon2d_deformation",
+    "visual_mesh_status": "rejected_thin_rest_silhouette_and_elbow_collapse",
+    "decision": "retain_as_binding_proof_only_do_not_reuse_geometry_uv_cells_or_weights",
+    "status": "technical_binding_pass_visual_mesh_fail"
   },
-  "current_gate": "front_right_arm_official_binding_needs_godot_runtime_review",
+  "full_humanoid_reference": {
+    "blueprint": "../../../../references/rc3/FULL_HUMANOID_REFERENCE_BLUEPRINT.md",
+    "static_validator": "res://scripts/mannequin/validate_official_full_humanoid_reference.py",
+    "reference_polygon_count": 7,
+    "reference_bone_count": 16,
+    "reference_animation_count": 8,
+    "status": "audited"
+  },
+  "technical_model": {
+    "id": "KTN-RC3-M01",
+    "purpose": "full_gbot_method_neutral_locomotion_mannequin",
+    "successor": "KTN-RC3-M02",
+    "successor_scope": "anatomical_joint_art_and_topology_refinement",
+    "asset_manifest": "godot_mesh/front/m01/m01_asset_manifest.json",
+    "atlas": "godot_mesh/front/m01/ktn_rc3_m01_front_atlas.png",
+    "asset_count": 6,
+    "assets": ["arm_right", "arm_left", "leg_right", "leg_left", "body", "head"],
+    "static_validator": "res://scripts/mannequin/validate_front_m01_assets.py",
+    "neutral_reconstruction": "pixel_identical_to_approved_source",
+    "status": "rgba_assets_ready_editor_polygon2d_mesh_pending"
+  },
+  "current_gate": "ktn_rc3_m01_full_editor_authored_polygon2d_neutral_binding",
   "prohibited_before_approval": [
-    "weight_painting",
     "animation_authoring",
+    "m02_anatomical_joint_redraw",
     "clothing_layers"
   ],
   "stage_gates": [
@@ -173,8 +198,11 @@
     "front_mannequin_parts_approved",
     "single_leg_cutout_motion_approved",
     "front_mannequin_neutral_rig_approved",
-    "front_mannequin_articulation_approved",
-    "front_mannequin_walk_approved",
+    "ktn_rc3_m01_six_assets_approved",
+    "ktn_rc3_m01_full_neutral_binding_approved",
+    "ktn_rc3_m01_full_articulation_approved",
+    "ktn_rc3_m01_idle_walk_run_jump_approved",
+    "ktn_rc3_m02_anatomical_refinement_allowed",
     "clothing_layers_allowed"
   ]
 }

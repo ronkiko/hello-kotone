@@ -26,7 +26,27 @@ prefer this downloaded 4.7 demo over assumptions inferred from the prose.
 - `player/player.gd`: animation selection and movement controller;
 - `project.godot`: standalone project configuration.
 
-## Right-arm facts from the upstream scene
+## Full-character facts from the upstream scene
+
+The character is a complete 16-bone humanoid driven by eight animations:
+`idle`, `walk`, `run`, `jump`, `fly`, `fall`, `land` and `land_hard`. Its
+visible body is seven Polygon2D regions drawn from one RGBA atlas:
+
+| Region | Vertices | Explicit cells | Active bones |
+| --- | ---: | ---: | --- |
+| RightArm | 19 | 7 | RightArm, RightForearm, RightHand |
+| RightLeg | 14 | 5 | RightLeg, RightLowerLeg, RightFoot |
+| Body | 21 | 8 | Hip, Chest |
+| LeftLeg | 15 | 4 | LeftLeg, LeftLowerLeg, LeftFoot |
+| Head | 14 | 1 | Head |
+| Chin | 7 | 1 | Chin |
+| LeftArm | 20 | 7 | LeftArm, LeftForearm, LeftHand |
+
+The order in this table is also the scene's back-to-front Polygon2D draw
+order. The full RC3 interpretation is recorded in
+`references/rc3/FULL_HUMANOID_REFERENCE_BLUEPRINT.md`.
+
+## Right-arm detail
 
 The deforming right arm is one continuous `Polygon2D`, not three overlapping
 rigid sprites. It covers upper arm, elbow, forearm and hand and is bound to the
@@ -62,9 +82,11 @@ editor, all of the following before building another Kotone mesh:
 6. weight painting on every point, including internal points;
 7. animation tracks rotating bones rather than polygons.
 
-Do not copy gBot coordinates or weights into Kotone. The next safe step is to
-run this project unchanged in Godot 4.7.2, inspect its right-arm mesh in the UV
-editor and document the structural differences against Task 4I.
+Do not copy gBot coordinates or weights into Kotone. Task 4J already confirmed
+the skeleton-relative path rule while rejecting its old arm topology. The
+successor is the full `KTN-RC3-M01` mannequin: six Kotone texture regions built
+from the approved neutral source and authored as Polygon2D meshes in Godot's UV
+editor. Inspect every gBot region, not only the right arm.
 
 ## First high-confidence structural discrepancy
 

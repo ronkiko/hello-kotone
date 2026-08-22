@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "technical_model": "KTN-RC3-M01",
+  "character": "kotone",
+  "release": "rc3",
+  "purpose": "whole_body_gbot_method_locomotion_mannequin",
+  "status": "six_rgba_regions_built_mesh_authoring_pending",
+  "source": "../../../source/kotone_front_mannequin_t_pose.png",
+  "source_sha256": "b13044d02fbc96a405e83d7903099e5a6bb9f99a6b471ac9e171c63ffc734b34",
+  "atlas": "ktn_rc3_m01_front_atlas.png",
+  "atlas_size": [
+    1024,
+    768
+  ],
+  "atlas_sha256": "6f8c5757abde4fa4fd96c99b57d9371ffc5d9bc9a888b10834aec6c6a20e0a79",
+  "reassembled_preview": "ktn_rc3_m01_front_reassembled.png",
+  "reassembled_sha256": "9dc3e7515a774c7df7dddfaff821e036287186b1adcc95498e578c246afa379d",
+  "draw_order_back_to_front": [
+    "arm_right",
+    "arm_left",
+    "leg_right",
+    "leg_left",
+    "body",
+    "head"
+  ],
+  "assets": {
+    "arm_right": {
+      "file": "parts/arm_right.png",
+      "source_parts": [
+        "hand_right",
+        "forearm_right",
+        "upper_arm_right"
+      ],
+      "source_offset": [
+        213,
+        219
+      ],
+      "size": [
+        363,
+        92
+      ],
+      "sha256": "d91bd056cd660aa6472468938a493a0fb4eeca8b1c59be879e571e9722244bdc",
+      "atlas_position": [
+        547,
+        229
+      ]
+    },
+    "arm_left": {
+      "file": "parts/arm_left.png",
+      "source_parts": [
+        "hand_left",
+        "forearm_left",
+        "upper_arm_left"
+      ],
+      "source_offset": [
+        679,
+        219
+      ],
+      "size": [
+        363,
+        92
+      ],
+      "sha256": "e9c267ea523ec3463a29d85a2f457a3079f8234e18e787b01d76b64cbcdddfeb",
+      "atlas_position": [
+        547,
+        337
+      ]
+    },
+    "leg_right": {
+      "file": "parts/leg_right.png",
+      "source_parts": [
+        "foot_right",
+        "calf_right",
+        "thigh_right"
+      ],
+      "source_offset": [
+        511,
+        520
+      ],
+      "size": [
+        125,
+        644
+      ],
+      "sha256": "30a702f4f7e86401864e12f9b4444d35774e8b62c734266dd4cfdf11befa8deb",
+      "atlas_position": [
+        16,
+        16
+      ]
+    },
+    "leg_left": {
+      "file": "parts/leg_left.png",
+      "source_parts": [
+        "foot_left",
+        "calf_left",
+        "thigh_left"
+      ],
+      "source_offset": [
+        619,
+        520
+      ],
+      "size": [
+        125,
+        645
+      ],
+      "sha256": "39e17253f85fbbfdf10ef6aed923ea5e4fae9451515aabb7d7ba9cef38c453c3",
+      "atlas_position": [
+        157,
+        16
+      ]
+    },
+    "body": {
+      "file": "parts/body.png",
+      "source_parts": [
+        "pelvis",
+        "torso"
+      ],
+      "source_offset": [
+        511,
+        185
+      ],
+      "size": [
+        233,
+        426
+      ],
+      "sha256": "7f788ce3be466b627695a23660d8fcbb12321f500d4470ff7be10fa0e5fc0b74",
+      "atlas_position": [
+        298,
+        16
+      ]
+    },
+    "head": {
+      "file": "parts/head.png",
+      "source_parts": [
+        "head_neck"
+      ],
+      "source_offset": [
+        545,
+        54
+      ],
+      "size": [
+        164,
+        197
+      ],
+      "sha256": "d0cdf4d3410f652352f3d417d9237d40b6f6cbe6964393f0154b2d8d68ddbe6e",
+      "atlas_position": [
+        547,
+        16
+      ]
+    }
+  },
+  "construction": "deterministic_composite_of_approved_registration_parts",
+  "mesh_authoring": "pending_godot_editor_polygon2d_uv_cells_sync_and_weights",
+  "anatomical_refinement_model": "KTN-RC3-M02"
+}

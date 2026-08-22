@@ -3,9 +3,11 @@
 ## Decision
 
 RC3 locomotion is built on a neutral articulated mannequin whose proportions
-belong to Kotone. It is not a generic doll and it is not a one-piece deforming
-sprite. Clothing, hair and accessories are introduced only after the mannequin
-can hold weight and walk convincingly.
+belong to Kotone. It is not a generic doll or one monolithic body polygon.
+Following the runnable official Godot Skeleton2D demo, the current target is a
+small set of continuous weighted regions: two complete arms, two complete
+legs, body, head and optional lower-face/jaw. Clothing, hair and accessories
+are introduced only after the mannequin can hold weight and walk convincingly.
 
 The Task 4B front-leg depth proxy remains historical rigging research. Vertical
 `scale.y = cos(angle)` proved that localized weights work, but it produced a
@@ -44,8 +46,8 @@ from the current one-piece source before its proportions are approved.
 
 ## Rig-ready part contract
 
-After source approval the figure is redrawn/extracted as separate transparent
-parts, not merely cropped along visible seams:
+The historical neutral registration set was extracted as these transparent
+parts:
 
 - pelvis/root;
 - torso and chest;
@@ -56,6 +58,12 @@ parts, not merely cropped along visible seams:
 Every rotating joint must contain hidden overlap art under its neighbour. No
 joint may expose transparent gaps at its tested range. Parts use anatomical
 left/right naming.
+
+These 15 cutouts locate proportions and pivots, but the rejected articulation
+spikes proved that they must not be rotated as the visible production limbs.
+The successor atlas combines them into seven continuous islands following
+`FULL_HUMANOID_REFERENCE_BLUEPRINT.md`: each arm spans shoulder through hand,
+each leg spans hip through foot, and the body spans pelvis through chest.
 
 The first motion proof uses one leg only. It must demonstrate contact, down,
 passing and up poses without sideways knee rotation or uniform telescoping.
@@ -75,4 +83,3 @@ Only after the mannequin walk is approved:
 6. secondary cloth and hair motion.
 
 All wearable parts inherit the approved mannequin pivots and rest coordinates.
-
