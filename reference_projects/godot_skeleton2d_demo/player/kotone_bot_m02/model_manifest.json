@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "technical_model": "KTN-RC3-M02",
+  "character": "kotone",
+  "purpose": "segmented_jointed_mannequin_grounded_gait_prototype",
+  "source_model": "KTN-RC3-M01",
+  "asset_count": 15,
+  "bone_count": 15,
+  "joint_caps": 12,
+  "construction": "rigid_sprite_cutouts_parented_to_bone2d_with_explicit_joint_caps",
+  "motion": "procedural_contact_midstance_toeoff_swing_cycle",
+  "original_gbot_preserved": true,
+  "m01_preserved": true,
+  "status": "ready_for_runtime_visual_gate"
+}

@@ -3,7 +3,8 @@
 This official Skeleton2D demo is the temporary playable training field for
 `KTN-RC3-M01`.
 
-- Active player: `res://player/kotone_bot_m01/player.tscn`
+- Active player: `res://player/kotone_bot_m02/player.tscn`
+- Preserved first prototype: `res://player/kotone_bot_m01/player.tscn`
 - Preserved original: `res://player/player.tscn`
 - Selection point: external resource id `4` in `level.tscn`
 - Launcher: `./demobot.sh`
@@ -17,8 +18,14 @@ does not copy the robot's gait. Its procedural poses target human weight shift
 and arm counter-swing. This M01 mannequin is an integration baseline; improved
 elbows and knees are reserved for M02.
 
-The first live articulation gate intentionally uses clearly visible rigid
+The M01 live articulation gate intentionally used clearly visible rigid
 whole-limb motion: shoulders and hips move while elbows, wrists, knees and
 ankles remain locked. This distinguishes a working bone/mesh binding from a
 subtle or malformed final gait. It is a diagnostic motion proof, not the final
 walk animation.
+
+`KTN-RC3-M02` is the next mechanical approximation. It reconstructs the same
+approved silhouette from 15 independently pivoted rigid parts and adds visible
+two-layer joint caps. Its gait has explicit contact, mid-stance, toe-off and
+bent-knee swing phases. M01 and gBot remain available as rollback and reference
+scenes; only resource id `4` selects the active experiment.

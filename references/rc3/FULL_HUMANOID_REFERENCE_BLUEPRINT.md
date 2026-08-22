@@ -170,9 +170,12 @@ Only the `PackedScene` resource with id `4` in `level.tscn` points to
 `res://player/player.tscn` restores gBot without deleting either model.
 
 The replacement copies the example's construction class, not its robotic
-motion. Kotone-bot has its own restrained human-target idle, locomotion and
-airborne poses. The demo field is only the first playable proving ground;
-elbow and knee refinement belongs to `KTN-RC3-M02`.
+motion. M01 proved loading, collision, movement, jumping and live whole-limb
+bone binding, but its locked-joint gait was visually rejected as suspended.
+The active `KTN-RC3-M02` therefore uses the approved 15 registration cutouts as
+rigid bone children with explicit joint caps. Its first gait introduces
+contact, stance, toe-off and swing phases. This is still a mechanical
+mannequin, not final Kotone animation.
 
 ## Authoritative references
 

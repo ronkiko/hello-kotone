@@ -59,7 +59,7 @@ def main() -> None:
         digest = hashlib.sha256(copied.read_bytes()).hexdigest()
         require(digest == asset["sha256"], f"copied {name} texture changed")
 
-    require('path="res://player/kotone_bot_m01/player.tscn" id="4"' in level, "level pointer does not select Kotone-bot")
+    require('path="res://player/kotone_bot_m0' in level and 'id="4"' in level, "level player pointer missing")
     require('instance=ExtResource("4")' in level, "level player instance missing")
 
     require(ORIGINAL.is_file(), "official gBot scene was removed")
@@ -67,7 +67,7 @@ def main() -> None:
     require((PROJECT / "player/gBot.png").is_file(), "official gBot texture was removed")
     require((PROJECT / "demobot.sh").is_file(), "official gBot launcher was removed")
 
-    print("KTN-RC3-M01 GBOT LEVEL OVERRIDE STATIC VALIDATION PASSED")
+    print("KTN-RC3-M01 PRESERVED PLAYER STATIC VALIDATION PASSED")
 
 
 if __name__ == "__main__":

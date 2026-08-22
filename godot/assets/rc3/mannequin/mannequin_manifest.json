@@ -185,12 +185,20 @@
     "assets": ["arm_right", "arm_left", "leg_right", "leg_left", "body", "head"],
     "static_validator": "res://scripts/mannequin/validate_front_m01_assets.py",
     "neutral_reconstruction": "pixel_identical_to_approved_source",
-    "status": "rgba_assets_ready_editor_polygon2d_mesh_pending"
+    "status": "runtime_integration_and_whole_limb_binding_passed_dangling_gait_rejected"
   },
-  "current_gate": "ktn_rc3_m01_full_editor_authored_polygon2d_neutral_binding",
+  "successor_model": {
+    "id": "KTN-RC3-M02",
+    "purpose": "segmented_jointed_mannequin_grounded_gait_prototype",
+    "asset_count": 15,
+    "bone_count": 15,
+    "joint_caps": 12,
+    "construction": "rigid_sprite_cutouts_parented_to_bone2d_with_explicit_joint_caps",
+    "active_scene": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02/player.tscn",
+    "status": "ready_for_runtime_visual_gate"
+  },
+  "current_gate": "ktn_rc3_m02_segmented_runtime_visual_gate",
   "prohibited_before_approval": [
-    "animation_authoring",
-    "m02_anatomical_joint_redraw",
     "clothing_layers"
   ],
   "stage_gates": [
@@ -199,10 +207,11 @@
     "single_leg_cutout_motion_approved",
     "front_mannequin_neutral_rig_approved",
     "ktn_rc3_m01_six_assets_approved",
-    "ktn_rc3_m01_full_neutral_binding_approved",
-    "ktn_rc3_m01_full_articulation_approved",
-    "ktn_rc3_m01_idle_walk_run_jump_approved",
-    "ktn_rc3_m02_anatomical_refinement_allowed",
+    "ktn_rc3_m01_runtime_integration_approved",
+    "ktn_rc3_m01_whole_limb_binding_approved",
+    "ktn_rc3_m01_gait_rejected_as_dangling",
+    "ktn_rc3_m02_segmented_scene_ready",
+    "ktn_rc3_m02_grounded_gait_runtime_approval_pending",
     "clothing_layers_allowed"
   ]
 }
