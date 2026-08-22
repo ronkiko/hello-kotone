@@ -75,3 +75,8 @@ They show only the joint-local anatomical mesh at 0, 30, 60 and 90 degrees of
 valid downward elbow flexion. If the elbow loses volume at an extreme, record
 the first failing angle and move to an explicit artwork/volume correction.
 Do not widen or smooth weights across the full arm.
+
+Each Task 4I pose is rendered in an isolated `500x820` viewport and the four
+finished images are stitched into the sheet afterward. The initial shared-
+viewport render overlapped neighbouring full-body instances and is invalid QA
+evidence; overwrite those PNGs before evaluating the mesh.

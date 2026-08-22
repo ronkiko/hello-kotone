@@ -35,8 +35,30 @@ func _run() -> void:
 	quit(0)
 
 func _render_theme(packed: PackedScene, theme: Dictionary) -> bool:
+	if DisplayServer.get_name() == "headless":
+		printerr("No rendered image: headless dummy renderer cannot rasterize; use GL/Xvfb")
+		return false
+	var sheet := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
+	for panel_index in POSE_ANGLES.size():
+		var panel_image := await _render_panel(packed, theme, POSE_ANGLES[panel_index])
+		if panel_image == null:
+			return false
+		sheet.blit_rect(
+			panel_image,
+			Rect2i(Vector2i.ZERO, panel_image.get_size()),
+			Vector2i(panel_index * PANEL_WIDTH, 0)
+		)
+	var output_path: String = OUTPUT_DIR + str(theme["name"])
+	var error := sheet.save_png(output_path)
+	if error == OK:
+		print("WROTE: ", output_path, " ", sheet.get_width(), "x", sheet.get_height())
+	else:
+		printerr("Could not write ", output_path, ": ", error)
+	return error == OK
+
+func _render_panel(packed: PackedScene, theme: Dictionary, angle: float) -> Image:
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(WIDTH, HEIGHT)
+	viewport.size = Vector2i(PANEL_WIDTH, HEIGHT)
 	viewport.transparent_bg = false
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	get_root().add_child(viewport)
@@ -44,61 +66,50 @@ func _render_theme(packed: PackedScene, theme: Dictionary) -> bool:
 	viewport.add_child(canvas)
 	var background := ColorRect.new()
 	background.color = theme["background"]
-	background.size = Vector2(WIDTH, HEIGHT)
+	background.size = Vector2(PANEL_WIDTH, HEIGHT)
 	canvas.add_child(background)
-	for panel_index in POSE_ANGLES.size():
-		_add_panel(canvas, panel_index, theme)
-		var rig := packed.instantiate() as Node2D
-		rig.scale = Vector2(RIG_SCALE, RIG_SCALE)
-		rig.position = Vector2(panel_index * PANEL_WIDTH + PANEL_WIDTH * 0.5 - 414.0 * RIG_SCALE, 140.0 - 245.0 * RIG_SCALE)
-		canvas.add_child(rig)
-		var elbow := rig.get_node("BaseRig/Skeleton2D/pelvis/torso/upper_arm_right/forearm_right") as Bone2D
-		elbow.rotation = deg_to_rad(POSE_ANGLES[panel_index])
-		_add_label(canvas, panel_index, "%d° ELBOW" % int(absf(POSE_ANGLES[panel_index])), theme)
+	_add_panel(canvas, theme)
+	var rig := packed.instantiate() as Node2D
+	rig.scale = Vector2(RIG_SCALE, RIG_SCALE)
+	rig.position = Vector2(PANEL_WIDTH * 0.5 - 414.0 * RIG_SCALE, 140.0 - 245.0 * RIG_SCALE)
+	canvas.add_child(rig)
+	var elbow := rig.get_node("BaseRig/Skeleton2D/pelvis/torso/upper_arm_right/forearm_right") as Bone2D
+	elbow.rotation = deg_to_rad(angle)
+	_add_label(canvas, "%d° ELBOW" % int(absf(angle)), theme)
 	var title := Label.new()
-	title.text = "TASK 4I / ANATOMICAL-RIGHT ELBOW / JOINT-LOCAL TOPOLOGY"
-	title.position = Vector2(30, 12)
-	title.size = Vector2(WIDTH - 60, 30)
+	title.text = "TASK 4I / ISOLATED POSE"
+	title.position = Vector2(20, 12)
+	title.size = Vector2(PANEL_WIDTH - 40, 30)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_color", theme["ink"])
 	title.add_theme_font_size_override("font_size", 18)
 	canvas.add_child(title)
 	await process_frame
 	await process_frame
-	if DisplayServer.get_name() == "headless":
-		printerr("No rendered image: headless dummy renderer cannot rasterize; use GL/Xvfb")
-		viewport.queue_free()
-		return false
 	var image := viewport.get_texture().get_image()
 	if image == null:
-		printerr("No rendered image returned by viewport")
+		printerr("No rendered image returned for isolated %d-degree panel" % int(absf(angle)))
 		viewport.queue_free()
-		return false
-	var output_path: String = OUTPUT_DIR + str(theme["name"])
-	var error := image.save_png(output_path)
-	if error == OK:
-		print("WROTE: ", output_path, " ", image.get_width(), "x", image.get_height())
-	else:
-		printerr("Could not write ", output_path, ": ", error)
+		return null
 	viewport.queue_free()
-	return error == OK
+	return image
 
-func _add_panel(canvas: Node2D, panel_index: int, theme: Dictionary) -> void:
+func _add_panel(canvas: Node2D, theme: Dictionary) -> void:
 	var panel := ColorRect.new()
 	panel.color = theme["panel"]
-	panel.position = Vector2(panel_index * PANEL_WIDTH + 20, 90)
+	panel.position = Vector2(20, 90)
 	panel.size = Vector2(PANEL_WIDTH - 40, HEIGHT - 120)
 	canvas.add_child(panel)
 	var rule := ColorRect.new()
 	rule.color = theme["rule"]
-	rule.position = Vector2(panel_index * PANEL_WIDTH + 20, 90)
+	rule.position = Vector2(20, 90)
 	rule.size = Vector2(PANEL_WIDTH - 40, 1)
 	canvas.add_child(rule)
 
-func _add_label(canvas: Node2D, panel_index: int, label_text: String, theme: Dictionary) -> void:
+func _add_label(canvas: Node2D, label_text: String, theme: Dictionary) -> void:
 	var label := Label.new()
 	label.text = label_text
-	label.position = Vector2(panel_index * PANEL_WIDTH + 20, 50)
+	label.position = Vector2(20, 50)
 	label.size = Vector2(PANEL_WIDTH - 40, 36)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", theme["ink"])

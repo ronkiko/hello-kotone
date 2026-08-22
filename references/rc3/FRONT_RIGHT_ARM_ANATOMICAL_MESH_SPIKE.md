@@ -38,8 +38,17 @@ Expected terminator:
 FRONT RIGHT ARM ANATOMICAL MESH SPIKE GODOT VALIDATION PASSED
 ```
 
-The renderer creates light, dark and magenta sheets containing only the new arm
-at `0°`, `30°`, `60°` and `90°` of anatomically valid downward elbow flexion.
+The renderer creates light, dark and magenta sheets containing the new arm at
+`0°`, `30°`, `60°` and `90°` of anatomically valid downward elbow flexion.
+Every pose is rasterized in its own `500x820` `SubViewport`; only completed
+panel images are stitched into the final `2000x820` sheet. This prevents a
+full mannequin instance from crossing a panel boundary and covering a
+neighbouring pose.
+
+The first runtime sheets produced before this isolation fix are invalid QA
+evidence: their four full mannequin instances shared one wide viewport and
+overlapped. They must be overwritten by a new GL/Xvfb render before judging
+the elbow at any angle.
 
 Review the elbow for pinching, loss of thickness, broken contour, holes,
 doubled pixels and texture folding. Do not tune weights or add a patch during
