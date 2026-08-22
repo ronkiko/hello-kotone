@@ -58,8 +58,15 @@ Runtime QA passed with `Godot 4.7.2.stable.official` and was recorded in commit
 
 The unsupported V-Sync warning from the headless/X11 driver is non-blocking.
 The initial runtime run proved the mechanics but its abduction/adduction labels
-were reversed. That evidence is retained for diagnosis but does not approve the
-direction labels. The corrected renderer and spatial validator must be rerun
-before Task 4E direction semantics are approved. Full neutral mannequin
-assembly remains independently approved by Task 4F; walk animation, weight
-painting and clothing remain outside this gate.
+were reversed. Corrected runtime evidence was recorded in commit
+`37955ef4a002c4060eda355ea990a34c44548fa4`.
+
+- `+4°` moved the anatomical-right ankle toward viewer-left;
+- `-4°` moved it toward the body center;
+- all three corrected GL/Xvfb previews were reviewed;
+- an additional temporary ±10-degree test measured ankle X as `472.517`,
+  `555.0`, and `637.483` for `+10°`, neutral, and `-10°` respectively.
+
+Task 4E direction semantics are approved. Full neutral mannequin assembly is
+independently approved by Task 4F; walk animation, weight painting and clothing
+remain outside this gate.

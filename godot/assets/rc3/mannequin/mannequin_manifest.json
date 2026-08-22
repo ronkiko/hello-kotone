@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "front_neutral_rig_runtime_approved_task4e_direction_fix_pending",
+  "status": "front_neutral_rig_runtime_approved",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -19,7 +19,7 @@
   "single_leg_scene": "res://scenes/mannequin/kotone_front_right_leg_cutout_spike.tscn",
   "neutral_rig_scene": "res://scenes/mannequin/kotone_front_neutral_rig.tscn",
   "runtime_qa": {
-    "status": "mechanics_passed_direction_labels_rejected",
+    "status": "passed_direction_corrected",
     "godot_version": "4.7.2.stable.official",
     "recorded_commit": "87a291ff107d9279334069ba57165d0df92bced3",
     "validator": "res://scripts/mannequin/validate_front_right_leg_cutout_spike.gd",
@@ -30,7 +30,18 @@
       "preview/task4e_front_right_leg_cutout_magenta.png"
     ],
     "tested_motion": "hip_right_rotation_minus4_to_plus4_degrees",
-    "rejection_reason": "abduction_and_adduction_labels_were_reversed",
+    "initial_rejection_reason": "abduction_and_adduction_labels_were_reversed",
+    "corrected_recorded_commit": "37955ef4a002c4060eda355ea990a34c44548fa4",
+    "angle_convention": {
+      "positive_4_degrees": "abduction_toward_viewer_left",
+      "negative_4_degrees": "adduction_toward_body_center"
+    },
+    "supplemental_10_degree_test": {
+      "neutral_ankle_x": 555.0,
+      "positive_10_ankle_x": 472.517,
+      "negative_10_ankle_x": 637.483,
+      "status": "passed"
+    },
     "knee_rotation": "neutral",
     "ankle_rotation": "neutral",
     "scale": "unchanged",
@@ -57,7 +68,7 @@
       "unsupported_vsync_in_headless_x11"
     ]
   },
-  "current_gate": "task4e_direction_labels_need_runtime_reapproval",
+  "current_gate": "front_mannequin_neutral_rig_approved",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",
