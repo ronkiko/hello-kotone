@@ -8,3 +8,9 @@
 
 These files are review evidence and are not loaded by runtime scenes.
 
+Task 4D adds:
+
+- `task4d_front_parts_contact.png`: all 15 named trimmed parts;
+- `task4d_front_parts_reassembled.png`: transparent reconstruction using only
+  the trimmed parts and manifest offsets;
+- checker, dark and magenta reconstruction checks.

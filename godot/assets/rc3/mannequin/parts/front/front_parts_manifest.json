@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "front_mannequin_parts_ready_for_user_review",
+  "source": "../../source/kotone_front_mannequin_t_pose.png",
+  "source_sha256": "b13044d02fbc96a405e83d7903099e5a6bb9f99a6b471ac9e171c63ffc734b34",
+  "canvas": [1254, 1254],
+  "coordinate_naming": "anatomical_left_right",
+  "parts": [
+    {"name":"head_neck","file":"head_neck.png","offset":[545,54],"size":[164,197],"pivot_global":[627,205],"pivot_local":[82,151],"sha256":"080fbe0352fc2ade4f01171e2adbc0344c9c0ca6aebc5b5d969cfd1857c5c2f6"},
+    {"name":"torso","file":"torso.png","offset":[511,185],"size":[233,286],"pivot_global":[627,430],"pivot_local":[116,245],"sha256":"312ac83686d86f1eeb4e0455a689624439ae1b6a726b4a68822abed60c281d5a"},
+    {"name":"pelvis","file":"pelvis.png","offset":[512,405],"size":[231,206],"pivot_global":[627,545],"pivot_local":[115,140],"sha256":"6b7fde40ce4394c1ce279e3ad5158a0dbd0aeb583042997ff8fbd2b18b81b5de"},
+    {"name":"upper_arm_right","file":"upper_arm_right.png","offset":[365,219],"size":[211,92],"pivot_global":[552,244],"pivot_local":[187,25],"sha256":"e8103f37ae55c7416e8383a25c524263c1b8a6140b83c55f63dccd9dd9d62f3c"},
+    {"name":"forearm_right","file":"forearm_right.png","offset":[260,240],"size":[186,50],"pivot_global":[414,263],"pivot_local":[154,23],"sha256":"146d0a986694939f42948bc4af056030d682f4d3419a7661a857eb5ed2db3086"},
+    {"name":"hand_right","file":"hand_right.png","offset":[213,251],"size":[118,43],"pivot_global":[300,270],"pivot_local":[87,19],"sha256":"20aa3201ec09780c101715ec8876e045927ae1479473b8b5a8a79dbb10847aec"},
+    {"name":"upper_arm_left","file":"upper_arm_left.png","offset":[679,219],"size":[211,92],"pivot_global":[702,244],"pivot_local":[23,25],"sha256":"6d3c7740fc69262a7615241e6984a4eb5c5739bd77f584bd16a70f269c3eb138"},
+    {"name":"forearm_left","file":"forearm_left.png","offset":[809,240],"size":[186,50],"pivot_global":[840,263],"pivot_local":[31,23],"sha256":"61b0c195be998c621aab4523233e198d5c4f86b32e2ae8088b2b119d13379481"},
+    {"name":"hand_left","file":"hand_left.png","offset":[924,250],"size":[118,44],"pivot_global":[954,270],"pivot_local":[30,20],"sha256":"4630f88dc23394970ff5eecd9bd1e7e8e96324bfd4593eb47e1f9336befa95d6"},
+    {"name":"thigh_right","file":"thigh_right.png","offset":[512,520],"size":[124,286],"pivot_global":[555,565],"pivot_local":[43,45],"sha256":"15b84dbac7d3bbba88822fa0063aac141d21c490ede354fa18f7dc2948953e05"},
+    {"name":"calf_right","file":"calf_right.png","offset":[511,710],"size":[81,361],"pivot_global":[555,765],"pivot_local":[44,55],"sha256":"285f6cb8ba69f4b602ad3c2b964db19d69ced1c2d4b29cd80183123a3e47fbe5"},
+    {"name":"foot_right","file":"foot_right.png","offset":[514,1000],"size":[56,164],"pivot_global":[555,1040],"pivot_local":[41,40],"sha256":"d3b65fd172b13268ed8dbc855d5855a7b3faeee034bd80537a6b8d5b2ffa75b1"},
+    {"name":"thigh_left","file":"thigh_left.png","offset":[619,520],"size":[124,286],"pivot_global":[699,565],"pivot_local":[80,45],"sha256":"233b4d112fe907fd1adac8a1785fd40fd4d2098c631b5035ac2ac72f3929e702"},
+    {"name":"calf_left","file":"calf_left.png","offset":[663,710],"size":[81,361],"pivot_global":[699,765],"pivot_local":[36,55],"sha256":"718496c77657af5f3dc0a25d129beb5f85eec06f7bcf681bd8c80d33c7644cb2"},
+    {"name":"foot_left","file":"foot_left.png","offset":[685,1000],"size":[55,165],"pivot_global":[699,1040],"pivot_local":[14,40],"sha256":"65f4ea9036da165eba4e9c748b0a880ce3d0b9656145e791b36548c0a2f415c5"}
+  ],
+  "layer_order_back_to_front": [
+    "hand_right", "forearm_right", "upper_arm_right",
+    "hand_left", "forearm_left", "upper_arm_left",
+    "foot_right", "calf_right", "thigh_right",
+    "foot_left", "calf_left", "thigh_left",
+    "pelvis", "torso", "head_neck"
+  ],
+  "required_overlap_pairs": [
+    ["head_neck","torso"], ["torso","pelvis"],
+    ["upper_arm_right","forearm_right"], ["forearm_right","hand_right"],
+    ["upper_arm_left","forearm_left"], ["forearm_left","hand_left"],
+    ["pelvis","thigh_right"], ["thigh_right","calf_right"], ["calf_right","foot_right"],
+    ["pelvis","thigh_left"], ["thigh_left","calf_left"], ["calf_left","foot_left"]
+  ]
+}
+
