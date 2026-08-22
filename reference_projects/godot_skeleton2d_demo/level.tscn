@@ -3,7 +3,7 @@
 [ext_resource type="TileSet" uid="uid://di2pny8n7xu18" path="res://level/tileset/tileset.tres" id="1_0yenw"]
 [ext_resource type="Script" uid="uid://b0eqjfca7g420" path="res://level/level.gd" id="1_bccge"]
 [ext_resource type="PackedScene" uid="uid://0nndwiqg01po" path="res://level/parallax_background.tscn" id="3"]
-[ext_resource type="PackedScene" uid="uid://c8av6e2xj4of2" path="res://player/player.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m01/player.tscn" id="4"]
 
 [node name="Level" type="Node2D" unique_id=480593130]
 process_mode = 1

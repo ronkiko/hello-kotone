@@ -20,6 +20,18 @@ into the full mannequin.
 
 These numbers identify rig mannequins, not new canon character designs.
 
+The word "gBot-method" refers only to the construction technique. M01 must not
+copy the robot's gait, pose timing, proportions or personality. Kotone-bot is a
+human-proportioned neutral mannequin and its locomotion target is a restrained
+human walk. M02 improves joint anatomy without replacing the learned
+Skeleton2D/Polygon2D architecture.
+
+The vendored official demo under `reference_projects/godot_skeleton2d_demo/`
+remains the permanent reference and the temporary playable test field. Its
+gBot player files stay unchanged; only the level's player-scene pointer is
+switched for the M01 experiment. Neither gBot nor `legacy/web/` is deleted or
+rewritten.
+
 ## What the official character actually contains
 
 The runtime character uses one `Skeleton2D`, 16 `Bone2D` nodes and seven
@@ -148,6 +160,19 @@ copy and swap only one controlled variable:
 - retain Kotone geometry but re-run **Sync Bones to Polygon** to test binding.
 
 Never commit a deliberately scrambled character to the production scene.
+
+## Active gBot-field experiment
+
+The official demo is the temporary training field for `KTN-RC3-M01`. Its
+original `player/player.tscn`, texture, controller and launcher remain intact.
+Only the `PackedScene` resource with id `4` in `level.tscn` points to
+`res://player/kotone_bot_m01/player.tscn`. Restoring that one path to
+`res://player/player.tscn` restores gBot without deleting either model.
+
+The replacement copies the example's construction class, not its robotic
+motion. Kotone-bot has its own restrained human-target idle, locomotion and
+airborne poses. The demo field is only the first playable proving ground;
+elbow and knee refinement belongs to `KTN-RC3-M02`.
 
 ## Authoritative references
 
