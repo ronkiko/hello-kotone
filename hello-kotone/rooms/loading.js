@@ -4,9 +4,17 @@
 
   const menu = [...screen.querySelectorAll(".menu-item")];
   const credits = screen.querySelector("[data-credits-panel]");
+  const settingsPanel = screen.querySelector("[data-settings-panel]");
   const dialogue = document.querySelector("#dialogue-screen");
   const dialogueText = document.querySelector("#dialogue-text");
   const dialogueAdvance = document.querySelector("[data-dialogue-advance]");
+  const volumeControl = document.querySelector("#master-volume");
+  const volumeValue = document.querySelector("#master-volume-value");
+  const muteControl = document.querySelector("#mute-sound");
+  const graphicsControl = document.querySelector("#graphics-quality");
+  const modelControls = [...document.querySelectorAll("[name='kotone-model']")];
+  const settingsKey = "hello-kotone-settings";
+  const defaultSettings = { volume: 70, muted: false, graphics: "pixel", model: "v1" };
   const music = new Audio(new URL("sounds/Dash @ フリーBGM DOVA-SYNDROME.mp3", document.baseURI).href);
   const schoolBell = new Audio(new URL("sounds/school-bell-japan-westminster.ogg", document.baseURI).href);
   const postBellMusic = new Audio(new URL("sounds/Epic and Dark Electronic Music - Welcome to Chaos (Copyright and Royalty Free).mp3", document.baseURI).href);
@@ -26,10 +34,63 @@
   let dialogueLine = firstLine;
   let dialogueType = "intro";
   let postBellStarted = false;
+  let settings = readSettings();
+
+  function readSettings() {
+    let stored = {};
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(settingsKey) || "{}");
+      stored = parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      stored = {};
+    }
+    return {
+      volume: Math.max(0, Math.min(100, Number.isFinite(Number(stored.volume)) ? Number(stored.volume) : defaultSettings.volume)),
+      muted: Boolean(stored.muted),
+      graphics: ["pixel", "smooth"].includes(stored.graphics) ? stored.graphics : defaultSettings.graphics,
+      model: ["v1", "v2"].includes(stored.model) ? stored.model : defaultSettings.model,
+    };
+  }
+
+  function masterVolume() {
+    return settings.muted ? 0 : settings.volume / 100;
+  }
+
+  function updateSettings(patch) {
+    settings = { ...settings, ...patch };
+    try {
+      window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+    } catch {
+      // Settings still apply for this session when storage is unavailable.
+    }
+    window.dispatchEvent(new CustomEvent("game:settings-change", { detail: { ...settings } }));
+    syncSettingsControls();
+    applyAudioSettings();
+  }
+
+  window.gameSettings = {
+    get: () => ({ ...settings }),
+    masterVolume,
+  };
+
+  function syncSettingsControls() {
+    if (volumeControl) volumeControl.value = String(settings.volume);
+    if (volumeValue) volumeValue.textContent = `${settings.volume}%`;
+    if (muteControl) muteControl.checked = settings.muted;
+    if (graphicsControl) graphicsControl.value = settings.graphics;
+    for (const control of modelControls) control.checked = control.value === settings.model;
+  }
+
+  function applyAudioSettings() {
+    const volume = masterVolume();
+    music.volume = 0.32 * volume;
+    postBellMusic.volume = 0.32 * volume;
+    schoolBell.volume = volume;
+  }
 
   function startMusic() {
     if (!music) return;
-    music.volume = 0.32;
+    applyAudioSettings();
     const playback = music.play();
     if (playback) playback.catch(() => {});
   }
@@ -37,7 +98,7 @@
   function startPostBellMusic() {
     if (postBellStarted) return;
     postBellStarted = true;
-    postBellMusic.volume = 0.32;
+    applyAudioSettings();
     postBellMusic.currentTime = 0;
     const playback = postBellMusic.play();
     if (playback) playback.catch(() => {});
@@ -106,6 +167,18 @@
     back.focus();
   }
 
+  function openSettings() {
+    screen.classList.add("show-settings");
+    settingsPanel.hidden = false;
+    volumeControl.focus();
+  }
+
+  function closeSettings() {
+    screen.classList.remove("show-settings");
+    settingsPanel.hidden = true;
+    menu[selectedIndex].focus();
+  }
+
   function closeCredits() {
     screen.classList.remove("show-credits");
     credits.hidden = true;
@@ -114,8 +187,10 @@
 
   function activate(action) {
     if (action === "start") startGame();
+    if (action === "settings") openSettings();
     if (action === "credits") openCredits();
     if (action === "back") closeCredits();
+    if (action === "settings-back") closeSettings();
   }
 
   for (const item of menu) {
@@ -123,6 +198,13 @@
     item.addEventListener("click", () => activate(item.dataset.menuAction));
   }
   credits.querySelector("[data-menu-action='back']").addEventListener("click", closeCredits);
+  settingsPanel.querySelector("[data-menu-action='settings-back']").addEventListener("click", closeSettings);
+  volumeControl.addEventListener("input", () => updateSettings({ volume: Number(volumeControl.value) }));
+  muteControl.addEventListener("change", () => updateSettings({ muted: muteControl.checked }));
+  graphicsControl.addEventListener("change", () => updateSettings({ graphics: graphicsControl.value }));
+  for (const control of modelControls) {
+    control.addEventListener("change", () => updateSettings({ model: control.value }));
+  }
   dialogueAdvance.addEventListener("click", advanceDialogue);
   window.addEventListener("burned-letter-dialogue", () => {
     if (dialogue.hidden) showDialogue(burnedLetterLine, "burned-letter");
@@ -166,6 +248,13 @@
       }
       return;
     }
+    if (screen.classList.contains("show-settings")) {
+      if (event.key === "Escape" || event.key === "Backspace") {
+        event.preventDefault();
+        closeSettings();
+      }
+      return;
+    }
     if (!["ArrowUp", "ArrowDown", "Enter", " "].includes(event.key)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -174,5 +263,7 @@
     if (event.key === "Enter" || event.key === " ") activate(menu[selectedIndex].dataset.menuAction);
   });
 
+  syncSettingsControls();
+  applyAudioSettings();
   select(0);
 })();

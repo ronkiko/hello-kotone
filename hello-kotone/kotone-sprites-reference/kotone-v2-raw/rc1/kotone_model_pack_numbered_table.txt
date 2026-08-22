@@ -1,0 +1,162 @@
+HELLO KOTONE — НУМЕРОВАННАЯ ТАБЛИЦА MODEL PACK
+Дата: 2026-08-21
+
+Обозначения:
+[OK] — можно использовать.
+[FIX] — материал есть, но требуется переработка/нормализация.
+[MISSING] — отсутствует.
+[HOLD] — сознательно отложено для базового набора.
+
+№ | КАТЕГОРИЯ | ДВИЖЕНИЕ / STATE | ТЕКУЩИЙ ЛИСТ | СТАТУС | ASSET ID | ФАЙЛ MODEL PACK
+
+1 | REFERENCE / UI | Canonical model | 01_model_reference.png | [OK] | kotone_reference | reference/kotone_reference.png
+2 | REFERENCE / UI | Dialogue portraits | 01_model_reference.png | [FIX] мало эмоций | kotone_portraits | reference/kotone_portraits.png
+
+3 | EXPLORATION | Idle front | 02_idle_directional.png | [FIX] | kotone_idle_front | locomotion/kotone_locomotion.png
+4 | EXPLORATION | Idle back | 02_idle_directional.png | [FIX] | kotone_idle_back | locomotion/kotone_locomotion.png
+5 | EXPLORATION | Idle left | 02_idle_directional.png | [FIX] | kotone_idle_left | locomotion/kotone_locomotion.png
+6 | EXPLORATION | Idle right | 02_idle_directional.png | [FIX] | kotone_idle_right | locomotion/kotone_locomotion.png
+
+7 | EXPLORATION | Walk front | 04_walk_directional.png | [FIX] собрать ровный цикл | kotone_walk_front | locomotion/kotone_locomotion.png
+8 | EXPLORATION | Walk back | 04_walk_directional.png | [FIX] | kotone_walk_back | locomotion/kotone_locomotion.png
+9 | EXPLORATION | Walk left | 04_walk_directional.png | [FIX] | kotone_walk_left | locomotion/kotone_locomotion.png
+10 | EXPLORATION | Walk right | 04_walk_directional.png | [FIX] | kotone_walk_right | locomotion/kotone_locomotion.png
+
+11 | EXPLORATION | Run front | 05_run_directional.png | [FIX] | kotone_run_front | locomotion/kotone_locomotion.png
+12 | EXPLORATION | Run back | 05_run_directional.png | [MISSING/FIX] нехватает кадров | kotone_run_back | locomotion/kotone_locomotion.png
+13 | EXPLORATION | Run left | 05_run_directional.png | [FIX] | kotone_run_left | locomotion/kotone_locomotion.png
+14 | EXPLORATION | Run right | 05_run_directional.png | [FIX] | kotone_run_right | locomotion/kotone_locomotion.png
+
+15 | EXPLORATION | Dash front | 06_dash_directional.png | [FIX] | kotone_dash_front | locomotion/kotone_locomotion.png
+16 | EXPLORATION | Dash back | 06_dash_directional.png | [MISSING/FIX] | kotone_dash_back | locomotion/kotone_locomotion.png
+17 | EXPLORATION | Dash left | 06_dash_directional.png | [FIX] | kotone_dash_left | locomotion/kotone_locomotion.png
+18 | EXPLORATION | Dash right | 06_dash_directional.png | [FIX] | kotone_dash_right | locomotion/kotone_locomotion.png
+19 | EXPLORATION | Run stop / brake | — | [MISSING] | kotone_run_stop | locomotion/kotone_locomotion.png
+20 | EXPLORATION | Dash recovery / brake | — | [MISSING] | kotone_dash_recover | locomotion/kotone_locomotion.png
+
+21 | AIR / JUMP | Jump front | 07_jump_directional.png | [FIX] start/up/apex/down | kotone_jump_front | air/kotone_air.png
+22 | AIR / JUMP | Jump back | 07_jump_directional.png | [MISSING/FIX] | kotone_jump_back | air/kotone_air.png
+23 | AIR / JUMP | Jump left | 07_jump_directional.png | [FIX] | kotone_jump_left | air/kotone_air.png
+24 | AIR / JUMP | Jump right | 07_jump_directional.png | [FIX] | kotone_jump_right | air/kotone_air.png
+25 | AIR / JUMP | Landing front | 08_landing_directional.png | [FIX] | kotone_land_front | air/kotone_air.png
+26 | AIR / JUMP | Landing back | 08_landing_directional.png | [MISSING/FIX] | kotone_land_back | air/kotone_air.png
+27 | AIR / JUMP | Landing left | 08_landing_directional.png | [FIX] | kotone_land_left | air/kotone_air.png
+28 | AIR / JUMP | Landing right | 08_landing_directional.png | [FIX] | kotone_land_right | air/kotone_air.png
+
+29 | DAMAGE | Hurt / hit stun | 10_hurt.png | [OK] | kotone_hurt | damage/kotone_damage.png
+30 | DAMAGE | Fall | 09_fall_knockdown_lie_getup.png | [OK] | kotone_fall | damage/kotone_damage.png
+31 | DAMAGE | Knockdown | 09_fall_knockdown_lie_getup.png | [OK] | kotone_knockdown | damage/kotone_damage.png
+32 | DAMAGE | Lie | 09_fall_knockdown_lie_getup.png | [OK] | kotone_lie | damage/kotone_damage.png
+33 | DAMAGE | Get up | 09_fall_knockdown_lie_getup.png | [OK] | kotone_get_up | damage/kotone_damage.png
+34 | DAMAGE | KO | 09 можно временно использовать | [FIX] | kotone_ko | damage/kotone_damage.png
+
+35 | MELEE | Bag attack left | 11_bag_attack_melee.png | [OK/FIX] | kotone_attack_bag_left | combat/kotone_combat.png
+36 | MELEE | Bag attack right | 11_bag_attack_melee.png | [FIX] | kotone_attack_bag_right | combat/kotone_combat.png
+37 | MELEE | Bag attack front | — | [HOLD] | kotone_attack_bag_front | combat/kotone_combat.png
+38 | MELEE | Bag attack back | — | [HOLD] | kotone_attack_bag_back | combat/kotone_combat.png
+39 | MELEE | Low kick left | 12_low_kick_melee.png | [FIX] | kotone_attack_kick_left | combat/kotone_combat.png
+40 | MELEE | Low kick right | 12_low_kick_melee.png | [FIX] | kotone_attack_kick_right | combat/kotone_combat.png
+41 | MELEE | Low kick front | — | [HOLD] | kotone_attack_kick_front | combat/kotone_combat.png
+42 | MELEE | Low kick back | — | [HOLD] | kotone_attack_kick_back | combat/kotone_combat.png
+
+43 | RANGED | Shoe throw left | 13_throw_shoe_ranged.png | [FIX] | kotone_attack_shoe_left | combat/kotone_combat.png
+44 | RANGED | Shoe throw right | 13_throw_shoe_ranged.png | [FIX] | kotone_attack_shoe_right | combat/kotone_combat.png
+45 | RANGED | Shoe throw front | — | [HOLD] | kotone_attack_shoe_front | combat/kotone_combat.png
+46 | RANGED | Shoe throw back | — | [HOLD] | kotone_attack_shoe_back | combat/kotone_combat.png
+47 | RANGED | Shoe projectile fly | 14_shoe_projectile.png | [OK] | kotone_shoe_projectile | combat/kotone_projectiles.png
+48 | RANGED | Shoe impact | 14_shoe_projectile.png | [OK] | kotone_shoe_impact | combat/kotone_projectiles.png
+
+49 | ACTING | Clap | 03_idle_special.png | [OK] | kotone_act_clap | acting/kotone_acting.png
+50 | ACTING | Fold arms | 03_idle_special.png | [OK] | kotone_act_fold_arms | acting/kotone_acting.png
+51 | ACTING | Heart / happy | 03_idle_special.png | [OK] | kotone_act_heart | acting/kotone_acting.png
+52 | ACTING | Heel pose | 03_idle_special.png | [FIX] | kotone_act_heel | acting/kotone_acting.png
+53 | ACTING | Idea | 03_idle_special.png | [OK] | kotone_act_idea | acting/kotone_acting.png
+54 | ACTING | Tablet / iPad | 03_idle_special.png | [OK] | kotone_act_tablet | acting/kotone_acting.png
+55 | ACTING | Thinking | 03_idle_special.png | [OK] | kotone_act_thinking | acting/kotone_acting.png
+56 | ACTING | Waving | 03_idle_special.png | [OK] | kotone_act_wave | acting/kotone_acting.png
+57 | ACTING | Angry | — | [MISSING] | kotone_act_angry | acting/kotone_acting.png
+58 | ACTING | Scared | — | [MISSING] | kotone_act_scared | acting/kotone_acting.png
+59 | ACTING | Sad | — | [MISSING] | kotone_act_sad | acting/kotone_acting.png
+60 | ACTING | Surprised | 03 / 19 частично | [FIX] | kotone_act_surprised | acting/kotone_acting.png
+61 | ACTING | Point | — | [MISSING] | kotone_act_point | acting/kotone_acting.png
+62 | ACTING | Talk gesture | — | [MISSING] | kotone_act_talk | acting/kotone_acting.png
+
+63 | INTERACTION | Crouch | 19_extra_poses_misc.png | [OK] как pose | kotone_interact_crouch | interaction/kotone_interaction.png
+64 | INTERACTION | Kneel | 19_extra_poses_misc.png | [OK] как pose | kotone_interact_kneel | interaction/kotone_interaction.png
+65 | INTERACTION | Sit | 19_extra_poses_misc.png | [OK] | kotone_interact_sit | interaction/kotone_interaction.png
+66 | INTERACTION | Inspect | 19_extra_poses_misc.png | [OK] как pose | kotone_interact_inspect | interaction/kotone_interaction.png
+67 | INTERACTION | Pick up | 19_extra_poses_misc.png частично | [FIX] нужны переходы | kotone_interact_pickup | interaction/kotone_interaction.png
+68 | INTERACTION | Give / take | — | [MISSING] | kotone_interact_give | interaction/kotone_interaction.png
+
+69 | EQUIPMENT | Idle — one shoe | 15_idle_one_shoe_off.png | [OK] | kotone_idle_one_shoe | equipment/kotone_equipment.png
+70 | EQUIPMENT | Walk — one shoe | 16_walk_one_shoe_off.png | [FIX] | kotone_walk_one_shoe | equipment/kotone_equipment.png
+71 | EQUIPMENT | Idle — no shoes | 17_idle_no_shoes.png | [OK] | kotone_idle_no_shoes | equipment/kotone_equipment.png
+72 | EQUIPMENT | Walk — no shoes | 18_walk_no_shoes.png | [FIX] | kotone_walk_no_shoes | equipment/kotone_equipment.png
+73 | EQUIPMENT | Run — one shoe / no shoes | — | [HOLD] | — | —
+74 | EQUIPMENT | Dash — one shoe / no shoes | — | [HOLD] | — | —
+75 | EQUIPMENT | Jump — one shoe / no shoes | — | [HOLD] | — | —
+
+======================================================================
+ПЛАНИРУЕМАЯ СТРУКТУРА MODEL PACK
+======================================================================
+
+kotone/
+  reference/
+    kotone_reference.png
+    kotone_portraits.png
+  locomotion/
+    kotone_locomotion.png
+    kotone_locomotion.json
+  air/
+    kotone_air.png
+    kotone_air.json
+  damage/
+    kotone_damage.png
+    kotone_damage.json
+  combat/
+    kotone_combat.png
+    kotone_combat.json
+    kotone_projectiles.png
+    kotone_projectiles.json
+  acting/
+    kotone_acting.png
+    kotone_acting.json
+  interaction/
+    kotone_interaction.png
+    kotone_interaction.json
+  equipment/
+    kotone_equipment.png
+    kotone_equipment.json
+
+======================================================================
+ПРИОРИТЕТ ДЛЯ ЗАВЕРШЕНИЯ ПЕРВОГО БАЗОВОГО НАБОРА
+======================================================================
+
+1. LOCOMOTION:
+   №3–6   idle front/back/left/right
+   №7–10  walk front/back/left/right
+   №11–14 run front/back/left/right
+   №15–18 dash front/back/left/right
+   №19    run stop
+   №20    dash recovery
+
+2. AIR:
+   №21–24 jump front/back/left/right
+   №25–28 landing front/back/left/right
+
+3. COMBAT:
+   №35–36 bag attack left/right
+   №39–40 low kick left/right
+   №43–44 shoe throw left/right
+
+Уже достаточно хорошо:
+- №29–33 damage / fall / knockdown / get up
+- №47–48 shoe projectile
+- №49–56 acting
+- №63–66 misc interaction poses
+
+Можно отложить:
+- front/back melee;
+- front/back shoe throw;
+- расширенные acting states;
+- полный one-shoe/no-shoes animation graph.

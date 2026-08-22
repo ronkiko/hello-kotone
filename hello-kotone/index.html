@@ -9,23 +9,144 @@
   </head>
   <body>
     <main class="app">
+      <section id="loading-screen" class="loading-screen" aria-label="Morning Bell start screen">
+        <div class="loading-backdrop" aria-hidden="true"></div>
+        <div class="loading-shade" aria-hidden="true"></div>
+        <div class="loading-grain" aria-hidden="true"></div>
+        <div class="loading-frame">
+          <header class="loading-header">
+            <a class="loading-mark" href="../" aria-label="Back to game library"><span>朝</span> SMALL WORLDS</a>
+            <p>SAKURA SENIOR HIGH <b>/</b> 07:42</p>
+          </header>
+
+          <img class="loading-hero" src="assets/kotone-portrait.png" alt="" aria-hidden="true" />
+
+          <div class="loading-content">
+            <p class="loading-kicker"><span></span> A KOTONE SASAKI STORY</p>
+            <h1><small>HELLO,</small> KOTONE</h1>
+            <p class="loading-subtitle">MORNING BELL</p>
+            <p class="loading-description">A quiet school morning.<br />Five letters before the first bell.</p>
+
+            <nav class="start-menu" aria-label="Start menu">
+              <button type="button" class="menu-item is-selected" data-menu-action="start">
+                <span>START GAME</span><b>↗</b>
+              </button>
+              <button type="button" class="menu-item" data-menu-action="settings">
+                <span>SETTINGS</span><b>*</b>
+              </button>
+              <button type="button" class="menu-item" data-menu-action="credits">
+                <span>CREDITS</span><b>+</b>
+              </button>
+            </nav>
+            <p class="menu-hint">ARROW KEYS <i>/</i> ENTER TO SELECT</p>
+          </div>
+
+          <footer class="loading-footer">
+            <span>DEMO BUILD / 01</span>
+            <span>v0.1</span>
+          </footer>
+        </div>
+
+        <section class="credits-panel" data-credits-panel hidden aria-label="Credits">
+          <p class="credits-label">MORNING BELL / CREDITS</p>
+          <h2>Get to class<br /><em>before the bell.</em></h2>
+          <dl>
+            <div><dt>Idea &amp; development</dt><dd>DorisuDesu</dd></div>
+            <div><dt>Character</dt><dd>Kotone Sasaki</dd></div>
+            <div><dt>Music</dt><dd>Dash / DOVA-SYNDROME</dd></div>
+            <div><dt>School bell</dt><dd>Matthias Brosius / Wikimedia</dd></div>
+            <div><dt>Pixel art</dt><dd>Kyuson</dd></div>
+            <div><dt>Sound design</dt><dd>BigSoundBank / CC0</dd></div>
+            <div><dt>Built with</dt><dd>Canvas &amp; vanilla JS</dd></div>
+          </dl>
+          <button type="button" class="credits-back" data-menu-action="back">← BACK</button>
+        </section>
+
+        <section class="settings-panel" data-settings-panel hidden aria-label="Settings">
+          <div class="settings-heading">
+            <p class="credits-label">MORNING BELL / SETTINGS</p>
+            <h2>Make the morning<br /><em>yours.</em></h2>
+          </div>
+
+          <div class="settings-grid">
+            <fieldset class="settings-group">
+              <legend>SOUND</legend>
+              <label class="setting-range" for="master-volume">
+                <span>MASTER VOLUME <output id="master-volume-value" for="master-volume">70%</output></span>
+                <input id="master-volume" type="range" min="0" max="100" step="1" value="70" />
+              </label>
+              <label class="setting-check" for="mute-sound">
+                <input id="mute-sound" type="checkbox" />
+                <span>MUTE ALL SOUND</span>
+              </label>
+            </fieldset>
+
+            <fieldset class="settings-group">
+              <legend>GRAPHICS</legend>
+              <label class="setting-select" for="graphics-quality">
+                <span>RENDER STYLE</span>
+                <select id="graphics-quality">
+                  <option value="pixel">PIXEL SHARP</option>
+                  <option value="smooth">SMOOTH</option>
+                </select>
+              </label>
+              <p class="setting-note">Pixel sharp keeps the original sprite edges crisp.</p>
+            </fieldset>
+
+            <fieldset class="settings-group settings-models">
+              <legend>KOTONE MODEL</legend>
+              <div class="model-options" role="radiogroup" aria-label="Kotone model">
+                <label class="model-option">
+                  <input type="radio" name="kotone-model" value="v1" />
+                  <span><b>KOTONE V1</b><small>Original model by Kyuson</small></span>
+                </label>
+                <label class="model-option">
+                  <input type="radio" name="kotone-model" value="v2" />
+                  <span><b>KOTONE V2</b><small>Enhanced model by Dorisu</small></span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+
+          <button type="button" class="credits-back" data-menu-action="settings-back">← BACK TO MENU</button>
+        </section>
+      </section>
+
+      <section id="dialogue-screen" class="dialogue-screen" hidden aria-label="Kotone dialogue">
+        <div class="dialogue-dim" aria-hidden="true"></div>
+        <div class="dialogue-scene">
+          <div class="dialogue-avatar" aria-hidden="true">
+            <img src="assets/kotone-avatar.png" alt="" />
+          </div>
+          <div class="dialogue-box">
+            <p class="dialogue-name">KOTONE</p>
+            <p id="dialogue-text" class="dialogue-text"></p>
+            <button type="button" class="dialogue-next" data-dialogue-advance aria-label="Continue dialogue">▼</button>
+          </div>
+        </div>
+      </section>
+
       <header class="masthead">
         <a class="title" href="./"><span>朝</span> MORNING BELL</a>
         <p>SAKURA SENIOR HIGH / 07:42</p>
       </header>
 
-      <section class="game" aria-label="Morning Bell game">
+      <section id="game-shell" class="game" aria-label="Morning Bell game">
         <canvas id="hall" width="960" height="540" aria-label="Morning Japanese school hallway"></canvas>
-        <div class="hud">
-          <p id="objective">Find the letters before the bell.</p>
-          <div id="word" class="word"><span>H</span><span>E</span><span>L</span><span>L</span><span>O</span></div>
+        <div class="hud-wrap">
+          <div class="hud">
+            <p id="objective">Find the letters before the bell.</p>
+            <div id="word" class="word"><span>H</span><span>E</span><span>L</span><span>L</span><span>O</span></div>
+          </div>
+          <div id="clock" class="clock" role="timer" aria-label="Current time">07:58:00</div>
         </div>
-        <div class="keys">MOVE <b>A</b><b>D</b> <i>or</i> <b>←</b><b>→</b> <span>VIEW</span> <b>↑</b><b>↓</b></div>
+        <div class="keys">MOVE <b>A</b><b>D</b> <i>or</i> <b>←</b><b>→</b> <span>VIEW</span> <b>↑</b><b>↓</b> <span>INSPECT</span> <b>E</b></div>
         <div class="mobile-controls">
           <button type="button" data-key="left" aria-label="Move left">←</button>
           <button type="button" data-key="right" aria-label="Move right">→</button>
           <button type="button" data-key="up" aria-label="Turn back to camera">↑</button>
           <button type="button" data-key="down" aria-label="Turn toward camera">↓</button>
+          <button type="button" data-key="inspect" aria-label="Inspect">E</button>
         </div>
 
       </section>
@@ -35,6 +156,7 @@
         <span>PIXEL ART: KYUSON</span>
       </footer>
     </main>
+    <script src="rooms/loading.js"></script>
     <script src="rooms/2C.js"></script>
     <script src="rooms/3C.js"></script>
     <script src="game.js?v=door-audio-5"></script>

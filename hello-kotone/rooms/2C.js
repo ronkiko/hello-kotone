@@ -72,6 +72,27 @@ window.rooms.class2C = (() => {
   }
 
   function paintLetter(paint, x, y, item) {
+    if (item && item.burned && !item.collected) {
+      paint.save();
+      paint.shadowColor = "#e45f4f";
+      paint.shadowBlur = 5;
+      paint.fillStyle = "#493a3d";
+      paint.beginPath();
+      paint.arc(Math.round(x), Math.round(y), 11, 0, Math.PI * 2);
+      paint.fill();
+      paint.shadowBlur = 0;
+      paint.fillStyle = "#151820";
+      paint.textAlign = "center";
+      paint.textBaseline = "middle";
+      paint.font = "900 14px Georgia, serif";
+      paint.fillText("L", x, y + 1);
+      paint.fillStyle = "#ef7652";
+      paint.fillRect(Math.round(x - 2), Math.round(y - 17), 3, 5);
+      paint.fillStyle = "#f2bf62";
+      paint.fillRect(Math.round(x + 4), Math.round(y - 14), 2, 3);
+      paint.restore();
+      return;
+    }
     const popping = item && item.collected;
     const progress = popping ? Math.min(1, item.popTime / 420) : 0;
     if (popping && progress >= 1) return;

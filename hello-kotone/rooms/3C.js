@@ -6,6 +6,7 @@ window.rooms.class3C = (() => {
   let flickerPattern = [];
   let flickerStep = 0;
   let flickerStepTime = 0;
+  let boardInspected = false;
 
   function resetFlicker() {
     lightLevel = 0;
@@ -120,7 +121,7 @@ window.rooms.class3C = (() => {
     block(paint, 276, 53, 182, 63, "#293d3c");
     edge(paint, 276, 53, 458, 53, "#695746", 2);
     edge(paint, 276, 116, 458, 116, "#171e26", 2);
-    paintRunMessage(paint, "#526a5e");
+    paintRunMessage(paint, boardInspected ? "#d6c77d" : "#526a5e");
   }
 
   function paintRunMessage(paint, color) {
@@ -210,9 +211,16 @@ window.rooms.class3C = (() => {
     paint.restore();
   }
 
+  function interact(playerX) {
+    if (playerX < 250) return "Nothing to inspect here.";
+    boardInspected = true;
+    return "The chalk says: RUN.";
+  }
+
   return {
     enter() {
       resetFlicker();
+      boardInspected = false;
     },
     update(deltaMs) {
       updateFlicker(deltaMs);
@@ -220,8 +228,10 @@ window.rooms.class3C = (() => {
     draw,
     drawForeground,
     paintLighting,
+    interact,
     reset() {
       resetFlicker();
+      boardInspected = false;
     },
   };
 })();

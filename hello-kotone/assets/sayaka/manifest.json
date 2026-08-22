@@ -1,0 +1,66 @@
+{
+  "model": "sayaka",
+  "displayName": "Sayaka",
+  "connectedToGame": false,
+  "frameWidth": 130,
+  "frameHeight": 130,
+  "frameCount": 6,
+  "sheetWidth": 780,
+  "sheetHeight": 130,
+  "format": "PNG RGBA",
+  "animations": {
+    "walking": [
+      "walking_front.png",
+      "walking_back.png",
+      "walking_left.png",
+      "walking_right.png"
+    ],
+    "running": [
+      "running_front.png",
+      "running_back.png",
+      "running_left.png",
+      "running_right.png"
+    ],
+    "sprinting": [
+      "sprinting_left.png",
+      "sprinting_right.png"
+    ],
+    "jumping": [
+      "jumping_front.png",
+      "jumping_back.png",
+      "jumping_left.png",
+      "jumping_right.png",
+      "jumping_low_left.png",
+      "jumping_low_right.png"
+    ],
+    "hurt": [
+      "hurt_front.png",
+      "hurt_back.png",
+      "hurt_left.png",
+      "hurt_right.png",
+      "hurt_low_left.png",
+      "hurt_low_right.png"
+    ],
+    "idle": [
+      "idle_clap.png",
+      "idle_foldarm.png",
+      "idle_thinking.png",
+      "idle_waving.png",
+      "idle_heart.png",
+      "idle_shy.png",
+      "idle_idea.png",
+      "idle_ipad.png"
+    ],
+    "special": [
+      "special_box.png"
+    ]
+  },
+  "mirrored": [
+    "running_left.png",
+    "sprinting_left.png",
+    "jumping_left.png",
+    "jumping_low_left.png",
+    "hurt_left.png",
+    "hurt_low_left.png"
+  ]
+}

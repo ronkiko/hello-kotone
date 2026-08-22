@@ -1,0 +1,829 @@
+KOTONE — CHARACTER DESIGN PASSPORT
+Production Canon for 2D Anime Side-Scrolling Platformer
+Version: 1.0
+Reference basis: master frontal character artwork supplied by the user
+
+======================================================================
+1. PURPOSE
+======================================================================
+
+This document defines the immutable visual canon of Kotone for all future
+sprite, animation, atlas, pose, direction, attack, hurt, jump, idle and
+locomotion generations.
+
+The goal is not merely to generate visually similar images. The goal is to
+preserve one and the same character across all frames and animation states.
+
+Any generated frame must be treated as incorrect if it changes Kotone's:
+- body proportions;
+- silhouette;
+- apparent height;
+- head-to-body ratio;
+- hair length or shape;
+- sleeve length;
+- vest construction;
+- skirt length or construction;
+- tights density;
+- shoe design;
+- colors;
+- lighting intensity;
+- shading style;
+- line-art style;
+- age impression;
+- overall visual mass.
+
+The character must remain recognizable as the same physical person even if
+the face is hidden and only the body silhouette, clothing and proportions are
+visible.
+
+======================================================================
+2. CORE IDENTITY
+======================================================================
+
+Character name:
+Kotone
+
+Visual role:
+Young adult anime woman with a clean professional/office appearance.
+
+Age impression:
+Young adult woman. She must not read as a schoolgirl, child, teenager,
+middle-aged woman, or chibi character.
+
+General visual impression:
+- feminine;
+- neat;
+- soft;
+- friendly;
+- composed;
+- elegant;
+- clean anime styling;
+- not exaggeratedly sexualized;
+- not chibi;
+- not super-deformed;
+- not realistic/live-action.
+
+Primary design rule:
+Kotone is a vertically oriented, slender, feminine character with stable
+proportions and a clean symmetrical base design.
+
+======================================================================
+3. SYMMETRY POLICY
+======================================================================
+
+Kotone's base design must be symmetrical.
+
+The following elements are explicitly removed from the canonical design:
+- handbag;
+- wristwatch;
+- bracelets;
+- side-specific jewelry;
+- hand-held default accessories;
+- any permanent accessory attached only to the left or right side.
+
+Do not introduce new asymmetric details without explicit approval.
+
+Left-facing and right-facing versions must be mirror-compatible in their base
+design. The body, clothing, sleeves, legs, shoes, hair mass and default
+accessories must not contain side-specific information that changes identity.
+
+Allowed centered accessory:
+- centered blue lanyard with a simple rectangular ID badge.
+
+If the badge causes instability in a specific animation, it may later be
+implemented as a separate sprite/overlay, but its canonical visual position is
+centered on the torso.
+
+======================================================================
+4. SILHOUETTE
+======================================================================
+
+The silhouette is a critical identity feature.
+
+Canonical silhouette:
+- tall-looking and vertically stretched;
+- slender rather than narrow or skeletal;
+- moderate shoulder width;
+- clearly defined waist;
+- moderately wider hips than waist;
+- long legs;
+- compact torso relative to total height;
+- small hands;
+- small elegant feet;
+- smooth feminine curves;
+- no blocky geometry;
+- no triangular body shape;
+- no squat proportions.
+
+The character must never become:
+- broad-shouldered;
+- box-shaped;
+- triangular;
+- squat;
+- short-legged;
+- overly thin;
+- overly curvy;
+- muscular;
+- chibi-proportioned.
+
+Across front, back, left, right and 3/4 views, the same underlying body volume
+must be preserved.
+
+======================================================================
+5. BODY PROPORTIONS
+======================================================================
+
+Target proportion:
+Approximately 7 to 7.5 heads tall.
+
+This is a production ratio, not a strict anatomical measurement. The apparent
+ratio must remain visually stable across all renders.
+
+Head:
+- medium anime head;
+- not oversized;
+- not tiny;
+- same relative size in every animation.
+
+Neck:
+- slim;
+- medium-short;
+- elegant;
+- never thick.
+
+Shoulders:
+- moderate width;
+- softly sloped;
+- not athletic or broad.
+
+Torso:
+- compact;
+- feminine;
+- stable ribcage width;
+- no large change in bust or torso mass between frames.
+
+Waist:
+- clearly defined;
+- narrow but natural;
+- must not widen or shrink between animations.
+
+Hips:
+- moderately pronounced;
+- wider than waist;
+- stable width across directions.
+
+Arms:
+- slender;
+- natural length;
+- wrists remain narrow;
+- hands remain small.
+
+Legs:
+- long;
+- slender;
+- visually important to the character's tall silhouette;
+- thigh and calf mass must remain consistent.
+
+Feet:
+- small;
+- elegant;
+- never oversized.
+
+Forbidden proportional drift:
+- enlarging or shrinking the head;
+- changing shoulder width;
+- changing waist width;
+- changing hip width;
+- shortening or lengthening the legs;
+- enlarging hands;
+- enlarging feet;
+- changing torso length;
+- changing apparent overall height.
+
+======================================================================
+6. FACE
+======================================================================
+
+Face shape:
+- soft oval;
+- slightly rounded cheeks;
+- narrow but not sharp chin;
+- delicate jawline.
+
+Eyes:
+- large anime eyes;
+- soft almond-like horizontal shape;
+- pink-violet / lilac-pink irises;
+- friendly and calm default gaze;
+- stable eye size across all renders.
+
+Eyebrows:
+- fine;
+- soft;
+- natural;
+- same general shape and thickness in all frames.
+
+Nose:
+- small;
+- understated;
+- anime-minimal.
+
+Mouth:
+- small;
+- delicate;
+- neutral or faintly friendly in default state.
+
+Skin:
+- light;
+- warm-neutral;
+- subtle soft blush may be present;
+- no strong tanning;
+- no dramatic hue changes.
+
+Age consistency:
+Do not make the face younger, more childlike, older, harsher, or more mature
+between animation states.
+
+======================================================================
+7. HAIR
+======================================================================
+
+Hair is one of the strongest identity anchors.
+
+Canonical hairstyle:
+- straight bob haircut;
+- approximately jaw-length to slightly below jaw level;
+- compact overall volume;
+- ends gently curve inward;
+- full straight bangs;
+- side strands frame the face;
+- smooth rounded outer contour;
+- no long rear hair mass;
+- no ponytail;
+- no braids;
+- no curls.
+
+Bangs:
+- dense;
+- straight;
+- stable width and depth;
+- must not become side-swept;
+- must not split dramatically.
+
+Hair volume:
+- compact;
+- soft;
+- not spherical;
+- not fluffy;
+- not flat.
+
+Hair color:
+Pastel light pink.
+
+Color behavior:
+- base: soft pastel pink;
+- highlight: lighter pearly pink;
+- shadow: muted dusty rose/pink;
+- never neon;
+- never magenta-heavy;
+- never peach-orange;
+- never purple-dominant;
+- never brownish.
+
+Forbidden hair drift:
+- changing haircut length;
+- changing bob width;
+- changing bang construction;
+- changing hair saturation;
+- adding curls or waves;
+- making the hair significantly fluffier or flatter;
+- changing the apparent hair density.
+
+======================================================================
+8. OUTFIT — CANONICAL CONSTRUCTION
+======================================================================
+
+The outfit is a fixed professional ensemble.
+
+------------------------------
+8.1 WHITE SHIRT
+------------------------------
+
+Type:
+Classic office blouse/shirt.
+
+Color:
+Cool-neutral white.
+
+Sleeves:
+LONG sleeves only.
+
+Sleeve rules:
+- sleeves extend to the wrists;
+- slightly loose fabric;
+- visible cuffs;
+- never short sleeves;
+- never rolled sleeves;
+- never elbow-length sleeves;
+- never sleeveless.
+
+Collar:
+- classic pointed office collar;
+- symmetrical;
+- stable size.
+
+Fit:
+- neat;
+- not skin-tight;
+- not oversized.
+
+Fabric impression:
+Soft office shirt fabric.
+
+------------------------------
+8.2 VEST
+------------------------------
+
+Type:
+Fitted professional vest.
+
+Color:
+Very dark blue-charcoal / navy-charcoal.
+
+Construction:
+- fitted at waist;
+- V-shaped front opening;
+- symmetrical;
+- tailored;
+- lower edge forms clean pointed/angled shapes around the waist.
+
+Fit:
+- emphasizes the waist;
+- never boxy;
+- never loose;
+- never cropped differently between frames.
+
+Canonical simplification:
+Do not preserve any one-sided decorative pocket/stitch as an identity-critical
+feature. The vest should be treated as visually symmetrical.
+
+------------------------------
+8.3 SKIRT
+------------------------------
+
+Type:
+Fitted pencil skirt.
+
+Color:
+Same dark blue-charcoal family as the vest.
+
+Length:
+Above the knee, but clearly not an extreme mini skirt.
+
+Fit:
+- fitted;
+- clean;
+- stable;
+- follows the hips without changing shape dramatically.
+
+Forbidden skirt drift:
+- changing into pleated skirt;
+- changing into A-line skirt;
+- changing into shorts;
+- becoming knee-length;
+- becoming very short;
+- changing waist height;
+- changing fabric color independently from the vest.
+
+------------------------------
+8.4 TIGHTS
+------------------------------
+
+Type:
+Dark semi-transparent tights.
+
+Appearance:
+- dark;
+- translucent enough to preserve leg form;
+- smooth;
+- refined;
+- consistent density across all renders.
+
+Do not change into:
+- bare legs;
+- opaque leggings;
+- thigh-high stockings;
+- knee socks;
+- fishnets;
+- gray tights;
+- brown tights.
+
+------------------------------
+8.5 SHOES
+------------------------------
+
+Type:
+Elegant dark pumps.
+
+Shape:
+- narrow / slightly pointed toe;
+- moderate heel;
+- compact;
+- feminine;
+- office appropriate.
+
+Color:
+Near-black or extremely dark blue-black.
+
+Finish:
+Slight restrained sheen.
+
+Do not change into:
+- boots;
+- sneakers;
+- flats;
+- sandals;
+- chunky heels;
+- platform shoes.
+
+======================================================================
+9. LANYARD AND ID BADGE
+======================================================================
+
+Lanyard:
+- centered;
+- blue;
+- thin;
+- hangs symmetrically from the neck.
+
+Badge:
+- small horizontal rectangular office ID card;
+- centered on the torso;
+- simple visual design;
+- no important readable text;
+- no complex logos;
+- no asymmetric attachment.
+
+The badge must not jump from one side of the body to the other.
+
+If physics animation is later added, its motion must be centered around the
+same attachment point and must not alter the character's base silhouette.
+
+======================================================================
+10. COLOR PALETTE
+======================================================================
+
+The palette must remain stable across every animation.
+
+Hair:
+- pastel light pink;
+- soft, slightly cool-neutral pink;
+- moderate-low saturation.
+
+Hair highlight:
+- pale pearly pink.
+
+Hair shadow:
+- dusty muted rose.
+
+Eyes:
+- pink-violet / lilac-pink.
+
+Skin:
+- light warm-neutral skin;
+- soft pink blush;
+- gentle warm shadow.
+
+Shirt:
+- cool-neutral white;
+- never yellow-white;
+- never gray.
+
+Vest:
+- dark navy-charcoal.
+
+Skirt:
+- same navy-charcoal family as vest.
+
+Tights:
+- dark semi-transparent charcoal-black.
+
+Shoes:
+- near-black / blue-black.
+
+Lanyard:
+- medium saturated blue.
+
+Color consistency rules:
+- no hue drift between animations;
+- no random saturation changes;
+- no warm/cool shifts;
+- no changing the vest from navy to pure black;
+- no changing the hair from pastel pink to saturated pink;
+- no changing tights opacity substantially.
+
+======================================================================
+11. LIGHTING
+======================================================================
+
+Canonical lighting:
+- soft;
+- neutral;
+- mostly frontal;
+- slightly upper-front;
+- studio-like;
+- consistent between renders.
+
+Lighting intensity:
+Moderate and stable.
+
+Shadows:
+- soft;
+- controlled;
+- not dramatic;
+- no hard noir shadows;
+- no strong rim lighting;
+- no colored environmental lighting.
+
+Highlights:
+- restrained;
+- soft;
+- consistent.
+
+The character must never become:
+- significantly darker;
+- significantly brighter;
+- heavily backlit;
+- orange-lit;
+- blue-lit;
+- strongly rim-lit;
+- high-contrast;
+- washed out.
+
+======================================================================
+12. RENDERING STYLE
+======================================================================
+
+Style:
+Clean polished anime illustration suitable for conversion into a consistent
+2D game sprite atlas.
+
+Line art:
+- clean;
+- thin to medium;
+- controlled;
+- consistent thickness;
+- not sketchy;
+- not painterly;
+- not pixel-art unless a later dedicated conversion step is requested.
+
+Shading:
+- soft anime shading;
+- moderate detail;
+- clean volume definition;
+- smooth transitions with restrained cel-shading influence.
+
+Do not change rendering style between:
+- idle;
+- walk;
+- run;
+- jump;
+- fall;
+- landing;
+- attack;
+- hurt;
+- interaction;
+- directional variants.
+
+======================================================================
+13. DEFAULT PHYSICAL POSTURE
+======================================================================
+
+Neutral posture:
+- upright;
+- relaxed;
+- balanced;
+- shoulders level;
+- head centered;
+- spine naturally vertical;
+- no permanent hip tilt;
+- no permanent asymmetrical stance.
+
+Animation may temporarily deform the pose, but the underlying anatomy must
+return to the same canonical body proportions.
+
+======================================================================
+14. DIRECTIONAL CONSISTENCY
+======================================================================
+
+Front, back, left and right views must represent the same 3D-equivalent body.
+
+Right and left side views:
+- base outfit must be mirror-compatible;
+- body mass must be identical;
+- hair length must match;
+- sleeve length must match;
+- skirt length must match;
+- leg length must match;
+- shoe size must match.
+
+Do not allow:
+- one direction to appear taller;
+- one direction to appear heavier;
+- one direction to have a larger chest;
+- one direction to have longer hair;
+- one direction to have shorter sleeves;
+- one direction to have a shorter skirt;
+- one direction to have different colors.
+
+======================================================================
+15. ANIMATION CONSISTENCY RULE
+======================================================================
+
+Every animation frame may change POSE, but must not change DESIGN.
+
+Allowed to change:
+- limb positions;
+- body lean;
+- hair motion;
+- skirt deformation caused by motion;
+- facial expression where animation requires it;
+- temporary perspective compression caused by pose.
+
+Not allowed to change:
+- identity;
+- body proportions;
+- garment construction;
+- garment baseline lengths;
+- hairstyle construction;
+- colors;
+- lighting model;
+- line-art style;
+- shading model;
+- age;
+- apparent character scale.
+
+Core rule:
+POSE CHANGES.
+CHARACTER DESIGN DOES NOT.
+
+======================================================================
+16. PRODUCTION SCALE CONSISTENCY
+======================================================================
+
+Within one atlas:
+- all frames use the same character scale;
+- neutral standing height is constant;
+- ground contact baseline is constant where applicable;
+- head scale is constant;
+- line thickness is constant;
+- rendering detail level is constant.
+
+A walking frame must not be interpreted as a new character with a different
+height or mass.
+
+======================================================================
+17. FORBIDDEN DESIGN DRIFT
+======================================================================
+
+Reject any generation containing one or more of the following:
+
+BODY
+- broader or narrower shoulders than canon;
+- different waist width;
+- different hip width;
+- different bust volume;
+- different leg length;
+- different arm length;
+- different head size;
+- different apparent height.
+
+HAIR
+- different bob length;
+- different bang shape;
+- substantially different hair volume;
+- different pink hue;
+- new hair ornaments.
+
+CLOTHING
+- short sleeves;
+- rolled sleeves;
+- missing cuffs;
+- different collar;
+- different vest cut;
+- asymmetric vest detailing;
+- different skirt length;
+- different skirt type;
+- bare legs;
+- opaque leggings;
+- different shoe class.
+
+ACCESSORIES
+- handbag;
+- watch;
+- bracelet;
+- random jewelry;
+- side pouch;
+- belt accessories;
+- side-specific decorations.
+
+COLOR
+- saturated hot-pink hair;
+- purple hair;
+- orange hair;
+- black shirt;
+- gray shirt;
+- pure black vest when previous frames are navy-charcoal;
+- inconsistent tights opacity.
+
+RENDER
+- cel-shading suddenly becoming hard;
+- painterly rendering;
+- 3D CGI rendering;
+- chibi styling;
+- semi-realistic face;
+- different line thickness;
+- dramatically different lighting.
+
+======================================================================
+18. FRAME ACCEPTANCE TEST
+======================================================================
+
+Before accepting any new generated frame, compare it against the master
+reference and check:
+
+[ ] Same apparent age.
+[ ] Same head-to-body ratio.
+[ ] Same overall height impression.
+[ ] Same shoulder width.
+[ ] Same waist width.
+[ ] Same hip width.
+[ ] Same leg length.
+[ ] Same hair length.
+[ ] Same bob silhouette.
+[ ] Same bang construction.
+[ ] Same eye color.
+[ ] Same hair color.
+[ ] Same skin tone.
+[ ] Same long sleeves.
+[ ] Same shirt collar.
+[ ] Same vest shape.
+[ ] Same skirt length.
+[ ] Same tights density.
+[ ] Same shoe type.
+[ ] No handbag.
+[ ] No watch.
+[ ] No asymmetric accessory.
+[ ] Same lanyard color if present.
+[ ] Same overall palette.
+[ ] Same lighting intensity.
+[ ] Same shading style.
+[ ] Same line-art style.
+[ ] Same rendering detail level.
+
+If several boxes fail, regenerate the frame instead of trying to treat the
+difference as acceptable variation.
+
+======================================================================
+19. MASTER REFERENCE PRIORITY
+======================================================================
+
+The supplied frontal artwork is the primary visual source of truth for:
+- face;
+- hairstyle;
+- body type;
+- body proportions;
+- outfit;
+- skirt length;
+- tights;
+- shoes;
+- palette;
+- lighting;
+- rendering style;
+- overall detail level.
+
+The only deliberate canonical changes from the master artwork are:
+1. remove the handbag;
+2. remove the wristwatch;
+3. avoid any unnecessary left/right-specific clothing detail;
+4. enforce a symmetrical base character design.
+
+If a future generated image conflicts with this passport, this passport and
+the master artwork take priority over the generated variation.
+
+======================================================================
+20. ONE-SENTENCE CANON
+======================================================================
+
+Kotone is a young adult, slender, long-legged anime office woman with a soft
+oval face, large pink-violet eyes, a compact pastel-pink straight bob with full
+bangs, a white long-sleeve office shirt, fitted dark navy-charcoal vest,
+matching fitted pencil skirt above the knee, dark semi-transparent tights,
+dark elegant pumps and an optional centered blue lanyard with a simple ID
+badge, rendered with the same soft neutral studio lighting, palette,
+proportions and anime shading in every frame, with no handbag, no wristwatch
+and no asymmetric permanent accessories.
+
+======================================================================
+END OF CHARACTER DESIGN PASSPORT
+======================================================================
