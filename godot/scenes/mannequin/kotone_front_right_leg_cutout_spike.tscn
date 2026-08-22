@@ -1,0 +1,53 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/rc3/mannequin/parts/front/pelvis.png" id="1_pelvis"]
+[ext_resource type="Texture2D" path="res://assets/rc3/mannequin/parts/front/thigh_right.png" id="2_thigh"]
+[ext_resource type="Texture2D" path="res://assets/rc3/mannequin/parts/front/calf_right.png" id="3_calf"]
+[ext_resource type="Texture2D" path="res://assets/rc3/mannequin/parts/front/foot_right.png" id="4_foot"]
+
+[node name="KotoneFrontRightLegCutoutSpike" type="Node2D"]
+
+[node name="Skeleton2D" type="Skeleton2D" parent="."]
+
+[node name="pelvis" type="Bone2D" parent="Skeleton2D"]
+position = Vector2(627, 545)
+rest = Transform2D(1, 0, 0, 1, 627, 545)
+
+[node name="Pelvis" type="Sprite2D" parent="Skeleton2D/pelvis"]
+z_index = 4
+position = Vector2(-115, -140)
+texture = ExtResource("1_pelvis")
+centered = false
+
+[node name="hip_right" type="Bone2D" parent="Skeleton2D/pelvis"]
+position = Vector2(-72, 20)
+rest = Transform2D(1, 0, 0, 1, -72, 20)
+
+[node name="ThighRight" type="Sprite2D" parent="Skeleton2D/pelvis/hip_right"]
+z_index = 3
+position = Vector2(-43, -45)
+texture = ExtResource("2_thigh")
+centered = false
+
+[node name="knee_right" type="Bone2D" parent="Skeleton2D/pelvis/hip_right"]
+position = Vector2(0, 200)
+rest = Transform2D(1, 0, 0, 1, 0, 200)
+
+[node name="CalfRight" type="Sprite2D" parent="Skeleton2D/pelvis/hip_right/knee_right"]
+z_index = 2
+position = Vector2(-44, -55)
+texture = ExtResource("3_calf")
+centered = false
+
+[node name="ankle_right" type="Bone2D" parent="Skeleton2D/pelvis/hip_right/knee_right"]
+position = Vector2(0, 275)
+rest = Transform2D(1, 0, 0, 1, 0, 275)
+auto_calculate_length_and_angle = false
+length = 40.0
+bone_angle = 0.0
+
+[node name="FootRight" type="Sprite2D" parent="Skeleton2D/pelvis/hip_right/knee_right/ankle_right"]
+z_index = 1
+position = Vector2(-41, -40)
+texture = ExtResource("4_foot")
+centered = false

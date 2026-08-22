@@ -14,3 +14,7 @@ Task 4D adds:
 - `task4d_front_parts_reassembled.png`: transparent reconstruction using only
   the trimmed parts and manifest offsets;
 - checker, dark and magenta reconstruction checks.
+
+Task 4E adds light, dark and magenta comparisons of the anatomical-right leg at
+4-degree abduction, neutral and 4-degree adduction. These are a hip-range and
+joint-overlap test, not a walk cycle.

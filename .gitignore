@@ -1,4 +1,6 @@
 .local/
+__pycache__/
+*.py[cod]
 
 # Godot editor and generated import/export data.
 godot/.godot/
