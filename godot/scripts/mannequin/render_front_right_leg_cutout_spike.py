@@ -17,9 +17,9 @@ MANIFEST = json.loads((PARTS_DIR / "front_parts_manifest.json").read_text())
 RECORDS = {record["name"]: record for record in MANIFEST["parts"]}
 HIP = (555, 565)
 POSES = [
-    (-4.0, "4° ABDUCTION"),
+    (4.0, "4° ABDUCTION"),
     (0.0, "NEUTRAL"),
-    (4.0, "4° ADDUCTION"),
+    (-4.0, "4° ADDUCTION"),
 ]
 THEMES = [
     ("task4e_front_right_leg_cutout.png", "#eeeae5", "#faf8f5", "#27232b"),

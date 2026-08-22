@@ -37,10 +37,11 @@ def main() -> None:
     assert 'type="Polygon2D"' not in text, "Task 4E must remain a rigid cutout spike"
     assert "scale =" not in text, "Task 4E must not telescope any limb"
     renderer = (GODOT_ROOT / "scripts/mannequin/render_front_right_leg_cutout_spike.py").read_text()
-    assert "(-4.0" in renderer and "(4.0" in renderer, "expected limited +/-4 degree hip range"
+    assert '(4.0, "4° ABDUCTION")' in renderer, "positive angle must be anatomical-right abduction"
+    assert '(-4.0, "4° ADDUCTION")' in renderer, "negative angle must be anatomical-right adduction"
     assert "knee" not in renderer.lower(), "static renderer must not bend the front-view knee"
     godot_renderer = (GODOT_ROOT / "scripts/mannequin/render_front_right_leg_cutout_spike.gd").read_text()
-    assert "HIP_ANGLES := [-4.0, 0.0, 4.0]" in godot_renderer, "Godot QA must use the same small hip range"
+    assert "HIP_ANGLES := [4.0, 0.0, -4.0]" in godot_renderer, "Godot QA must use correct anatomical-right direction labels"
     assert 'get_node("Skeleton2D/pelvis/hip_right")' in godot_renderer, "Godot QA must rotate only hip_right"
     assert "knee.rotation" not in godot_renderer, "Godot QA must not rotate the front-view knee"
     print("PASS: no Polygon2D, scaling or front-view knee bend is used")

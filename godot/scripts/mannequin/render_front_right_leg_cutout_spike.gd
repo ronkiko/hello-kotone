@@ -6,7 +6,7 @@ const WIDTH := 1500
 const HEIGHT := 900
 const PANEL_WIDTH := 500
 const DISPLAY_SCALE := 0.95
-const HIP_ANGLES := [-4.0, 0.0, 4.0]
+const HIP_ANGLES := [4.0, 0.0, -4.0]
 const LABELS := ["4° ABDUCTION", "NEUTRAL", "4° ADDUCTION"]
 
 const THEMES := [

@@ -11,6 +11,12 @@ abduction/adduction range with the knee and ankle held neutral. This is a real
 front-plane hip motion and is sufficient to expose missing hip, knee or ankle
 overlap art.
 
+Godot uses screen coordinates with positive Y downward. For the anatomical
+right leg shown on the viewer's left, `+4` degrees moves the ankle toward
+viewer-left and is abduction; `-4` degrees moves it toward the body center and
+is adduction. The runtime validator checks this spatial result, not only the
+numeric angle.
+
 ## Scene contract
 
 - chain: `pelvis -> hip_right -> knee_right -> ankle_right`;
@@ -51,5 +57,9 @@ Runtime QA passed with `Godot 4.7.2.stable.official` and was recorded in commit
 - hip direction is correct, knee and ankle stay neutral, and scale is unchanged.
 
 The unsupported V-Sync warning from the headless/X11 driver is non-blocking.
-Task 4E is approved. Full neutral mannequin assembly may begin; walk animation,
-weight painting and clothing remain outside this gate.
+The initial runtime run proved the mechanics but its abduction/adduction labels
+were reversed. That evidence is retained for diagnosis but does not approve the
+direction labels. The corrected renderer and spatial validator must be rerun
+before Task 4E direction semantics are approved. Full neutral mannequin
+assembly remains independently approved by Task 4F; walk animation, weight
+painting and clothing remain outside this gate.

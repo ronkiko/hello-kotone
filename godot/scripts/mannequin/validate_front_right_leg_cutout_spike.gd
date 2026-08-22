@@ -44,6 +44,14 @@ func _run() -> void:
 		_check(sprite != null, "%s exists" % path)
 		if sprite != null:
 			_check(not sprite.centered, "%s uses manifest top-left offset" % path)
+	var hip := skeleton.get_node_or_null("pelvis/hip_right") as Bone2D
+	var ankle := skeleton.get_node_or_null("pelvis/hip_right/knee_right/ankle_right") as Bone2D
+	if hip != null and ankle != null:
+		hip.rotation = deg_to_rad(4.0)
+		_check(ankle.global_position.x < 555.0, "+4 degrees abducts anatomical-right leg toward viewer-left")
+		hip.rotation = deg_to_rad(-4.0)
+		_check(ankle.global_position.x > 555.0, "-4 degrees adducts anatomical-right leg toward body center")
+		hip.rotation = 0.0
 	_finish()
 
 func _check(condition: bool, message: String) -> void:
