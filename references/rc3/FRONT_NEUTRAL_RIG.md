@@ -56,3 +56,19 @@ The renderer must produce three `1500x900` source-versus-rig comparisons in
 `assets/rc3/mannequin/preview/`. Review all three backgrounds for registration,
 layering, joint gaps, halos and missing parts. Leave generated `.uid`, `.import`
 and preview files available for architectural review; do not begin animation.
+
+## Runtime result
+
+Task 4F passed on `Godot 4.7.2.stable.official` and was recorded in commit
+`1a2258e4c19dda9d9aede8c9e9b24bbd7d6ae756`.
+
+- editor scan, validator and GL/Xvfb renderer completed successfully;
+- the validator printed `FRONT NEUTRAL RIG GODOT VALIDATION PASSED`;
+- all 15 bones, pivots, neutral rotations, unit scales, texture registrations
+  and layer indices passed;
+- all three `1500x900` comparisons contain the complete mannequin with no joint
+  gaps or missing parts;
+- the only warnings concern terminal bones and unavailable headless V-Sync.
+
+Task 4F is approved. Controlled articulation testing may begin, but walk
+animation, weight painting and clothing are still prohibited.

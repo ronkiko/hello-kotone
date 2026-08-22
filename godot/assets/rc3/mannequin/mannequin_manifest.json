@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "front_neutral_rig_needs_godot_runtime_review",
+  "status": "front_neutral_rig_runtime_approved",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -35,7 +35,28 @@
     "scale": "unchanged",
     "non_blocking_warning": "unsupported_vsync_in_headless_x11"
   },
-  "current_gate": "front_mannequin_neutral_rig_needs_runtime_approval",
+  "neutral_rig_runtime_qa": {
+    "status": "passed",
+    "godot_version": "4.7.2.stable.official",
+    "recorded_commit": "1a2258e4c19dda9d9aede8c9e9b24bbd7d6ae756",
+    "validator": "res://scripts/mannequin/validate_front_neutral_rig.gd",
+    "renderer": "res://scripts/mannequin/render_front_neutral_rig.gd",
+    "bone_count": 15,
+    "sprite_count": 15,
+    "previews": [
+      "preview/task4f_front_neutral_rig.png",
+      "preview/task4f_front_neutral_rig_dark.png",
+      "preview/task4f_front_neutral_rig_magenta.png"
+    ],
+    "source_vs_rig_review": "approved_no_missing_parts_or_joint_gaps",
+    "rotations": "neutral",
+    "scale": "unchanged",
+    "non_blocking_warnings": [
+      "terminal_bones_without_child_bone2d",
+      "unsupported_vsync_in_headless_x11"
+    ]
+  },
+  "current_gate": "front_mannequin_neutral_rig_approved",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",
@@ -46,6 +67,7 @@
     "front_mannequin_parts_approved",
     "single_leg_cutout_motion_approved",
     "front_mannequin_neutral_rig_approved",
+    "front_mannequin_articulation_approved",
     "front_mannequin_walk_approved",
     "clothing_layers_allowed"
   ]
