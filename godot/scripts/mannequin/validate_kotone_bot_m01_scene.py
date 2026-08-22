@@ -43,9 +43,15 @@ def main() -> None:
         require(f"func {method}" in controller, f"missing {method}")
     require('move_and_slide()' in controller, "movement controller missing")
     require('visual_pivot.scale.x = 1.0 if direction > 0.0 else -1.0' in controller, "direction flip missing")
+    require('ARM_SWING_DEGREES := 24.0' in controller, "visible arm articulation proof missing")
+    require('LEG_SWING_DEGREES := 12.0' in controller, "visible leg articulation proof missing")
+    require('func _reset_distal_joints' in controller, "M01 distal-joint lock missing")
     require('[node name="Camera2D" type="Camera2D" parent="."]' in scene, "player camera missing")
     require('position = Vector2(-25.08, -46.56)' in scene, "visual registration changed")
     require('scale = Vector2(0.04, 0.04)' in scene, "gBot-field scale changed")
+    require('collision_mask = 28' in scene, "tested demo collision mask missing")
+    require('floor_snap_length = 20.0' in scene, "tested floor snap missing")
+    require('safe_margin = 0.2' in scene, "tested collision margin missing")
 
     for name, asset in manifest["assets"].items():
         copied = PROJECT / f"player/kotone_bot_m01/assets/{name}.png"
