@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "single_leg_cutout_spike_runtime_approved",
+  "status": "front_neutral_rig_needs_godot_runtime_review",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -17,6 +17,7 @@
   "parts_manifest": "parts/front/front_parts_manifest.json",
   "parts_approval": "approved_for_task4e_mechanical_spike_2026-08-22",
   "single_leg_scene": "res://scenes/mannequin/kotone_front_right_leg_cutout_spike.tscn",
+  "neutral_rig_scene": "res://scenes/mannequin/kotone_front_neutral_rig.tscn",
   "runtime_qa": {
     "status": "passed",
     "godot_version": "4.7.2.stable.official",
@@ -34,7 +35,7 @@
     "scale": "unchanged",
     "non_blocking_warning": "unsupported_vsync_in_headless_x11"
   },
-  "current_gate": "single_leg_cutout_motion_approved",
+  "current_gate": "front_mannequin_neutral_rig_needs_runtime_approval",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",
