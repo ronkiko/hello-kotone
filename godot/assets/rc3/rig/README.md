@@ -23,6 +23,13 @@ This directory contains the prepared artwork output of RC3 Task 3.
 - Fine-tune node offsets and exact joint positions in the Godot neutral assembly.
 - Confirm skirt/hip overlap across the intended walk range.
 - Preserve the canonical skirt construction: one fitted mini pencil skirt with a pronounced front slit over the forward leg and a rear walking vent. The openings must never read as shorts or separate leg holes.
+
+## Alpha-mask QA
+
+- Every rig part must be reviewed on both a bright chroma background and a dark background before use in Godot.
+- The skirt openings and both the outside and inside of the lanyard loop are true alpha, not black or white fills.
+- In the assembled rig, both thigh sprites must remain behind `pelvis_skirt` so the skirt openings reveal the tights rather than the scene background.
+- Contrast QA sheets are stored in `preview/` and must be regenerated after any future extraction change.
 - Confirm shoe/ankle overlap at heel contact and toe-off.
 - Position face overlays on `head_base`; strict side profile may hide the far eye variants.
 - Pivot values in the manifest are starting hints and must be visually checked in the assembled scene.
