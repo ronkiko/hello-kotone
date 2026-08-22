@@ -13,6 +13,8 @@ from scratch rather than converted from the Canvas implementation.
 - Pixel-oriented rendering settings
 - Main scene with world, camera, and UI layers
 - Initial global game state singleton
+- RC3 rigid-cutout experiment archived
+- Fresh front-facing T-pose/Polygon2D rig workspace prepared
 
 ## Planned build order
 

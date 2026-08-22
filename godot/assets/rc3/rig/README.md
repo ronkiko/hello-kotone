@@ -1,39 +1,39 @@
-# Kotone RC3 rig artwork
+# Kotone RC3 deformable rig
 
-This directory contains the prepared artwork output of RC3 Task 3.
+This is the only active artwork root for the RC3 character rig.
 
-## Contents
+## Direction and rest pose
 
-- `master/kotone_side_right_master.png` — visual neutral assembly and proportion reference.
-- `parts/` — 29 normalized transparent PNG layers.
-- `rig_manifest.json` — bone ownership, default z-order and pivot hints.
-- `preview/task3_contact_sheet.png` — visual QA sheet for the master and every part.
+- Initial view: front.
+- Rest pose: front-facing T-pose.
+- Anatomical left/right are always named from Kotone's point of view. In the
+  front view, Kotone's right side appears on the viewer's left.
+- Side and back views are future, separate artwork/rig tasks. Do not derive them
+  by rotating the front artwork.
 
-## Production decisions
+## Production technique
 
-- Direction master: right.
-- Left direction: horizontal mirror in Godot.
-- Front/back: separate future rigs.
-- No bag, watch, bracelets, earrings or necklace.
-- Rolled blouse sleeves, centered lanyard and blank badge.
-- Parts were normalized once during Task 3. Task 4 should keep texture scale at `1.0` and align bones/offsets rather than independently rescaling individual sprites.
+- `Skeleton2D` and `Bone2D` provide the hierarchy.
+- Character regions are textured `Polygon2D` meshes with bone weights.
+- Limbs must deform at joints; they must not be reconstructed as the archived
+  chain of rigid PNG segments.
+- Face variants, front hair and the badge may remain separate layers when that
+  is useful for expression or secondary motion.
 
-## Known Task 4 work
+## Directory contract
 
-- Fine-tune node offsets and exact joint positions in the Godot neutral assembly.
-- Confirm skirt/hip overlap across the intended walk range.
-- Preserve the canonical skirt construction: one fitted mini pencil skirt with a pronounced front slit over the forward leg and a rear walking vent. The openings must never read as shorts or separate leg holes.
+- `source/` contains approved full-resolution authoring artwork.
+- `mesh/` contains textures/masks prepared from an approved source for Godot.
+- `preview/` contains rendered visual QA, never production input.
+- `rig_manifest.json` records the active approach and stage gate.
+- Active scenes belong in `res://scenes/rig/`.
+- Active tooling belongs in `res://scripts/rig/`.
 
-## Alpha-mask QA
+The previous 29-part side-view experiment is preserved under
+`res://archive/rc3_rigid_cutout/` and must not be referenced by active scenes.
 
-- Every rig part must be reviewed on both a bright chroma background and a dark background before use in Godot.
-- The skirt openings and both the outside and inside of the lanyard loop are true alpha, not black or white fills.
-- In the assembled rig, both thigh sprites must remain behind `pelvis_skirt` so the skirt openings reveal the tights rather than the scene background.
-- Contrast QA sheets are stored in `preview/` and must be regenerated after any future extraction change.
-- Confirm shoe/ankle overlap at heel contact and toe-off.
-- Position face overlays on `head_base`; strict side profile may hide the far eye variants.
-- Pivot values in the manifest are starting hints and must be visually checked in the assembled scene.
+## Current stage gate
 
-## Source lineage
-
-The master and parts were derived with image editing from the approved RC2 right-walk and idle references. The generated checkerboard backgrounds were removed and all committed production PNGs were checked for a real alpha channel. Original RC1/RC2 references remain unchanged under `references/`.
+The next deliverable is an approved `source/kotone_front_t_pose.png`. No mesh,
+full rig or animation may be accepted before that source passes visual and
+alpha QA.
