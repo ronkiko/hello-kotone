@@ -39,11 +39,11 @@ Kotone is a young adult anime woman with a polished office appearance. She is no
 ### Clothing
 
 - White office blouse with sleeves rolled consistently to just below the elbows.
-- Dark fitted vest and matching fitted short pencil skirt.
+- Dark fitted vest and matching fitted short pencil skirt. The skirt is one coherent garment with a pronounced front slit over the forward leg and a separate rear walking vent.
 - Dark semi-transparent tights.
 - Black elegant pumps with a moderate narrow heel.
 - The skirt remains a skirt: it must not turn into shorts between views or poses.
-- The skirt slit and tailoring must remain symmetrical and direction-safe.
+- The front slit and rear vent must remain readable and direction-safe; they must never form shorts or separate leg holes.
 
 ### Accessories
 
@@ -207,4 +207,3 @@ Task 3 is complete only when:
 - no bag, watch or jewelry remains;
 - sleeve length, skirt construction, tights, shoes, hair and body proportions match this canon;
 - a contact sheet shows the assembled neutral character and the separated parts before Godot import.
-
