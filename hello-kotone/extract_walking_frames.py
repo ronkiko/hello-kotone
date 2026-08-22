@@ -13,7 +13,7 @@ from PIL import Image
 
 
 ORDERS = {
-    "walking": ("front", "back", "left", "right"),
+    "walking": ("right", "left", "front", "back"),
     "idle": ("right", "left", "front", "back"),
 }
 FRAME_SIZE = 130
@@ -53,7 +53,7 @@ def find_frame_rectangles(rgb: np.ndarray) -> list[tuple[int, int, int, int]]:
         horizontal_mask = horizontal_counts >= (right - left + 1) * 0.8
         horizontal = [
             group for group in groups(horizontal_mask)
-            if group[1] - group[0] <= 6 and group[0] > body_top - 30 and group[1] < body_bottom + 30
+            if group[1] - group[0] <= 6 and group[0] >= body_top - 20 and group[1] <= body_bottom + 20
         ]
         if len(horizontal) != 2:
             raise RuntimeError(f"frame {frame}: expected 2 horizontal borders, found {horizontal}")
@@ -159,6 +159,57 @@ def extract_sheet(source: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(destination)
     print(f"{source.name}: {rectangles} -> {destination}")
+
+
+def extract_transparent_sheet(source: Path, destination: Path) -> None:
+    rgba = np.array(Image.open(source).convert("RGBA"))
+    alpha = rgba[:, :, 3]
+    foreground = alpha > 16
+    spans = [group for group in groups(foreground.sum(axis=0) > 2) if group[1] - group[0] > 40]
+    if len(spans) != 6:
+        raise RuntimeError(f"expected 6 transparent frames, found {len(spans)}: {spans}")
+
+    crops = []
+    for left, right in spans:
+        component = largest_component(foreground[:, left:right + 1])
+        ys, xs = np.where(component)
+        if len(xs) == 0:
+            raise RuntimeError(f"no foreground found in {source} span {(left, right)}")
+        x1, x2 = left + int(xs.min()), left + int(xs.max())
+        y1, y2 = int(ys.min()), int(ys.max())
+        crops.append((x1, y1, x2, y2, component, left))
+
+    source_side = max(max(x2 - x1 + 1, y2 - y1 + 1) for x1, y1, x2, y2, _, _ in crops) + 12
+    source_bottom = max(y2 for _, _, _, y2, _, _ in crops) + 6
+    sheet = Image.new("RGBA", (FRAME_SIZE * 6, FRAME_SIZE), (0, 0, 0, 0))
+    for index, (_, _, _, _, component, span_left) in enumerate(crops):
+        center_x = (span_left + spans[index][1]) / 2
+        left = int(round(center_x - source_side / 2))
+        top = source_bottom - source_side
+        canvas = np.zeros((source_side, source_side, 4), dtype=np.uint8)
+        src_x1 = max(0, left)
+        src_y1 = max(0, top)
+        src_x2 = min(rgba.shape[1], left + source_side)
+        src_y2 = min(rgba.shape[0], top + source_side)
+        dst_x1 = src_x1 - left
+        dst_y1 = src_y1 - top
+        dst_x2 = dst_x1 + (src_x2 - src_x1)
+        dst_y2 = dst_y1 + (src_y2 - src_y1)
+        canvas[dst_y1:dst_y2, dst_x1:dst_x2] = rgba[src_y1:src_y2, src_x1:src_x2]
+        local_mask = np.zeros((src_y2 - src_y1, src_x2 - src_x1), dtype=bool)
+        mask_x1 = max(src_x1, span_left)
+        mask_x2 = min(src_x2, span_left + component.shape[1])
+        if mask_x1 < mask_x2:
+            local_mask[:, mask_x1 - src_x1:mask_x2 - src_x1] = component[
+                src_y1:src_y2, mask_x1 - span_left:mask_x2 - span_left
+            ]
+        canvas[dst_y1:dst_y2, dst_x1:dst_x2, 3] *= local_mask
+        frame = Image.fromarray(canvas, "RGBA").resize((512, 512), Image.Resampling.LANCZOS)
+        frame = frame.resize((FRAME_SIZE, FRAME_SIZE), Image.Resampling.LANCZOS)
+        sheet.paste(frame, (index * FRAME_SIZE, 0), frame)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(destination)
+    print(f"{source.name}: {spans} -> {destination}")
 
 
 def mirror_sheet(source: Path, destination: Path) -> None:
