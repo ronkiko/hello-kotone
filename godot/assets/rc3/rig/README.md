@@ -34,6 +34,6 @@ The previous 29-part side-view experiment is preserved under
 
 ## Current stage gate
 
-The next deliverable is an approved `source/kotone_front_t_pose.png`. No mesh,
-full rig or animation may be accepted before that source passes visual and
-alpha QA.
+The current candidate is `source/kotone_front_t_pose.png` with Task 4A QA
+previews. Its state is `ready_for_review`, not approved. No mesh, full rig or
+animation may begin before explicit user approval.

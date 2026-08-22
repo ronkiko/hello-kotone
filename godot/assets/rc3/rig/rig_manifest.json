@@ -6,8 +6,12 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "polygon2d_weighted_mesh",
-  "status": "awaiting_approved_source",
+  "status": "front_t_pose_source_ready_for_review",
   "source": "source/kotone_front_t_pose.png",
+  "source_qa": "source/kotone_front_t_pose.qa.json",
+  "source_size": [1254, 1254],
+  "source_color_mode": "RGBA",
+  "source_approval": "pending_user_review",
   "coordinate_naming": "anatomical_left_right",
   "archived_approach": "res://archive/rc3_rigid_cutout/",
   "planned_regions": [

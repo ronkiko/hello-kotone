@@ -1,9 +1,13 @@
 # Source artwork
 
-Expected first deliverable: `kotone_front_t_pose.png`.
+Current candidate: `kotone_front_t_pose.png`.
 
 The source must be a single coherent front-view rendering on true transparent
 alpha, not an assembly of the archived incompatible body parts.
+
+The binding visual style is the detailed semi-realistic anime rendering of the
+RC2 idle/walk artwork. Flat vector, cartoon, chibi, simplified cel-shaded and
+pixel-art substitutions are rejected even if their pose is correct.
 
 Required pose:
 
@@ -12,8 +16,8 @@ Required pose:
 - both arms extend horizontally at shoulder height;
 - elbows and wrists are straight but not hyperextended;
 - palms use the same neutral orientation;
-- legs are straight, parallel and separated enough to expose both inner
-  silhouettes from skirt hem to shoes;
+- legs are straight in a modest symmetrical hip-width stance, with a continuous
+  background gap exposing both inner silhouettes from skirt hem to shoes;
 - the complete hair, fingers and heels remain inside the canvas.
 
 Canonical exclusions remain in force: no bag, watch, bracelets, earrings or

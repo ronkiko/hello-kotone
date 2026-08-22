@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "asset": "kotone_front_t_pose.png",
+  "status": "ready_for_user_review",
+  "sha256": "09d9c385e83ed1b46f637691bde78c85c60f86c0b44553f1017c8714887333e6",
+  "width": 1254,
+  "height": 1254,
+  "color_mode": "RGBA",
+  "alpha": {
+    "present": true,
+    "fully_transparent_corners": true,
+    "used_bounds": [213, 54, 827, 1106],
+    "safe_margins": {
+      "left": 213,
+      "top": 54,
+      "right": 214,
+      "bottom": 94
+    }
+  },
+  "binding_style_reference": "references/kotone-sprites-reference/kotone-v2-raw/rc2/idle/ChatGPT Image Aug 22, 2026, 05_53_17 AM (3).png",
+  "qa_previews": [
+    "../preview/task4a_front_t_pose_checker.png",
+    "../preview/task4a_front_t_pose_dark.png",
+    "../preview/task4a_front_t_pose_magenta.png"
+  ],
+  "notes": [
+    "Front-facing T-pose with symmetrical rolled sleeves.",
+    "Legs use a modest separated stance for independent mesh extraction.",
+    "This asset remains a candidate until explicit user approval."
+  ]
+}
