@@ -12,7 +12,10 @@
 size = Vector2(22, 44)
 
 [node name="SkeletalPlayer" type="CharacterBody2D"]
-floor_snap_length = 6.0
+collision_mask = 28
+floor_max_angle = 0.907571
+floor_snap_length = 20.0
+safe_margin = 0.2
 script = ExtResource("1_script")
 
 [node name="VisualPivot" type="Node2D" parent="."]
