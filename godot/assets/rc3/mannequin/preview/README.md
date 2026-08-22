@@ -17,4 +17,5 @@ Task 4D adds:
 
 Task 4E adds light, dark and magenta comparisons of the anatomical-right leg at
 4-degree abduction, neutral and 4-degree adduction. These are a hip-range and
-joint-overlap test, not a walk cycle.
+joint-overlap test, not a walk cycle. The committed images were rendered by
+Godot 4.7.2 under GL/Xvfb and passed runtime review in commit `87a291f`.

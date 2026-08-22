@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "single_leg_cutout_spike_needs_godot_runtime_review",
+  "status": "single_leg_cutout_spike_runtime_approved",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -17,9 +17,25 @@
   "parts_manifest": "parts/front/front_parts_manifest.json",
   "parts_approval": "approved_for_task4e_mechanical_spike_2026-08-22",
   "single_leg_scene": "res://scenes/mannequin/kotone_front_right_leg_cutout_spike.tscn",
-  "current_gate": "single_leg_cutout_motion_needs_runtime_approval",
+  "runtime_qa": {
+    "status": "passed",
+    "godot_version": "4.7.2.stable.official",
+    "recorded_commit": "87a291ff107d9279334069ba57165d0df92bced3",
+    "validator": "res://scripts/mannequin/validate_front_right_leg_cutout_spike.gd",
+    "renderer": "res://scripts/mannequin/render_front_right_leg_cutout_spike.gd",
+    "previews": [
+      "preview/task4e_front_right_leg_cutout.png",
+      "preview/task4e_front_right_leg_cutout_dark.png",
+      "preview/task4e_front_right_leg_cutout_magenta.png"
+    ],
+    "accepted_motion": "hip_right_abduction_adduction_minus4_to_plus4_degrees",
+    "knee_rotation": "neutral",
+    "ankle_rotation": "neutral",
+    "scale": "unchanged",
+    "non_blocking_warning": "unsupported_vsync_in_headless_x11"
+  },
+  "current_gate": "single_leg_cutout_motion_approved",
   "prohibited_before_approval": [
-    "full_skeleton_authoring",
     "weight_painting",
     "animation_authoring",
     "clothing_layers"

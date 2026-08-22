@@ -34,7 +34,22 @@ xvfb-run -a godot --path . --script res://scripts/mannequin/render_front_right_l
 ```
 
 The Pillow renders are deterministic preflight evidence. The Godot command
-must overwrite the same three preview files before runtime approval; it proves
-that the committed scene, Bone2D hierarchy and sprite transforms—not a separate
-mock-up—produce the poses. The Godot validator and renderer remain mandatory on
-a workstation with Godot 4.7.2 before this stage can be approved.
+overwrites the same three preview files and proves that the committed scene,
+Bone2D hierarchy and sprite transforms—not a separate mock-up—produce the
+poses.
+
+## Runtime result
+
+Runtime QA passed with `Godot 4.7.2.stable.official` and was recorded in commit
+`87a291ff107d9279334069ba57165d0df92bced3`:
+
+- editor import completed successfully;
+- the Godot validator printed
+  `FRONT RIGHT LEG CUTOUT SPIKE GODOT VALIDATION PASSED`;
+- the GL/Xvfb renderer wrote all three `1500x900` previews;
+- light, dark and magenta previews show no joint gaps;
+- hip direction is correct, knee and ankle stay neutral, and scale is unchanged.
+
+The unsupported V-Sync warning from the headless/X11 driver is non-blocking.
+Task 4E is approved. Full neutral mannequin assembly may begin; walk animation,
+weight painting and clothing remain outside this gate.
