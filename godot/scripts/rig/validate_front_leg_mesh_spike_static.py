@@ -10,6 +10,9 @@ from pathlib import Path
 
 SCENE = Path(__file__).parents[2] / "scenes/rig/kotone_front_leg_mesh_spike.tscn"
 PIVOT_KNEE = (555.0, 765.0)
+PIVOT_ANKLE = (555.0, 1040.0)
+DEPTH_ANGLE = 40.0
+PROJECTED_LENGTH = math.cos(math.radians(DEPTH_ANGLE))
 
 
 def parse_numbers(payload: str) -> list[float]:
@@ -30,11 +33,13 @@ def expected_weights(y: float) -> tuple[float, float, float]:
     return 0.0, 0.0, 1.0
 
 
-def rotate(point: tuple[float, float], pivot: tuple[float, float], degrees: float) -> tuple[float, float]:
-    angle = math.radians(degrees)
-    cosine, sine = math.cos(angle), math.sin(angle)
-    dx, dy = point[0] - pivot[0], point[1] - pivot[1]
-    return pivot[0] + dx * cosine - dy * sine, pivot[1] + dx * sine + dy * cosine
+def knee_depth_projection(point: tuple[float, float]) -> tuple[float, float]:
+    return point[0], PIVOT_KNEE[1] + PROJECTED_LENGTH * (point[1] - PIVOT_KNEE[1])
+
+
+def ankle_counter_projection(point: tuple[float, float]) -> tuple[float, float]:
+    shift = (PROJECTED_LENGTH - 1.0) * (PIVOT_ANKLE[1] - PIVOT_KNEE[1])
+    return point[0], point[1] + shift
 
 
 def main() -> None:
@@ -63,31 +68,40 @@ def main() -> None:
             f"vertex {index} at y={y} has {actual}, expected {expected}"
         )
 
-    # A knee-only pose gives knee and its ankle descendant the same rigid
-    # transform. Below the narrow knee blend, hip weight must therefore be zero
-    # and every mesh edge must preserve its length exactly.
+    # A front view cannot show knee flexion by rotating the calf sideways.
+    # Orthographic depth flexion is represented by cosine foreshortening of the
+    # calf. The ankle gets the reciprocal scale, so the shoe keeps its shape and
+    # is translated upward instead of being squashed.
     transformed: list[tuple[float, float]] = []
     for index, point in enumerate(vertices):
         hip, knee, ankle = (slot[index] for slot in weights)
-        rotated = rotate(point, PIVOT_KNEE, 45.0)
+        projected = knee_depth_projection(point)
+        counter_projected = ankle_counter_projection(point)
         transformed.append(
             (
-                hip * point[0] + (knee + ankle) * rotated[0],
-                hip * point[1] + (knee + ankle) * rotated[1],
+                hip * point[0] + knee * projected[0] + ankle * counter_projected[0],
+                hip * point[1] + knee * projected[1] + ankle * counter_projected[1],
             )
         )
 
-    rigid_indices = [index for index, (_, y) in enumerate(vertices) if y >= 795.0]
-    max_distance_error = 0.0
-    for left, right in zip(rigid_indices, rigid_indices[1:]):
-        before = math.dist(vertices[left], vertices[right])
-        after = math.dist(transformed[left], transformed[right])
-        max_distance_error = max(max_distance_error, abs(before - after))
-    assert max_distance_error < 1e-6, f"calf is not rigid: max edge error {max_distance_error}"
+    max_lateral_error = max(abs(before[0] - after[0]) for before, after in zip(vertices, transformed))
+    assert max_lateral_error < 1e-6, f"depth proxy moved the calf sideways by {max_lateral_error}px"
+
+    for index, ((_, y), (_, transformed_y)) in enumerate(zip(vertices, transformed)):
+        if y <= 725.0:
+            assert abs(transformed_y - y) < 1e-6, f"thigh vertex {index} moved"
+        elif 795.0 <= y <= 1000.0:
+            expected_y = PIVOT_KNEE[1] + PROJECTED_LENGTH * (y - PIVOT_KNEE[1])
+            assert abs(transformed_y - expected_y) < 1e-6, f"calf vertex {index} is not foreshortened"
+        elif y >= 1075.0:
+            expected_y = ankle_counter_projection((0.0, y))[1]
+            assert abs(transformed_y - expected_y) < 1e-6, f"shoe vertex {index} is distorted"
 
     print(f"PASS: {len(vertices)} vertices; 3 normalized localized weight slots")
     print("PASS: hip/knee crossover Y=765; knee/ankle crossover Y=1040")
-    print(f"PASS: 45-degree knee test keeps rigid section exact (max edge error {max_distance_error:.9f}px)")
+    print(f"PASS: {DEPTH_ANGLE:.0f}-degree depth proxy uses cosine scale {PROJECTED_LENGTH:.6f}")
+    print(f"PASS: no sideways knee motion (max lateral error {max_lateral_error:.9f}px)")
+    print("PASS: calf foreshortens while ankle counter-scale preserves the shoe")
     print("STATIC VALIDATION PASSED")
 
 

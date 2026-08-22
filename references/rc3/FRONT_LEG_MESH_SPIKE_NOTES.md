@@ -8,8 +8,9 @@ the actual coordinate system and the weight rule; no visual guesswork is needed.
 The first spike spread every bone across most of the leg. Its strongest
 `knee_right` influence was around source Y=925 although the knee pivot is at
 Y=765. Its strongest `ankle_right` influence was around Y=1150 although the
-ankle pivot is at Y=1040. Rotating the knee therefore bent the whole limb like
-a rubber hose instead of keeping the thigh and calf approximately rigid.
+ankle pivot is at Y=1040. The original QA then compounded the problem by
+rotating the calf in the image plane, which is not an anatomically valid knee
+bend in a front view.
 
 ## Fixed rest coordinates
 
@@ -39,6 +40,26 @@ exactly Y=1040. Never replace this with a smooth gradient over the full leg.
 
 ## Required Godot verification
 
+### Anatomical rule for the front view
+
+Do not rotate `knee_right` left or right in the image plane. A human knee flexes
+backward in the sagittal plane; from the front this is motion into depth, not a
+45-degree sideways hinge. Changing the rotation sign only changes one invalid
+sideways bend into the opposite invalid sideways bend.
+
+The renderer therefore uses an orthographic depth proxy:
+
+- poses are `0`, `25` and `40` degrees of out-of-plane flexion;
+- calf projected length is `cos(angle)` through `knee.scale.y`;
+- `ankle.scale.y` uses the reciprocal value so the shoe keeps its shape;
+- no bone receives an in-plane rotation;
+- the foot rises vertically as the projected calf shortens.
+
+This spike checks mesh continuity and depth foreshortening. It is not a complete
+front walk pose: final animation will additionally require overlap, draw order
+and subtle hip motion. A literal side-view knee arc requires a separate side
+source and side rig.
+
 Run from the `godot/` directory with Godot 4.7.2:
 
 ```bash
@@ -52,12 +73,13 @@ The last command must create all three active `task4b_leg_mesh_spike*.png`
 files and exit zero. Dummy headless rendering now exits nonzero instead of
 claiming success without rasterizing.
 
-Visual acceptance at 0, 20 and 45 degrees:
+Visual acceptance at `0`, `25` and `40` degrees of depth flexion:
 
-- the thigh above the knee stays still when only `knee_right` rotates;
-- the calf is nearly rigid and rotates around `(555, 765)`;
+- the thigh above the knee stays still;
+- the calf shortens vertically without moving left or right;
+- the foot rises but does not become vertically squashed;
 - deformation is confined to a narrow band around the kneecap;
-- no banana curve, local narrowing, transparent tear or duplicated edge;
+- no sideways dislocation, banana curve, transparent tear or duplicated edge;
 - tights and shoe texture remain continuous;
 - dark and magenta previews have no halo.
 

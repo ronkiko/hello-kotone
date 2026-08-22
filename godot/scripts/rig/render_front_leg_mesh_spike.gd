@@ -6,7 +6,7 @@ const WIDTH := 1440
 const HEIGHT := 760
 const PANEL_WIDTH := 480
 const SCALE := 0.9
-const POSES := [0.0, 20.0, 45.0]
+const DEPTH_POSES := [0.0, 25.0, 40.0]
 
 const THEMES := [
 	{"name": "task4b_leg_mesh_spike.png", "background": Color("#eeeae5"), "panel": Color("#faf8f5"), "ink": Color("#27232b"), "rule": Color("#c6beb5")},
@@ -63,9 +63,13 @@ func _render_theme(packed: PackedScene, theme: Dictionary) -> bool:
 		instance.position = Vector2(index * PANEL_WIDTH + PANEL_WIDTH * 0.5 - 555.0 * SCALE, 120.0 - 575.0 * SCALE)
 		canvas.add_child(instance)
 		var knee := instance.get_node("Skeleton2D/pelvis/hip_right/knee_right") as Bone2D
-		knee.rotation = deg_to_rad(POSES[index])
+		var ankle := instance.get_node("Skeleton2D/pelvis/hip_right/knee_right/ankle_right") as Bone2D
+		var depth_angle: float = DEPTH_POSES[index]
+		var projected_length := cos(deg_to_rad(depth_angle))
+		knee.scale = Vector2(1.0, projected_length)
+		ankle.scale = Vector2(1.0, 1.0 / projected_length)
 		var label := Label.new()
-		label.text = "%d°" % [int(POSES[index])]
+		label.text = "%d° DEPTH" % [int(depth_angle)]
 		label.position = Vector2(index * PANEL_WIDTH + 24, 42)
 		label.size = Vector2(PANEL_WIDTH - 48, 44)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -73,7 +77,7 @@ func _render_theme(packed: PackedScene, theme: Dictionary) -> bool:
 		label.add_theme_font_size_override("font_size", 30)
 		canvas.add_child(label)
 	var title := Label.new()
-	title.text = "KOTONE / FRONT RIGHT LEG / WEIGHTED POLYGON2D"
+	title.text = "KOTONE / FRONT RIGHT LEG / OUT-OF-PLANE KNEE FLEXION PROXY"
 	title.position = Vector2(24, 12)
 	title.size = Vector2(WIDTH - 48, 28)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
