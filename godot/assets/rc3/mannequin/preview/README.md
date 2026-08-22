@@ -85,3 +85,17 @@ Task 4I panels are arm-only close-ups: base-rig sprites are hidden, the bones
 remain active and the target elbow is anchored at `(286, 270)` in every panel.
 The intermediate partial-body render from commit `b0ae29a` is invalid QA
 evidence and must also be overwritten.
+
+Task 4I is fully rejected after its final arm-only render produced empty
+panels. Its bone entries were paths from `Polygon2D` rather than paths inside
+the selected `Skeleton2D`.
+
+Task 4J reserves three corrected-binding sheets:
+
+- `task4j_front_right_arm_official_binding.png`;
+- `task4j_front_right_arm_official_binding_dark.png`;
+- `task4j_front_right_arm_official_binding_magenta.png`.
+
+They retain the Task 4I geometry but use the bone-path convention serialized
+by the official Godot 4.7 Skeleton2D Demo. The renderer fails instead of
+saving a sheet when the expected arm region contains only its background.

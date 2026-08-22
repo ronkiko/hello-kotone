@@ -30,7 +30,11 @@ weights = [[float(value.strip()) for value in array.split(",")] for array in wei
 require(all(len(array) == 24 for array in weights), "each bone has exactly 24 weights")
 require(all(value in {0.0, 0.5, 1.0} for array in weights for value in array), "weights are rigid or 50/50 joint shares")
 require(all(abs(sum(vertex) - 1.0) < 1e-9 for vertex in zip(*weights)), "every vertex weight sum is one")
-require(manifest["current_gate"] == "front_right_elbow_anatomical_mesh_needs_godot_runtime_review", "manifest points to Task 4I runtime gate")
+require(
+    manifest["right_arm_anatomical_mesh_spike"]["status"]
+    == "rejected_invalid_bone_paths_and_unverifiable_renders",
+    "manifest records Task 4I rejection",
+)
 require("func _render_panel(" in renderer_text, "renderer isolates every pose in its own panel viewport")
 require("viewport.size = Vector2i(PANEL_WIDTH, HEIGHT)" in renderer_text, "isolated viewport is exactly one panel wide")
 require("sheet.blit_rect(" in renderer_text, "renderer stitches completed panel images into the final sheet")

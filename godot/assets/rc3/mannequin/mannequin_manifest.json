@@ -126,7 +126,7 @@
     "method": "hybrid_continuous_weighted_bendable_parts_and_rigid_shape_preserving_parts",
     "weight_policy": "rigid_regions_with_local_50_50_joint_ring",
     "ik_policy": "pose_solver_only_not_a_deformation_fix",
-    "status": "approved_for_task4i_implementation"
+    "status": "reopened_after_task4i_binding_failure"
   },
   "right_arm_anatomical_mesh_spike": {
     "scene": "res://scenes/mannequin/kotone_front_right_arm_anatomical_mesh_spike.tscn",
@@ -143,9 +143,26 @@
       "allowed_weights": [0, 0.5, 1],
       "weighted_bones": ["upper_arm_right", "forearm_right", "hand_right"]
     },
+    "status": "rejected_invalid_bone_paths_and_unverifiable_renders",
+    "decision": "superseded_by_task4j_official_skeleton_relative_binding"
+  },
+  "official_skeleton2d_reference": {
+    "project": "../../../../reference_projects/godot_skeleton2d_demo/project.godot",
+    "scene": "../../../../reference_projects/godot_skeleton2d_demo/player/player.tscn",
+    "upstream_commit": "34fc99545fc41520a958248f607101e7d0b95b05",
+    "status": "runtime_confirmed_by_operator_on_godot_4_7_2"
+  },
+  "right_arm_official_binding_spike": {
+    "scene": "res://scenes/mannequin/kotone_front_right_arm_official_binding_spike.tscn",
+    "static_validator": "res://scripts/mannequin/validate_front_right_arm_official_binding_spike.py",
+    "runtime_validator": "res://scripts/mannequin/validate_front_right_arm_official_binding_spike.gd",
+    "renderer": "res://scripts/mannequin/render_front_right_arm_official_binding_spike.gd",
+    "bone_path_contract": "relative_to_skeleton2d_root",
+    "poses_degrees": [0, 30, 60, 90],
+    "empty_render_is_fatal": true,
     "status": "prepared_needs_godot_runtime_review"
   },
-  "current_gate": "front_right_elbow_anatomical_mesh_needs_godot_runtime_review",
+  "current_gate": "front_right_arm_official_binding_needs_godot_runtime_review",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",

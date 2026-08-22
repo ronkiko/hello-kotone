@@ -60,6 +60,12 @@ The second runtime sheets produced after panel isolation but before the
 arm-only close-up are also invalid QA evidence: they still framed a partial
 full mannequin rather than guaranteeing visibility of the target mesh.
 
+The final arm-only pass produced empty panels. Task 4I is therefore rejected,
+not merely pending another render. Its bone entries used polygon-relative paths
+instead of the skeleton-relative paths serialized by the official Godot 4.7
+Skeleton2D Demo. Task 4J isolates that binding correction while retaining the
+same geometry and weights.
+
 Review the elbow for pinching, loss of thickness, broken contour, holes,
 doubled pixels and texture folding. Do not tune weights or add a patch during
 the runtime pass. If the local topology fails, record which angle first fails;
