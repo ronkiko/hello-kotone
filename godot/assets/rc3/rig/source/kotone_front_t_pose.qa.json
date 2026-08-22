@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "asset": "kotone_front_t_pose.png",
-  "status": "ready_for_user_review",
+  "status": "approved_by_user",
   "sha256": "09d9c385e83ed1b46f637691bde78c85c60f86c0b44553f1017c8714887333e6",
   "width": 1254,
   "height": 1254,
@@ -26,6 +26,6 @@
   "notes": [
     "Front-facing T-pose with symmetrical rolled sleeves.",
     "Legs use a modest separated stance for independent mesh extraction.",
-    "This asset remains a candidate until explicit user approval."
+    "User approval recorded on 2026-08-22; single-limb mesh spike is now allowed."
   ]
 }

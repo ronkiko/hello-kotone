@@ -34,6 +34,7 @@ The previous 29-part side-view experiment is preserved under
 
 ## Current stage gate
 
-The current candidate is `source/kotone_front_t_pose.png` with Task 4A QA
-previews. Its state is `ready_for_review`, not approved. No mesh, full rig or
-animation may begin before explicit user approval.
+`source/kotone_front_t_pose.png` and its Task 4A QA previews were explicitly
+approved by the user on 2026-08-22. The next allowed work is a weighted
+single-limb mesh spike. The full rig and animation remain blocked until their
+own stage gates pass.
