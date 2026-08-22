@@ -61,3 +61,17 @@ Each sheet compares the accepted neutral reference, the rejected rigid-cutout
 elbow at 18 degrees and a continuous weighted `Polygon2D` elbow at the same
 angle. Acceptance is visual: the weighted panel must remove the rectangular
 protrusion without introducing a hole, doubled contour or pinched silhouette.
+
+Task 4H is diagnostic evidence only. Its dense 45-vertex strip and broad weight
+gradient are not the selected production topology.
+
+Task 4I reserves three `2000x820` sheets:
+
+- `task4i_front_right_elbow_anatomical.png`;
+- `task4i_front_right_elbow_anatomical_dark.png`;
+- `task4i_front_right_elbow_anatomical_magenta.png`.
+
+They show only the joint-local anatomical mesh at 0, 30, 60 and 90 degrees of
+valid downward elbow flexion. If the elbow loses volume at an extreme, record
+the first failing angle and move to an explicit artwork/volume correction.
+Do not widen or smooth weights across the full arm.

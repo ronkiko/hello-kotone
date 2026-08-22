@@ -23,5 +23,5 @@ require('name="FrontRightArmMesh" type="Polygon2D"' in scene_text, "weighted Pol
 require('internal_vertex_count = 15' in scene_text, "internal mesh vertices are declared")
 require(scene_text.count("PackedFloat32Array(") == 3, "exactly three bone-weight arrays are declared")
 require("upper_arm_right/forearm_right/hand_right" in scene_text, "hand bone path is present")
-require(manifest["current_gate"] == "front_right_elbow_weighted_mesh_spike_needs_godot_runtime_review", "manifest points to the weighted elbow runtime gate")
+require(manifest["right_arm_weighted_mesh_spike"]["status"] == "diagnostic_only_not_production_topology", "manifest retains Task 4H as diagnostic evidence")
 print("FRONT RIGHT ARM WEIGHTED MESH SPIKE STATIC VALIDATION PASSED")

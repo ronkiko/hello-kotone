@@ -1,4 +1,8 @@
-# Task 4H: anatomical-right arm weighted-mesh spike
+# Task 4H: anatomical-right arm weighted-mesh diagnostic
+
+> Status: diagnostic evidence only. The broad 45-vertex strip is not the
+> production topology. Task 4I replaces it with joint-local semantic cells and
+> weights based on the official Godot Skeleton2D example.
 
 ## Why this spike exists
 

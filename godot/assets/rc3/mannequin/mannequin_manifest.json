@@ -118,9 +118,32 @@
       "elbow_blend_width_pixels": 60,
       "wrist_blend_width_pixels": 50
     },
+    "status": "diagnostic_only_not_production_topology",
+    "decision": "superseded_by_joint_local_anatomical_topology_after_official_demo_review"
+  },
+  "joint_rigging_architecture": {
+    "reference": "../../../../references/rc3/FRONT_JOINT_RIGGING_ARCHITECTURE.md",
+    "method": "hybrid_continuous_weighted_bendable_parts_and_rigid_shape_preserving_parts",
+    "weight_policy": "rigid_regions_with_local_50_50_joint_ring",
+    "ik_policy": "pose_solver_only_not_a_deformation_fix",
+    "status": "approved_for_task4i_implementation"
+  },
+  "right_arm_anatomical_mesh_spike": {
+    "scene": "res://scenes/mannequin/kotone_front_right_arm_anatomical_mesh_spike.tscn",
+    "static_validator": "res://scripts/mannequin/validate_front_right_arm_anatomical_mesh_spike.py",
+    "runtime_validator": "res://scripts/mannequin/validate_front_right_arm_anatomical_mesh_spike.gd",
+    "renderer": "res://scripts/mannequin/render_front_right_arm_anatomical_mesh_spike.gd",
+    "poses_degrees": [0, 30, 60, 90],
+    "mesh": {
+      "vertices": 24,
+      "internal_joint_vertices": 2,
+      "cells": 18,
+      "allowed_weights": [0, 0.5, 1],
+      "weighted_bones": ["upper_arm_right", "forearm_right", "hand_right"]
+    },
     "status": "prepared_needs_godot_runtime_review"
   },
-  "current_gate": "front_right_elbow_weighted_mesh_spike_needs_godot_runtime_review",
+  "current_gate": "front_right_elbow_anatomical_mesh_needs_godot_runtime_review",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",
