@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "front_articulation_spike_needs_godot_runtime_review",
+  "status": "front_articulation_spike_visually_rejected",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -84,9 +84,43 @@
       "knee_left",
       "ankle_left"
     ],
-    "status": "needs_godot_runtime_review"
+    "status": "runtime_mechanics_passed_visual_acceptance_failed",
+    "godot_version": "4.7.2.stable.official",
+    "recorded_commit": "00b39c476fcbe61791f6b3eb87f24ba68565c579",
+    "runtime_validator": "passed",
+    "visual_review": {
+      "neutral": "passed",
+      "shoulders_down_12_degrees": "mechanically_correct_but_rigid_joint_transition_not_final",
+      "elbows_down_18_degrees": "rejected_rectangular_forearm_cutout_ends_protrude_at_both_elbows",
+      "both_hips_abduct_4_degrees": "mechanically_correct_but_rigid_joint_transition_not_final",
+      "overall": "rejected_for_animation_authoring"
+    },
+    "root_cause": "independently_rotated_rectangular_sprite2d_cutouts_reveal_their_proximal_ends_when_joint_overlap_opens",
+    "decision": "retain_the_approved_neutral_rig_as_registration_reference_and_test_one_continuous_weighted_polygon2d_arm_before_any_full_rig_or_walk"
   },
-  "current_gate": "front_mannequin_articulation_needs_runtime_approval",
+  "right_arm_weighted_mesh_spike": {
+    "scene": "res://scenes/mannequin/kotone_front_right_arm_weighted_mesh_spike.tscn",
+    "controller": "res://scripts/mannequin/front_right_arm_weighted_mesh_spike.gd",
+    "static_validator": "res://scripts/mannequin/validate_front_right_arm_weighted_mesh_spike.py",
+    "runtime_validator": "res://scripts/mannequin/validate_front_right_arm_weighted_mesh_spike.gd",
+    "renderer": "res://scripts/mannequin/render_front_right_arm_weighted_mesh_spike.gd",
+    "scope": "anatomical_right_arm_only",
+    "comparison": [
+      "neutral_rigid_reference",
+      "rigid_cutout_elbow_down_18_degrees_rejected",
+      "weighted_mesh_elbow_down_18_degrees_review"
+    ],
+    "mesh": {
+      "vertices": 45,
+      "internal_vertices": 15,
+      "cells": 28,
+      "weighted_bones": ["upper_arm_right", "forearm_right", "hand_right"],
+      "elbow_blend_width_pixels": 60,
+      "wrist_blend_width_pixels": 50
+    },
+    "status": "prepared_needs_godot_runtime_review"
+  },
+  "current_gate": "front_right_elbow_weighted_mesh_spike_needs_godot_runtime_review",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",

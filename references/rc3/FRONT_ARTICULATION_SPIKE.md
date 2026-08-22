@@ -57,3 +57,28 @@ must create three `2000x900` sheets in `assets/rc3/mannequin/preview/`.
 Review all panels for shoulder, elbow and hip gaps; doubled edges; incorrect
 front/back layering; missing hands or feet; and any apparent knee bending. Stop
 after recording the runtime evidence. Do not create a walk cycle.
+
+## Runtime result and visual decision
+
+Godot 4.7.2 completed the editor scan, validator and renderer successfully. The
+runtime evidence was recorded in commit `00b39c4`. That proves bone directions,
+locked knee/ankle transforms and pose generation, but it does **not** approve
+the cutout technique for animation.
+
+Visual review of the three committed sheets produced this decision:
+
+- neutral T-pose: accepted as the registration reference;
+- shoulders down 12 degrees: direction is correct, but the rigid shoulder
+  transition is visible and is not final-quality deformation;
+- elbows down 18 degrees: rejected; the rectangular proximal ends of both
+  forearm PNG cutouts protrude as corrupted blocks;
+- hips abducted 4 degrees: direction is correct, but the rigid hip transition
+  remains slightly visible and is not final-quality deformation.
+
+The elbow failure is not an angle-sign error and must not be hidden by reducing
+the test angle. A child `Sprite2D` rotates as a rigid rectangle; once its overlap
+with the upper-arm sprite opens, pixels intended to remain covered become
+visible. The next gate is therefore a single anatomical-right arm spike using
+one continuous `Polygon2D` mesh weighted across upper-arm, forearm and hand
+bones. The accepted neutral rig remains unchanged. Full-rig conversion, walk
+animation and clothing remain prohibited until that narrow spike is reviewed.

@@ -43,3 +43,21 @@ Task 4G reserves three four-pose articulation sheets at `2000x900`:
 The four panels are neutral, straight arms lowered at the shoulders, forearms
 lowered at the elbows, and bilateral hip abduction. Knees and ankles stay
 neutral in every panel. These are joint-overlap tests, not animation frames.
+
+Godot runtime checks passed and the sheets were recorded in commit `00b39c4`,
+but Task 4G failed visual acceptance. The neutral panel remains accepted. The
+shoulder and hip poses move in the correct directions but retain visible rigid
+transitions. The 18-degree elbow panel is rejected because the rectangular
+proximal ends of both forearm cutouts protrude. These PNGs are retained as
+failure evidence; they must not be cited as approval of front articulation.
+
+Task 4H reserves three `1800x760` A/B/C sheets:
+
+- `task4h_front_right_arm_weighted_mesh.png`;
+- `task4h_front_right_arm_weighted_mesh_dark.png`;
+- `task4h_front_right_arm_weighted_mesh_magenta.png`.
+
+Each sheet compares the accepted neutral reference, the rejected rigid-cutout
+elbow at 18 degrees and a continuous weighted `Polygon2D` elbow at the same
+angle. Acceptance is visual: the weighted panel must remove the rectangular
+protrusion without introducing a hole, doubled contour or pinched silhouette.
