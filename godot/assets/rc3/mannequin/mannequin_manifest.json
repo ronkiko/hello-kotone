@@ -133,7 +133,8 @@
     "static_validator": "res://scripts/mannequin/validate_front_right_arm_anatomical_mesh_spike.py",
     "runtime_validator": "res://scripts/mannequin/validate_front_right_arm_anatomical_mesh_spike.gd",
     "renderer": "res://scripts/mannequin/render_front_right_arm_anatomical_mesh_spike.gd",
-    "renderer_layout": "four_isolated_500x820_subviewports_stitched_after_render",
+    "renderer_layout": "four_isolated_500x820_arm_only_closeups_stitched_after_render",
+    "renderer_elbow_panel_position": [286, 270],
     "poses_degrees": [0, 30, 60, 90],
     "mesh": {
       "vertices": 24,

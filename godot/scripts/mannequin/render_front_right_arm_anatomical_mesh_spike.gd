@@ -6,6 +6,8 @@ const WIDTH := 2000
 const HEIGHT := 820
 const PANEL_WIDTH := 500
 const RIG_SCALE := 1.16
+const ELBOW_SOURCE_POSITION := Vector2(414.0, 263.0)
+const ELBOW_PANEL_POSITION := Vector2(286.0, 270.0)
 const POSE_ANGLES := [0.0, -30.0, -60.0, -90.0]
 
 const THEMES := [
@@ -71,8 +73,9 @@ func _render_panel(packed: PackedScene, theme: Dictionary, angle: float) -> Imag
 	_add_panel(canvas, theme)
 	var rig := packed.instantiate() as Node2D
 	rig.scale = Vector2(RIG_SCALE, RIG_SCALE)
-	rig.position = Vector2(PANEL_WIDTH * 0.5 - 414.0 * RIG_SCALE, 140.0 - 245.0 * RIG_SCALE)
+	rig.position = ELBOW_PANEL_POSITION - ELBOW_SOURCE_POSITION * RIG_SCALE
 	canvas.add_child(rig)
+	_hide_base_rig_sprites(rig)
 	var elbow := rig.get_node("BaseRig/Skeleton2D/pelvis/torso/upper_arm_right/forearm_right") as Bone2D
 	elbow.rotation = deg_to_rad(angle)
 	_add_label(canvas, "%d° ELBOW" % int(absf(angle)), theme)
@@ -93,6 +96,13 @@ func _render_panel(packed: PackedScene, theme: Dictionary, angle: float) -> Imag
 		return null
 	viewport.queue_free()
 	return image
+
+func _hide_base_rig_sprites(rig: Node2D) -> void:
+	var base_rig := rig.get_node("BaseRig")
+	for node in base_rig.find_children("*", "Sprite2D", true, false):
+		var sprite := node as Sprite2D
+		if sprite != null:
+			sprite.visible = false
 
 func _add_panel(canvas: Node2D, theme: Dictionary) -> void:
 	var panel := ColorRect.new()

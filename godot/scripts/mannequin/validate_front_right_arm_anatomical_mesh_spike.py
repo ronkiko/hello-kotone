@@ -34,4 +34,6 @@ require(manifest["current_gate"] == "front_right_elbow_anatomical_mesh_needs_god
 require("func _render_panel(" in renderer_text, "renderer isolates every pose in its own panel viewport")
 require("viewport.size = Vector2i(PANEL_WIDTH, HEIGHT)" in renderer_text, "isolated viewport is exactly one panel wide")
 require("sheet.blit_rect(" in renderer_text, "renderer stitches completed panel images into the final sheet")
+require("ELBOW_PANEL_POSITION := Vector2(286.0, 270.0)" in renderer_text, "renderer anchors the elbow inside the close-up panel")
+require("_hide_base_rig_sprites(rig)" in renderer_text, "renderer shows the anatomical arm mesh without full-body sprite clutter")
 print("FRONT RIGHT ARM ANATOMICAL MESH SPIKE STATIC VALIDATION PASSED")

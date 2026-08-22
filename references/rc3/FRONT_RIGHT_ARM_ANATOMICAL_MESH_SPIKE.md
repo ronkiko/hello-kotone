@@ -45,10 +45,20 @@ panel images are stitched into the final `2000x820` sheet. This prevents a
 full mannequin instance from crossing a panel boundary and covering a
 neighbouring pose.
 
+The panel is an arm-only close-up, not a crop of the full mannequin. All
+`Sprite2D` visuals below `BaseRig` are hidden while `Skeleton2D` and its bones
+remain active. The anatomical-right elbow at source coordinate `(414, 263)` is
+anchored at panel coordinate `(286, 270)`. This leaves room for the straight
+arm toward viewer-left and for downward flexion through 90 degrees.
+
 The first runtime sheets produced before this isolation fix are invalid QA
 evidence: their four full mannequin instances shared one wide viewport and
 overlapped. They must be overwritten by a new GL/Xvfb render before judging
 the elbow at any angle.
+
+The second runtime sheets produced after panel isolation but before the
+arm-only close-up are also invalid QA evidence: they still framed a partial
+full mannequin rather than guaranteeing visibility of the target mesh.
 
 Review the elbow for pinching, loss of thickness, broken contour, holes,
 doubled pixels and texture folding. Do not tune weights or add a patch during

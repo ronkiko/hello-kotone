@@ -80,3 +80,8 @@ Each Task 4I pose is rendered in an isolated `500x820` viewport and the four
 finished images are stitched into the sheet afterward. The initial shared-
 viewport render overlapped neighbouring full-body instances and is invalid QA
 evidence; overwrite those PNGs before evaluating the mesh.
+
+Task 4I panels are arm-only close-ups: base-rig sprites are hidden, the bones
+remain active and the target elbow is anchored at `(286, 270)` in every panel.
+The intermediate partial-body render from commit `b0ae29a` is invalid QA
+evidence and must also be overwritten.
