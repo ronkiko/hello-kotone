@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "polygon2d_weighted_mesh",
-  "status": "single_limb_mesh_spike_needs_depth_proxy_godot_rerender",
+  "status": "single_limb_mesh_spike_ready_for_user_review",
   "source": "source/kotone_front_t_pose.png",
   "source_qa": "source/kotone_front_t_pose.qa.json",
   "source_size": [1254, 1254],
