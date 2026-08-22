@@ -3,9 +3,15 @@ extends SceneTree
 const SCENE_PATH := "res://scenes/rig/kotone_front_leg_mesh_spike.tscn"
 const SOURCE_PATH := "res://assets/rc3/rig/source/kotone_front_t_pose.png"
 const QA_PATH := "res://assets/rc3/rig/source/kotone_front_t_pose.qa.json"
-const EXPECTED_SHA256 := "09d9c385e83ed1b46f637691bde78c85c60f86c0b44553f1017c8714887333e6"
+const EXPECTED_SHA256 := "ebf49c3444844173f02ee32ed6697396868411ab945de7a35500f28e21532d39"
 const EXPECTED_BONES := ["hip_right", "knee_right", "ankle_right"]
 const EXPECTED_BONE_PATHS := ["pelvis/hip_right", "pelvis/hip_right/knee_right", "pelvis/hip_right/knee_right/ankle_right"]
+const EXPECTED_MESH_BONE_PATHS := [
+	NodePath("../Skeleton2D/pelvis/hip_right"),
+	NodePath("../Skeleton2D/pelvis/hip_right/knee_right"),
+	NodePath("../Skeleton2D/pelvis/hip_right/knee_right/ankle_right")
+]
+const EXPECTED_PIVOTS := [Vector2(555, 560), Vector2(555, 765), Vector2(555, 1040)]
 
 var failures: Array[String] = []
 
@@ -33,6 +39,7 @@ func _run() -> void:
 		if bone != null:
 			_check(bone.get_parent().name == expected_parents[index], "%s has the required parent" % EXPECTED_BONES[index])
 			_check(bone.rest.is_equal_approx(bone.transform), "%s rest transform is stable" % EXPECTED_BONES[index])
+			_check(bone.global_position.is_equal_approx(EXPECTED_PIVOTS[index]), "%s pivot is at approved source coordinate %s" % [EXPECTED_BONES[index], EXPECTED_PIVOTS[index]])
 
 	var polygons := _find_polygons(rig)
 	_check(polygons.size() == 1, "exactly one working Polygon2D is present")
@@ -55,6 +62,7 @@ func _run() -> void:
 	_check(leg.get_bone_count() == 3, "three weighted bones are assigned")
 	var positive_bones := 0
 	for index in leg.get_bone_count():
+		_check(leg.get_bone_path(index) == EXPECTED_MESH_BONE_PATHS[index], "bone slot %d is bound to %s" % [index, EXPECTED_MESH_BONE_PATHS[index]])
 		var weights := leg.get_bone_weights(index)
 		_check(weights.size() == leg.polygon.size(), "bone %d has one weight per vertex" % index)
 		var positive := 0
@@ -68,6 +76,10 @@ func _run() -> void:
 		for bone_index in leg.get_bone_count():
 			total += leg.get_bone_weights(bone_index)[vertex]
 		_check(absf(total - 1.0) < 0.01, "vertex %d weights normalize to 1" % vertex)
+		var expected := _expected_weights(leg.polygon[vertex].y)
+		for bone_index in leg.get_bone_count():
+			var actual := leg.get_bone_weights(bone_index)[vertex]
+			_check(absf(actual - expected[bone_index]) < 0.01, "vertex %d bone %d uses localized joint weight" % [vertex, bone_index])
 	_check(positive_bones == 3, "hip_right, knee_right and ankle_right all carry weights")
 	_check(leg.polygon.size() == 72, "mesh has 72 vertices")
 	_check(leg.uv[0] == Vector2(511, 575) and leg.uv[leg.uv.size() - 1] == Vector2(546, 1150), "UVs remain in approved source coordinates")
@@ -82,14 +94,27 @@ func _check_source() -> void:
 	if qa_file == null:
 		return
 	var qa = JSON.parse_string(qa_file.get_as_text())
-	_check(qa is Dictionary and qa.get("status") == "approved_by_user", "source QA status is approved_by_user")
-	_check(qa is Dictionary and qa.get("sha256") == EXPECTED_SHA256, "source QA SHA-256 matches approved source")
+	_check(qa is Dictionary and qa.get("status") == "ready_for_user_review", "revised source QA status is ready_for_user_review")
+	_check(qa is Dictionary and qa.get("sha256") == EXPECTED_SHA256, "source QA SHA-256 matches revised source")
 	var context := HashingContext.new()
 	context.start(HashingContext.HASH_SHA256)
 	var source_file := FileAccess.open(SOURCE_PATH, FileAccess.READ)
 	if source_file != null:
 		context.update(source_file.get_buffer(source_file.get_length()))
-		_check(context.finish().hex_encode() == EXPECTED_SHA256, "source file SHA-256 matches approval record")
+		_check(context.finish().hex_encode() == EXPECTED_SHA256, "source file SHA-256 matches QA record")
+
+func _expected_weights(y: float) -> Vector3:
+	if y <= 735.0:
+		return Vector3(1.0, 0.0, 0.0)
+	if y < 795.0:
+		var knee_blend := (y - 735.0) / 60.0
+		return Vector3(1.0 - knee_blend, knee_blend, 0.0)
+	if y <= 1010.0:
+		return Vector3(0.0, 1.0, 0.0)
+	if y < 1070.0:
+		var ankle_blend := (y - 1010.0) / 60.0
+		return Vector3(0.0, 1.0 - ankle_blend, ankle_blend)
+	return Vector3(0.0, 0.0, 1.0)
 
 func _find_polygons(root: Node) -> Array[Polygon2D]:
 	var result: Array[Polygon2D] = []

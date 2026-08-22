@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "asset": "kotone_front_t_pose.png",
-  "status": "approved_by_user",
-  "sha256": "09d9c385e83ed1b46f637691bde78c85c60f86c0b44553f1017c8714887333e6",
+  "status": "ready_for_user_review",
+  "sha256": "ebf49c3444844173f02ee32ed6697396868411ab945de7a35500f28e21532d39",
   "width": 1254,
   "height": 1254,
   "color_mode": "RGBA",
@@ -26,6 +26,8 @@
   "notes": [
     "Front-facing T-pose with symmetrical rolled sleeves.",
     "Legs use a modest separated stance for independent mesh extraction.",
-    "User approval recorded on 2026-08-22; single-limb mesh spike is now allowed."
+    "Dark semi-transparent tights now continue from the skirt hem through both shoes.",
+    "The previous approved alpha silhouette was reused exactly, so rig coordinates and safe margins remain stable.",
+    "This revised source requires visual user approval before the source gate is promoted again."
   ]
 }

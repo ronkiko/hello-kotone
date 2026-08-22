@@ -62,8 +62,9 @@ original references remain untouched unless explicitly requested.
 
 1. Archive rigid-cutout experiment — complete.
 2. Prepare fresh front T-pose/mesh workspace — complete.
-3. Create front T-pose source and QA — current, awaiting user review.
-4. Build and approve a weighted single-limb deformation spike.
+3. Create front T-pose source and QA — tights revision awaiting user review.
+4. Build and approve a weighted single-limb deformation spike — corrected
+   weights prepared; Godot GL/Xvfb rerender still required.
 5. Build and approve the complete front neutral rig.
 6. Author animations only after the previous gates pass.
 7. Create separate side/back sources and rigs when explicitly scheduled.

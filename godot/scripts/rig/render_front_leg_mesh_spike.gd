@@ -23,12 +23,18 @@ func _run() -> void:
 		printerr("Could not load ", SCENE_PATH)
 		quit(1)
 		return
+	var rendered_count := 0
 	for theme in THEMES:
-		await _render_theme(packed, theme)
-	print("RENDER COMPLETE: %d previews" % THEMES.size())
+		if await _render_theme(packed, theme):
+			rendered_count += 1
+	if rendered_count != THEMES.size():
+		printerr("RENDER FAILED: wrote %d of %d previews" % [rendered_count, THEMES.size()])
+		quit(1)
+		return
+	print("RENDER COMPLETE: %d previews" % rendered_count)
 	quit(0)
 
-func _render_theme(packed: PackedScene, theme: Dictionary) -> void:
+func _render_theme(packed: PackedScene, theme: Dictionary) -> bool:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(WIDTH, HEIGHT)
 	viewport.transparent_bg = false
@@ -79,17 +85,17 @@ func _render_theme(packed: PackedScene, theme: Dictionary) -> void:
 	if DisplayServer.get_name() == "headless":
 		printerr("No rendered image: headless dummy renderer cannot rasterize; use a GL-compatible display backend")
 		viewport.queue_free()
-		return
+		return false
 	var viewport_texture := viewport.get_texture()
 	if viewport_texture == null:
 		printerr("No viewport texture: headless dummy renderer cannot rasterize; use a GL-compatible display backend")
 		viewport.queue_free()
-		return
+		return false
 	var image := viewport_texture.get_image()
 	if image == null:
 		printerr("No rendered image returned by viewport")
 		viewport.queue_free()
-		return
+		return false
 	var output_path: String = OUTPUT_DIR + str(theme["name"])
 	var error := image.save_png(output_path)
 	if error != OK:
@@ -97,3 +103,4 @@ func _render_theme(packed: PackedScene, theme: Dictionary) -> void:
 	else:
 		print("WROTE: ", output_path, " ", image.get_width(), "x", image.get_height())
 	viewport.queue_free()
+	return error == OK
