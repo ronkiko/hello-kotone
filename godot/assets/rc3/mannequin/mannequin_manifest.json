@@ -6,7 +6,7 @@
   "view": "front",
   "rest_pose": "t_pose",
   "technique": "separated_cutout_parts_with_local_polygon2d_deform",
-  "status": "front_neutral_rig_runtime_approved",
+  "status": "front_articulation_spike_needs_godot_runtime_review",
   "source": "source/kotone_front_mannequin_t_pose.png",
   "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
   "clothed_reference": "../rig/source/kotone_front_t_pose.png",
@@ -68,7 +68,25 @@
       "unsupported_vsync_in_headless_x11"
     ]
   },
-  "current_gate": "front_mannequin_neutral_rig_approved",
+  "articulation_spike": {
+    "scene": "res://scenes/mannequin/kotone_front_neutral_rig.tscn",
+    "validator": "res://scripts/mannequin/validate_front_articulation_spike.gd",
+    "renderer": "res://scripts/mannequin/render_front_articulation_spike.gd",
+    "poses": [
+      "neutral",
+      "shoulders_down_12_degrees",
+      "elbows_down_18_degrees",
+      "both_hips_abduct_4_degrees"
+    ],
+    "locked_joints": [
+      "knee_right",
+      "ankle_right",
+      "knee_left",
+      "ankle_left"
+    ],
+    "status": "needs_godot_runtime_review"
+  },
+  "current_gate": "front_mannequin_articulation_needs_runtime_approval",
   "prohibited_before_approval": [
     "weight_painting",
     "animation_authoring",
