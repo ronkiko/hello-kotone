@@ -1,1 +1,8 @@
 .local/
+
+# Godot editor and generated import/export data.
+godot/.godot/
+godot/.import/
+godot/export/
+godot/*.pck
+godot/*.zip

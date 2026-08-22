@@ -1,0 +1,30 @@
+; Engine configuration file.
+; Hello Kotone Godot project
+
+config_version=5
+
+[application]
+
+config/name="Hello Kotone"
+run/main_scene="res://scenes/main.tscn"
+
+[autoload]
+
+GameState="*res://scripts/game_state.gd"
+
+[display]
+
+window/size/viewport_width=482
+window/size/viewport_height=270
+window/size/window_width_override=964
+window/size/window_height_override=540
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true

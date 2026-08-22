@@ -14,10 +14,10 @@
 Перед созданием обязательно изучи в репозитории существующие файлы во временной
 папке reference pack:
 
-    hello-kotone/kotone-sprites-reference/frames/walking_front.png
-    hello-kotone/kotone-sprites-reference/frames/walking_back.png
-    hello-kotone/kotone-sprites-reference/frames/walking_left.png
-    hello-kotone/kotone-sprites-reference/frames/walking_right.png
+    references/kotone-sprites-reference/frames/walking_front.png
+    references/kotone-sprites-reference/frames/walking_back.png
+    references/kotone-sprites-reference/frames/walking_left.png
+    references/kotone-sprites-reference/frames/walking_right.png
 
 В этой же временной папке доступны все остальные исходные материалы Котоне:
 idle-спрайты, GIF-анимации, preview, общий sprite sheet, metadata и license.

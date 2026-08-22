@@ -267,7 +267,7 @@ footer {
 }
 
 .loading-backdrop {
-  background: url("../.local/School_Backgrounds_Pack/school corridor_N_3840x2160.jpg") center / cover no-repeat;
+  background: url("../../.local/School_Backgrounds_Pack/school corridor_N_3840x2160.jpg") center / cover no-repeat;
   filter: blur(3px) saturate(0.72);
   transform: scale(1.035);
 }
