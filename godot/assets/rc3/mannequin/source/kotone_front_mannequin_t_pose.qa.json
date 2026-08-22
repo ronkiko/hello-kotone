@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "status": "ready_for_user_review",
+  "sha256": "b13044d02fbc96a405e83d7903099e5a6bb9f99a6b471ac9e171c63ffc734b34",
+  "canvas": [1254, 1254],
+  "color_mode": "RGBA",
+  "alpha_min": 0.0,
+  "alpha_max": 1.0,
+  "alpha_bounds": [213, 54, 829, 1111],
+  "clothed_reference_alpha_bounds": [213, 54, 827, 1106],
+  "registration_delta": {
+    "x": 0,
+    "y": 0,
+    "width": 2,
+    "height": 5
+  },
+  "surface": "neutral_light_warm_skin_tone_mannequin",
+  "background": "genuine_transparent_alpha",
+  "visual_checks": [
+    "checker",
+    "dark",
+    "magenta",
+    "clothed_reference_comparison"
+  ],
+  "notes": "Proportional review source only; not yet separated into rig-ready parts."
+}

@@ -1,5 +1,10 @@
 # Front leg mesh spike: implementation note
 
+> Historical Task 4B research only. The localized weights passed validation,
+> but the depth proxy was rejected for locomotion because it visually
+> telescopes the calf. RC3 continues with the proportional mannequin pipeline
+> documented in `RC3_MANNEQUIN_PIPELINE.md`.
+
 This note is the handoff for `kotone_front_leg_mesh_spike.tscn`. It describes
 the actual coordinate system and the weight rule; no visual guesswork is needed.
 

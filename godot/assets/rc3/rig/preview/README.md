@@ -11,7 +11,10 @@ Every approved source or mesh stage must include:
 
 Passing a structural validator does not replace visual review.
 
-The active Task 4B previews are intentionally absent after the joint-weight
-correction. They must be regenerated with a GL/Xvfb Godot run before review.
-The old, rejected renders live under `rejected_task4b_old_weights/` and are not
-evidence for the current scene.
+The active Task 4B previews document the final depth-proxy experiment. The
+experiment passed its structural checks but was rejected as a locomotion
+solution because the calf telescopes vertically instead of producing a
+convincing front-view step.
+
+Older rejected renders live under `rejected_task4b_old_weights/` and
+`rejected_task4b_sideways_rotation/`; they are historical evidence only.

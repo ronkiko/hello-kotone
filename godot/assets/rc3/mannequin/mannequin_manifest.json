@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "character": "kotone",
+  "release": "rc3",
+  "asset": "front_mannequin",
+  "view": "front",
+  "rest_pose": "t_pose",
+  "technique": "separated_cutout_parts_with_local_polygon2d_deform",
+  "status": "front_mannequin_source_ready_for_user_review",
+  "source": "source/kotone_front_mannequin_t_pose.png",
+  "source_qa": "source/kotone_front_mannequin_t_pose.qa.json",
+  "clothed_reference": "../rig/source/kotone_front_t_pose.png",
+  "source_size": [1254, 1254],
+  "source_color_mode": "RGBA",
+  "coordinate_naming": "anatomical_left_right",
+  "current_gate": "front_mannequin_source_approved",
+  "prohibited_before_approval": [
+    "part_extraction",
+    "skeleton_authoring",
+    "weight_painting",
+    "animation_authoring",
+    "clothing_layers"
+  ],
+  "stage_gates": [
+    "front_mannequin_source_approved",
+    "front_mannequin_parts_approved",
+    "single_leg_cutout_motion_approved",
+    "front_mannequin_neutral_rig_approved",
+    "front_mannequin_walk_approved",
+    "clothing_layers_allowed"
+  ]
+}
+
