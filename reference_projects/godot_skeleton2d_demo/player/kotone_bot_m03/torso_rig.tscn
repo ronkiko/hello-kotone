@@ -23,23 +23,14 @@ auto_calculate_length_and_angle = false
 length = 190.0
 bone_angle = -1.570796
 
-[node name="Polygons" type="Node2D" parent="."]
-
-[node name="Torso" type="Polygon2D" parent="Polygons"]
+[node name="Art_torso" type="Sprite2D" parent="Skeleton2D/Torso"]
 texture = ExtResource("1_torso")
-skeleton = NodePath("../../Skeleton2D")
-# Source torso pivot (110, 350) is at the Torso bone root (0, 0).
-polygon = PackedVector2Array(-110, -350, 107, -350, 107, 85, -110, 85)
-uv = PackedVector2Array(0, 0, 217, 0, 217, 435, 0, 435)
-polygons = [PackedInt32Array(0, 1, 2, 3)]
-# Keep the complete skeleton list, as the Godot robot's UV editor serializes it.
-bones = ["Torso", PackedFloat32Array(1, 1, 1, 1), "Torso/Head", PackedFloat32Array(0, 0, 0, 0)]
+centered = false
+# The source pelvis pivot is pixel (110, 350).
+position = Vector2(-110, -350)
 
-[node name="Head" type="Polygon2D" parent="Polygons"]
+[node name="Art_head" type="Sprite2D" parent="Skeleton2D/Torso/Head"]
 texture = ExtResource("2_head")
-skeleton = NodePath("../../Skeleton2D")
-# Source head neck point (80, 190) is at the Head bone joint (16, -328).
-polygon = PackedVector2Array(-64, -518, 97, -518, 97, -311, -64, -311)
-uv = PackedVector2Array(0, 0, 161, 0, 161, 207, 0, 207)
-polygons = [PackedInt32Array(0, 1, 2, 3)]
-bones = ["Torso", PackedFloat32Array(0, 0, 0, 0), "Torso/Head", PackedFloat32Array(1, 1, 1, 1)]
+centered = false
+# The source neck pivot is pixel (80, 190) inside head.png.
+position = Vector2(-80, -190)
