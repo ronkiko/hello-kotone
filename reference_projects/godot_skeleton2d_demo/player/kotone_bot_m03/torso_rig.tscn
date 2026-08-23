@@ -34,7 +34,6 @@ uv = PackedVector2Array(0, 0, 217, 0, 217, 435, 0, 435)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
 # Keep the complete skeleton list, as the Godot robot's UV editor serializes it.
 bones = ["Torso", PackedFloat32Array(1, 1, 1, 1), "Torso/Head", PackedFloat32Array(0, 0, 0, 0)]
-internal_vertex_count = 4
 
 [node name="Head" type="Polygon2D" parent="Polygons"]
 texture = ExtResource("2_head")
@@ -44,4 +43,3 @@ polygon = PackedVector2Array(-64, -518, 97, -518, 97, -311, -64, -311)
 uv = PackedVector2Array(0, 0, 161, 0, 161, 207, 0, 207)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
 bones = ["Torso", PackedFloat32Array(0, 0, 0, 0), "Torso/Head", PackedFloat32Array(1, 1, 1, 1)]
-internal_vertex_count = 4
