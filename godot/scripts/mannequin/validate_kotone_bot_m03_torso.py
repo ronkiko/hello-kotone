@@ -40,12 +40,14 @@ def main() -> None:
     require(len(re.findall(r'type="Bone2D"', rig)) == 1, "expected exactly one Bone2D")
     require('[node name="Torso" type="Bone2D" parent="Skeleton2D"]' in rig, "Torso root bone missing")
     require("auto_calculate_length_and_angle = false" in rig, "Torso bone must use explicit geometry")
-    require("length = 300.0" in rig and "bone_angle = -1.50423" in rig, "Torso bone axis changed")
+    require("rotation = -1.570796" in rig, "Torso bone must point vertically upward")
+    require("length = 300.0" in rig and "bone_angle = 0.0" in rig, "Torso bone axis changed")
     require('[node name="Art_torso" type="Sprite2D" parent="Skeleton2D/Torso"]' in rig, "torso art is not bound to Torso")
-    require("position = Vector2(-110, -350)" in rig, "torso pivot registration changed")
+    require("position = Vector2(350, -110)" in rig and "rotation = 1.570796" in rig, "torso pivot registration changed")
     require('path="res://player/kotone_bot_m03/assets/torso.png"' in rig, "torso texture missing")
     require('instance=ExtResource("2_rig")' in preview, "preview does not instance torso rig")
     require("KEY_Q" in preview_script and "KEY_R" in preview_script and "KEY_E" in preview_script, "manual angle controls missing")
+    require("AXIS_UP_ANGLE" in preview_script, "preview must preserve the vertical rest axis")
     require('godot --headless --path "$SCRIPT_DIR" --import' in launcher, "fresh-checkout import pass missing")
     require("res://player/kotone_bot_m03/torso_preview.tscn" in launcher, "wrong preview scene")
     require(not (MODEL / "player.tscn").exists(), "M03 must not replace the game player yet")
@@ -63,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

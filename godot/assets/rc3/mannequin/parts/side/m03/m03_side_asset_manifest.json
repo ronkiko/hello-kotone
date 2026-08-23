@@ -29,7 +29,7 @@
       "file": "torso.png",
       "size": [217, 435],
       "alpha_bounds": [12, 12, 190, 408],
-      "sha256": "b213eafc58ce62698fc681fce6eee6602e86f43c40b3c5b7e7b9690519370d28"
+      "sha256": "af067567c19127a665a41d427a84d88e2b8440895b54d453853c2f7a9c3a1f48"
     },
     {
       "name": "head",
@@ -70,7 +70,7 @@
   "preview": {
     "file": "preview/neutral_assembly.png",
     "status": "visual_only_not_a_runtime_asset",
-    "sha256": "bb7f7fef3a6b11fae5a53ae4e8367c42cd26b6aeb50fd134374ce04707f588b9"
+    "sha256": "d1e2f8f19ed226c6df0a54a771dbcf2fed93d2df7d31d4ac22594a569e4bbc93"
   },
   "next_gate": "create_six_bone_skeleton_step_by_step_with_operator_editor_control"
 }
