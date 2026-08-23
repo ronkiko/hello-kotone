@@ -16,6 +16,9 @@ MANIFEST = SOURCE_DIR / "front_parts_manifest.json"
 TARGET = ROOT / "reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02"
 ASSETS = TARGET / "assets"
 OUTPUT = TARGET / "player.tscn"
+PROVEN_NEUTRAL = ROOT / "godot/scenes/mannequin/kotone_front_neutral_rig.tscn"
+NEUTRAL_RIG = TARGET / "neutral_rig.tscn"
+NEUTRAL_PREVIEW = TARGET / "neutral_visibility_test.tscn"
 
 BONES = [
     ("Hip", "VisualPivot/Sprite2D/Skeleton2D", (627, 545)),
@@ -159,7 +162,49 @@ process_callback = 0
 ''')
 
     OUTPUT.write_text("\n".join(lines), encoding="utf-8")
-    print("KTN-RC3-M02 CUTOUT SCENE BUILD COMPLETE")
+
+    # Visibility gate: keep the rig itself byte-for-byte equivalent to the
+    # already rendered Task 4F scene. Only resource paths and the root name
+    # differ because this copy lives in the standalone gBot demo project.
+    neutral = PROVEN_NEUTRAL.read_text(encoding="utf-8")
+    neutral = neutral.replace(
+        "res://assets/rc3/mannequin/parts/front/",
+        "res://player/kotone_bot_m02/assets/",
+    )
+    neutral = neutral.replace(
+        '[node name="KotoneFrontNeutralRig" type="Node2D"]',
+        '[node name="M02NeutralRig" type="Node2D"]',
+    )
+    NEUTRAL_RIG.write_text(neutral, encoding="utf-8")
+
+    NEUTRAL_PREVIEW.write_text(
+        '''[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="1_rig"]
+
+[node name="M02NeutralVisibilityTest" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+color = Color(0.18, 0.20, 0.24, 1)
+z_index = -100
+
+[node name="Instruction" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 860.0
+offset_bottom = 56.0
+text = "KTN-RC3-M02 VISIBILITY GATE — expected: all 15 neutral cutout parts"
+theme_override_font_sizes/font_size = 22
+z_index = 100
+
+[node name="Rig" parent="." instance=ExtResource("1_rig")]
+''',
+        encoding="utf-8",
+    )
+    print("KTN-RC3-M02 CUTOUT + NEUTRAL VISIBILITY SCENES BUILD COMPLETE")
 
 
 if __name__ == "__main__":

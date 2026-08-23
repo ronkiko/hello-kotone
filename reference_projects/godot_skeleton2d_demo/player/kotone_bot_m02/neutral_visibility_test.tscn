@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="1_rig"]
+
+[node name="M02NeutralVisibilityTest" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+color = Color(0.18, 0.20, 0.24, 1)
+z_index = -100
+
+[node name="Instruction" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 860.0
+offset_bottom = 56.0
+text = "KTN-RC3-M02 VISIBILITY GATE — expected: all 15 neutral cutout parts"
+theme_override_font_sizes/font_size = 22
+z_index = 100
+
+[node name="Rig" parent="." instance=ExtResource("1_rig")]

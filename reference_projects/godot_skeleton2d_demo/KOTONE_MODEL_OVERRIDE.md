@@ -8,6 +8,7 @@ This official Skeleton2D demo is the temporary playable training field for
 - Preserved original: `res://player/player.tscn`
 - Selection point: external resource id `4` in `level.tscn`
 - Launcher: `./demobot.sh`
+- Isolated M02 visibility gate: `./m02-neutral-preview.sh`
 
 The original gBot scene, art, controller and launcher are unchanged and remain
 the construction reference. To restore gBot, change only resource id `4` in
@@ -31,3 +32,10 @@ bent-knee swing phases. Its first live launch rendered only the joint caps; the
 15 art sprites were invisible. M02 is therefore disabled and must remain an
 isolated diagnostic scene until a Godot render visibly proves every segment.
 M01 and gBot remain available; only resource id `4` selects the active model.
+
+The first M02 recovery gate deliberately contains no controller, collision,
+camera, animation or joint caps. `neutral_rig.tscn` is generated directly from
+the previously rendered Task 4F neutral scene, with only standalone-demo
+texture paths and the root name changed. Run `./m02-neutral-preview.sh` and
+accept the gate only if the complete neutral mannequin is visible. Do not
+change `level.tscn` during this test.

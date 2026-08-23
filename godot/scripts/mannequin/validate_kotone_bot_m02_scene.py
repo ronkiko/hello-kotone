@@ -17,6 +17,9 @@ SCRIPT = MODEL / "player.gd"
 LEVEL = PROJECT / "level.tscn"
 PARTS = ROOT / "godot/assets/rc3/mannequin/parts/front"
 PARTS_MANIFEST = PARTS / "front_parts_manifest.json"
+PROVEN_NEUTRAL = ROOT / "godot/scenes/mannequin/kotone_front_neutral_rig.tscn"
+NEUTRAL_RIG = MODEL / "neutral_rig.tscn"
+NEUTRAL_PREVIEW = MODEL / "neutral_visibility_test.tscn"
 
 
 def require(condition: bool, message: str) -> None:
@@ -29,6 +32,8 @@ def main() -> None:
     controller = SCRIPT.read_text(encoding="utf-8")
     level = LEVEL.read_text(encoding="utf-8")
     manifest = json.loads(PARTS_MANIFEST.read_text(encoding="utf-8"))
+    neutral = NEUTRAL_RIG.read_text(encoding="utf-8")
+    preview = NEUTRAL_PREVIEW.read_text(encoding="utf-8")
 
     require(len(re.findall(r'type="Bone2D"', scene)) == 15, "expected 15 bones")
     require(len(re.findall(r'name="Art_[^"]+" type="Sprite2D"', scene)) == 15, "expected 15 rigid art parts")
@@ -39,6 +44,18 @@ def main() -> None:
     require('deg_to_rad(left.y * intensity)' in controller, "left knee does not flex toward travel direction")
     require('deg_to_rad(right.y * intensity)' in controller, "right knee does not flex toward travel direction")
     require('collision_mask = 28' in scene and 'floor_snap_length = 20.0' in scene, "tested floor collision contract missing")
+
+    expected_neutral = PROVEN_NEUTRAL.read_text(encoding="utf-8").replace(
+        "res://assets/rc3/mannequin/parts/front/",
+        "res://player/kotone_bot_m02/assets/",
+    ).replace(
+        '[node name="KotoneFrontNeutralRig" type="Node2D"]',
+        '[node name="M02NeutralRig" type="Node2D"]',
+    )
+    require(neutral == expected_neutral, "neutral visibility rig drifted from proven Task 4F scene")
+    require(len(re.findall(r'type="Bone2D"', neutral)) == 15, "neutral gate must contain 15 bones")
+    require(len(re.findall(r'type="Sprite2D"', neutral)) == 15, "neutral gate must contain 15 sprites")
+    require('instance=ExtResource("1_rig")' in preview, "neutral preview does not instance the proven rig")
 
     for part in manifest["parts"]:
         copied = MODEL / "assets" / part["file"]
@@ -51,7 +68,7 @@ def main() -> None:
 
     require((PROJECT / "player/player.tscn").is_file(), "gBot reference removed")
     require((PROJECT / "player/kotone_bot_m01/player.tscn").is_file(), "M01 rollback scene removed")
-    print("KTN-RC3-M02 DISABLED ISOLATED SCENE STATIC VALIDATION PASSED")
+    print("KTN-RC3-M02 DISABLED + TASK 4F PARITY VISIBILITY GATE STATIC VALIDATION PASSED")
 
 
 if __name__ == "__main__":
