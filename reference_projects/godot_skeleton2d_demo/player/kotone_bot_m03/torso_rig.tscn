@@ -11,7 +11,7 @@
 # The rig root is the pelvis pivot. All artwork is registered around (0, 0).
 position = Vector2(0, 0)
 rotation = -1.570796
-rest = Transform2D(1, 0, 0, 1, 0, 0)
+rest = Transform2D(0, -1, 1, 0, 0, 0)
 auto_calculate_length_and_angle = false
 length = 300.0
 bone_angle = 0.0
@@ -25,11 +25,10 @@ rotation = 1.570796
 offset = Vector2(-110, -350)
 
 [node name="Head" type="Bone2D" parent="Skeleton2D/Torso"]
-# Torso source neck: (126, 22); torso root: (110, 350).
-# This local value becomes the neck point (16, -328) after Torso's -90° basis.
-position = Vector2(328, 16)
+# Attach exactly to the far end of the 300 px Torso bone.
+position = Vector2(300, 0)
 rotation = 1.570796
-rest = Transform2D(1, 0, 0, 1, 328, 16)
+rest = Transform2D(0, 1, -1, 0, 300, 0)
 auto_calculate_length_and_angle = false
 length = 190.0
 bone_angle = -1.570796

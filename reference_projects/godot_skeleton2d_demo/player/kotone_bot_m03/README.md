@@ -42,7 +42,8 @@ Expected editor state:
 
 ## Step 2/6: Head
 
-`Head` is the only new bone. It is a child of `Torso`; its root is the neck
+`Head` is the only new bone. It is a child of `Torso` and starts exactly at the
+far end of the 300 px torso bone: local `(300, 0)`. This endpoint is the neck
 connection. The head sprite's internal neck point `(80, 190)` is registered to
 that root. The head has no facial, jaw, hair, or deformation bones.
 
