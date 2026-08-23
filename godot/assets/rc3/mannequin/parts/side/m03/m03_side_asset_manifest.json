@@ -12,7 +12,8 @@
     "kind": "generated_parts_sheet_derived_from_operator_side_mannequin",
     "reference": "operator-provided layer-female-mannequin.png",
     "background_processing": "external_white_background_flood_removed_then_low_alpha_normalized",
-    "proportion_correction": "head_scaled_to_85_percent_before_extraction",
+    "proportion_correction": "head_scaled_to_85_percent before extraction; legs rebuilt as complete rigid hip-to-foot parts",
+    "hip_seam_policy": "each leg begins at the visible diagonal hip seam and includes its hip and buttock cap; torso alpha ends at the matching seam",
     "approved": false
   },
   "rig_contract": {
@@ -28,7 +29,7 @@
       "file": "torso.png",
       "size": [209, 510],
       "alpha_bounds": [12, 12, 185, 486],
-      "sha256": "f9f263a595af47c69e04cd5d99151cbde58de008d20107d59e5e26517fa5f3d4"
+      "sha256": "61e5b2446801590580d25e6cec6f46ce361bd38874a68dbc9b983d7a7f9d742a"
     },
     {
       "name": "head",
@@ -54,22 +55,22 @@
     {
       "name": "leg_far",
       "file": "leg_far.png",
-      "size": [195, 738],
-      "alpha_bounds": [12, 12, 171, 714],
-      "sha256": "a36439b317a9959a2b842e503dd7b25df5753c516af27f262bf704b001116f18"
+      "size": [182, 834],
+      "alpha_bounds": [12, 12, 158, 810],
+      "sha256": "55e9ba5ba977306f8f1bc80f2c762432cd192efe639ba6ecded45d44b3e451c2"
     },
     {
       "name": "leg_near",
       "file": "leg_near.png",
-      "size": [195, 738],
-      "alpha_bounds": [12, 12, 171, 714],
-      "sha256": "3d68efbb377ef20ec6d6c9ea4c7e1d7e7e1bcabf64730bac34e9db8e8213523c"
+      "size": [182, 834],
+      "alpha_bounds": [12, 12, 158, 810],
+      "sha256": "55e9ba5ba977306f8f1bc80f2c762432cd192efe639ba6ecded45d44b3e451c2"
     }
   ],
   "preview": {
     "file": "preview/neutral_assembly.png",
     "status": "visual_only_not_a_runtime_asset",
-    "sha256": "e82f54aa45d5a8923c80e9968b48d7e0d35fba2aec1cb939fbdc5b974246567f"
+    "sha256": "db281b39a8703d558b05b904f5b375173c9de4cd5384f3f010ad21bc170e63ee"
   },
   "next_gate": "operator_accepts_or_rejects_each_asset_before_skeleton_creation"
 }

@@ -23,6 +23,7 @@
     "joint_deformation": false,
     "ik": false
   },
+  "hip_seam_policy": "leg textures include the diagonal hip/buttock cap; future leg pivots belong inside that cap",
   "runtime_scene": null,
   "next_gate": "operator_asset_review",
   "inherits_art_from": null

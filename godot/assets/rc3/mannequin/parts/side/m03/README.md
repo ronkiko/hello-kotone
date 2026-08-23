@@ -20,6 +20,12 @@ The six parts are intended for a six-bone rigid cutout. Arms do not bend at
 the elbows or wrists, legs do not bend at the knees or ankles, and this model
 does not use `Polygon2D` deformation, vertex weights or IK.
 
+Each leg is one complete rigid hip-to-foot part. Its upper edge follows the
+visible diagonal hip seam and includes the corresponding hip/buttock cap.
+The torso alpha ends at that same seam, so a future leg bone rotates from a
+point inside the hip cap instead of behaving like a narrow thigh inserted
+vertically into the torso.
+
 `preview/neutral_assembly.png` is only a visual assembly check. It is not a
 runtime texture and its placement is not an approved rest pose.
 
@@ -31,7 +37,7 @@ Before any `Skeleton2D` or `Bone2D` node is created, the operator reviews:
 
 - head-to-body scale;
 - shoulder and neck joins;
-- hip overlap;
+- diagonal hip seam, hip-cap overlap and buttock silhouette;
 - both complete hands and feet;
 - consistent left-facing direction;
 - absence of background pixels or cropped silhouettes.
