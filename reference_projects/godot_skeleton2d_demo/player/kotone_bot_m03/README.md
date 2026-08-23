@@ -40,4 +40,19 @@ Expected editor state:
 - the Inspector shows explicit length/angle calculation disabled;
 - no other `Bone2D` node exists at this gate.
 
-After operator acceptance, the next separate change adds only the `Head` bone.
+## Step 2/6: Head
+
+`Head` is the only new bone. It is a child of `Torso`; its root is the neck
+connection. The head sprite's internal neck point `(80, 190)` is registered to
+that root. The head has no facial, jaw, hair, or deformation bones.
+
+In the editor, select `Skeleton2D/Torso/Head` and check:
+
+- its origin is at the neck, not at the centre of the head;
+- the bone axis rises through the head;
+- `Art_head` has no scale and uses offset `(-80, -190)`;
+- rotating `Head` moves the whole head around the neck while the torso stays
+  fixed.
+
+Do not add arms or legs yet. After acceptance, the next separate change adds
+only the far arm.

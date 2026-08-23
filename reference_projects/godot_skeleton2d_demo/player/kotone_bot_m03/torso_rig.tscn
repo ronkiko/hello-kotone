@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/torso.png" id="1_torso"]
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/head.png" id="2_head"]
 
 [node name="M03TorsoRig" type="Node2D"]
 
@@ -22,3 +23,19 @@ centered = false
 position = Vector2(0, 0)
 rotation = 1.570796
 offset = Vector2(-110, -350)
+
+[node name="Head" type="Bone2D" parent="Skeleton2D/Torso"]
+# Torso source neck: (126, 22); torso root: (110, 350).
+# This local value becomes the neck point (16, -328) after Torso's -90° basis.
+position = Vector2(328, 16)
+rotation = 1.570796
+rest = Transform2D(1, 0, 0, 1, 328, 16)
+auto_calculate_length_and_angle = false
+length = 190.0
+bone_angle = -1.570796
+
+[node name="Art_head" type="Sprite2D" parent="Skeleton2D/Torso/Head"]
+texture = ExtResource("2_head")
+centered = false
+# Head source neck point: (80, 190). Keep this point at the Head root.
+offset = Vector2(-80, -190)
