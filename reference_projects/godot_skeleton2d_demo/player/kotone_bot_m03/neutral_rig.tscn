@@ -1,0 +1,100 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/body_head_pelvis.png" id="1_body_head_pelvis"]
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/arm_near.png" id="2_arm_near"]
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/thigh.png" id="3_thigh"]
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/calf.png" id="4_calf"]
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/foot.png" id="5_foot"]
+
+[node name="M03SideRig" type="Node2D"]
+
+[node name="Skeleton2D" type="Skeleton2D" parent="."]
+
+[node name="Hip" type="Bone2D" parent="Skeleton2D"]
+position = Vector2(625, 575)
+rest = Transform2D(1, 0, 0, 1, 625, 575)
+
+[node name="FarLeg" type="Bone2D" parent="Skeleton2D/Hip"]
+position = Vector2(0, 0)
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+
+[node name="FarLower" type="Bone2D" parent="Skeleton2D/Hip/FarLeg"]
+position = Vector2(0, 200)
+rest = Transform2D(1, 0, 0, 1, 0, 200)
+
+[node name="FarFoot" type="Bone2D" parent="Skeleton2D/Hip/FarLeg/FarLower"]
+position = Vector2(0, 285)
+rest = Transform2D(1, 0, 0, 1, 0, 285)
+auto_calculate_length_and_angle = false
+length = 40.0
+bone_angle = 0.0
+
+[node name="NearLeg" type="Bone2D" parent="Skeleton2D/Hip"]
+position = Vector2(0, 0)
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+
+[node name="NearLower" type="Bone2D" parent="Skeleton2D/Hip/NearLeg"]
+position = Vector2(0, 200)
+rest = Transform2D(1, 0, 0, 1, 0, 200)
+
+[node name="NearFoot" type="Bone2D" parent="Skeleton2D/Hip/NearLeg/NearLower"]
+position = Vector2(0, 285)
+rest = Transform2D(1, 0, 0, 1, 0, 285)
+auto_calculate_length_and_angle = false
+length = 40.0
+bone_angle = 0.0
+
+[node name="ArmNear" type="Bone2D" parent="Skeleton2D/Hip"]
+position = Vector2(-5, -370)
+rest = Transform2D(1, 0, 0, 1, -5, -370)
+auto_calculate_length_and_angle = false
+length = 40.0
+bone_angle = 0.0
+
+[node name="Art_far_thigh" type="Sprite2D" parent="Skeleton2D/Hip/FarLeg"]
+texture = ExtResource("3_thigh")
+centered = false
+position = Vector2(-79, -55)
+z_index = 0
+
+[node name="Art_far_calf" type="Sprite2D" parent="Skeleton2D/Hip/FarLeg/FarLower"]
+texture = ExtResource("4_calf")
+centered = false
+position = Vector2(-73, -40)
+z_index = 1
+
+[node name="Art_far_foot" type="Sprite2D" parent="Skeleton2D/Hip/FarLeg/FarLower/FarFoot"]
+texture = ExtResource("5_foot")
+centered = false
+position = Vector2(-68, -45)
+z_index = 2
+
+[node name="Art_body_head_pelvis" type="Sprite2D" parent="Skeleton2D/Hip"]
+texture = ExtResource("1_body_head_pelvis")
+centered = false
+position = Vector2(-79, -521)
+z_index = 3
+
+[node name="Art_near_thigh" type="Sprite2D" parent="Skeleton2D/Hip/NearLeg"]
+texture = ExtResource("3_thigh")
+centered = false
+position = Vector2(-79, -55)
+z_index = 4
+
+[node name="Art_near_calf" type="Sprite2D" parent="Skeleton2D/Hip/NearLeg/NearLower"]
+texture = ExtResource("4_calf")
+centered = false
+position = Vector2(-73, -40)
+z_index = 5
+
+[node name="Art_near_foot" type="Sprite2D" parent="Skeleton2D/Hip/NearLeg/NearLower/NearFoot"]
+texture = ExtResource("5_foot")
+centered = false
+position = Vector2(-68, -45)
+z_index = 6
+
+[node name="Art_arm_near" type="Sprite2D" parent="Skeleton2D/Hip/ArmNear"]
+texture = ExtResource("2_arm_near")
+centered = false
+position = Vector2(-28, -20)
+z_index = 7

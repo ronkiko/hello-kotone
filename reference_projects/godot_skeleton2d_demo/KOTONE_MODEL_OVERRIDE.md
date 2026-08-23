@@ -9,6 +9,7 @@ This official Skeleton2D demo is the temporary playable training field for
 - Selection point: external resource id `4` in `level.tscn`
 - Launcher: `./demobot.sh`
 - Isolated M02 visibility gate: `./m02-neutral-preview.sh`
+- Isolated animated M03 side gate: `./m03-side-preview.sh`
 
 The original gBot scene, art, controller and launcher are unchanged and remain
 the construction reference. To restore gBot, change only resource id `4` in
@@ -44,3 +45,15 @@ the previously rendered Task 4F neutral scene, with only standalone-demo
 texture paths and the root name changed. Run `./m02-neutral-preview.sh` and
 accept the gate only if the complete neutral mannequin is visible. Do not
 change `level.tscn` during this test.
+
+The operator visually confirmed the complete M02 neutral render on 2026-08-23.
+M02 remains front-facing, so it is retained as a registration and comparison
+model rather than promoted as the side-scroller player.
+
+`KTN-RC3-M03` is the first true side-facing mechanical gate. It uses the only
+available coherent side turnaround, mirrored to a right-facing 1254 x 1254
+registration source, one separately generated complete rigid near arm, and one
+three-piece side leg instantiated for both near and far layers. The source's
+foreshortened far arm remains baked into the static body for this first gait
+gate. Run `./m03-side-preview.sh`; it animates the two legs and near arm in
+place without changing `level.tscn` or the active M01 rollback player.

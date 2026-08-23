@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "technical_model": "KTN-RC3-M03",
+  "character": "kotone",
+  "release": "rc3",
+  "view": "side_right",
+  "purpose": "first_side_facing_grounded_gait_prototype",
+  "status": "isolated_animated_preview_ready",
+  "source_body": "../../../source/side/kotone_side_left_mannequin_source.png",
+  "source_body_sha256": "4ff6fed6b151ec3b4fe310507566a0ed7655a54b1cb5b2a58895d5629ddd2760",
+  "source_arm": "../../../source/side/kotone_side_arm_down_source.png",
+  "source_arm_sha256": "c57ef48c465d2f270d27674a1253363d1ce08ad4cfd19fc6efc53fb867585df5",
+  "canvas": [
+    1254,
+    1254
+  ],
+  "normalized_source": "kotone_side_right_normalized.png",
+  "normalized_source_sha256": "00ea0674ba7a04fc779136928681b8101da5c724cb88ba2c54a465cc322c69c7",
+  "normalized_alpha_bounds": [
+    546,
+    54,
+    708,
+    1165
+  ],
+  "direction_policy": "right_source_mirror_visual_pivot_for_left",
+  "construction": "static_side_body_one_rigid_near_arm_two_instances_of_one_three_segment_leg",
+  "known_limitations": [
+    "source_far_arm_is_foreshortened_and_remains_baked_into_body",
+    "near_arm_is_rigid_at_elbow_for_first_side_gait_gate",
+    "one_side_leg_art_is_reused_for_near_and_far_layers"
+  ],
+  "pivots": {
+    "shoulder": [
+      620,
+      205
+    ],
+    "hip": [
+      625,
+      575
+    ],
+    "knee": [
+      625,
+      775
+    ],
+    "ankle": [
+      625,
+      1060
+    ]
+  },
+  "parts": [
+    {
+      "name": "body_head_pelvis",
+      "file": "body_head_pelvis.png",
+      "offset": [
+        546,
+        54
+      ],
+      "size": [
+        162,
+        566
+      ],
+      "pivot_global": [
+        625,
+        575
+      ],
+      "pivot_local": [
+        79,
+        521
+      ],
+      "sha256": "33fb39a8e3c55b87d68ad8ca97606bd85376406bc593f2b470d9aa85eb2208dc"
+    },
+    {
+      "name": "arm_near",
+      "file": "arm_near.png",
+      "offset": [
+        592,
+        185
+      ],
+      "size": [
+        56,
+        360
+      ],
+      "pivot_global": [
+        620,
+        205
+      ],
+      "pivot_local": [
+        28,
+        20
+      ],
+      "sha256": "dcb9b461f881169057992da2a6425d125b388c6c33c91d12e36e67a84dd6174c"
+    },
+    {
+      "name": "thigh",
+      "file": "thigh.png",
+      "offset": [
+        546,
+        520
+      ],
+      "size": [
+        131,
+        315
+      ],
+      "pivot_global": [
+        625,
+        575
+      ],
+      "pivot_local": [
+        79,
+        55
+      ],
+      "sha256": "c61d52ca0582b54811ced865a1402eaff1b9093f30bd3e6c760b67087eea5589"
+    },
+    {
+      "name": "calf",
+      "file": "calf.png",
+      "offset": [
+        552,
+        735
+      ],
+      "size": [
+        100,
+        370
+      ],
+      "pivot_global": [
+        625,
+        775
+      ],
+      "pivot_local": [
+        73,
+        40
+      ],
+      "sha256": "7ab80f807d72df68b7995b994d422e54898cd1f5588c17114062b0732f93151c"
+    },
+    {
+      "name": "foot",
+      "file": "foot.png",
+      "offset": [
+        557,
+        1015
+      ],
+      "size": [
+        124,
+        150
+      ],
+      "pivot_global": [
+        625,
+        1060
+      ],
+      "pivot_local": [
+        68,
+        45
+      ],
+      "sha256": "78e542e61c86a4b37af035ccc26cb2c3bee3b1d95ccf8f2fb2a98356d3109f4b"
+    }
+  ],
+  "draw_order_back_to_front": [
+    "far_foot",
+    "far_calf",
+    "far_thigh",
+    "body_head_pelvis",
+    "near_foot",
+    "near_calf",
+    "near_thigh",
+    "arm_near"
+  ],
+  "asset_manifest": "../../../../../godot/assets/rc3/mannequin/parts/side/m03/m03_side_asset_manifest.json"
+}
