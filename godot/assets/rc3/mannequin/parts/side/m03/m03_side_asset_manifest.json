@@ -5,16 +5,16 @@
   "release": "rc3",
   "view": "side_left",
   "purpose": "operator_reviewed_minimal_rigid_cutout_model",
-  "status": "six_part_assets_draft_operator_review_required",
+  "status": "six_part_assets_approved_ready_for_skeleton",
   "construction": "six_rigid_rgba_parts_without_joint_deformation",
   "direction_policy": "authoritative_left_source_mirror_complete_model_for_right",
   "source": {
     "kind": "generated_parts_sheet_derived_from_operator_side_mannequin",
     "reference": "operator-provided layer-female-mannequin.png",
-    "background_processing": "external_white_background_flood_removed_then_low_alpha_normalized",
+    "background_processing": "generated_checkerboard_removed; alpha edges decontaminated for Godot filtering",
     "proportion_correction": "head_scaled_to_85_percent before extraction; legs rebuilt as complete rigid hip-to-foot parts",
-    "hip_seam_policy": "each leg begins at the visible diagonal hip seam and includes its hip and buttock cap; torso alpha ends at the matching seam",
-    "approved": false
+    "hip_seam_policy": "torso retains the complete pelvis and buttock shell; each leg has a hidden proximal overlap centred on the internal femoral-head pivot",
+    "approved": true
   },
   "rig_contract": {
     "part_count": 6,
@@ -27,9 +27,9 @@
     {
       "name": "torso",
       "file": "torso.png",
-      "size": [209, 510],
-      "alpha_bounds": [12, 12, 185, 486],
-      "sha256": "61e5b2446801590580d25e6cec6f46ce361bd38874a68dbc9b983d7a7f9d742a"
+      "size": [217, 435],
+      "alpha_bounds": [12, 12, 190, 408],
+      "sha256": "b213eafc58ce62698fc681fce6eee6602e86f43c40b3c5b7e7b9690519370d28"
     },
     {
       "name": "head",
@@ -55,22 +55,22 @@
     {
       "name": "leg_far",
       "file": "leg_far.png",
-      "size": [182, 834],
-      "alpha_bounds": [12, 12, 158, 810],
-      "sha256": "55e9ba5ba977306f8f1bc80f2c762432cd192efe639ba6ecded45d44b3e451c2"
+      "size": [184, 834],
+      "alpha_bounds": [12, 12, 160, 810],
+      "sha256": "ec9e50144610f70e39eeb6b0ebc90285d701a7caa868e8fe2a10155f93e60e78"
     },
     {
       "name": "leg_near",
       "file": "leg_near.png",
-      "size": [182, 834],
-      "alpha_bounds": [12, 12, 158, 810],
-      "sha256": "55e9ba5ba977306f8f1bc80f2c762432cd192efe639ba6ecded45d44b3e451c2"
+      "size": [184, 834],
+      "alpha_bounds": [12, 12, 160, 810],
+      "sha256": "ec9e50144610f70e39eeb6b0ebc90285d701a7caa868e8fe2a10155f93e60e78"
     }
   ],
   "preview": {
     "file": "preview/neutral_assembly.png",
     "status": "visual_only_not_a_runtime_asset",
-    "sha256": "db281b39a8703d558b05b904f5b375173c9de4cd5384f3f010ad21bc170e63ee"
+    "sha256": "bb7f7fef3a6b11fae5a53ae4e8367c42cd26b6aeb50fd134374ce04707f588b9"
   },
-  "next_gate": "operator_accepts_or_rejects_each_asset_before_skeleton_creation"
+  "next_gate": "create_six_bone_skeleton_step_by_step_with_operator_editor_control"
 }

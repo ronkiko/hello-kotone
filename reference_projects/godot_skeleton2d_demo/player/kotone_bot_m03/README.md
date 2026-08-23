@@ -3,15 +3,15 @@
 M03 is rebuilt as an independent six-part rigid Kotone model. The robot and
 M02 do not define its proportions, skeleton or artwork.
 
-The local `assets/` directory contains the six candidate textures required for
-Godot import and operator inspection. There is intentionally no scene, script,
-skeleton, rig or animation at this gate.
+The local `assets/` directory contains the six operator-approved textures
+required for Godot import. There is intentionally no scene, script, skeleton,
+rig or animation at this gate.
 
-Both rigid leg textures start at the diagonal hip seam and include the
-hip/buttock cap. The matching lower-pelvis alpha was removed from `torso.png`;
-this prevents a duplicated rear silhouette and gives each future leg a broad,
-readable rotation attachment instead of a thin vertical insertion.
+`torso.png` retains the complete pelvis and stable buttock silhouette. Both
+rigid leg textures contain a hidden rounded proximal overlap centred on the
+internal femoral-head position. The overlap sits behind the torso shell and
+prevents gaps when a complete rigid leg rotates at the hip.
 
-The next step begins only after the operator accepts the six assets. It will
-create one root `Torso` bone and five direct child bones: `Head`, `ArmFar`,
-`ArmNear`, `LegFar` and `LegNear`.
+The next step creates one root `Torso` bone and five direct child bones:
+`Head`, `ArmFar`, `ArmNear`, `LegFar` and `LegNear`. Every pivot will be added
+and inspected separately in the Godot editor with the operator.

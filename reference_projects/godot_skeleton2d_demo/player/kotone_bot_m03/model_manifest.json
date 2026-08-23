@@ -5,7 +5,7 @@
   "release": "rc3",
   "view": "side_left",
   "purpose": "minimal_operator_observable_rigid_model",
-  "status": "six_part_assets_draft_operator_review_required",
+  "status": "six_part_assets_approved_ready_for_skeleton",
   "asset_source": "../../../../../godot/assets/rc3/mannequin/parts/side/m03",
   "assets": [
     "assets/torso.png",
@@ -23,8 +23,8 @@
     "joint_deformation": false,
     "ik": false
   },
-  "hip_seam_policy": "leg textures include the diagonal hip/buttock cap; future leg pivots belong inside that cap",
+  "hip_seam_policy": "torso retains pelvis and buttock shell; leg textures use a hidden proximal overlap around the internal femoral-head pivot",
   "runtime_scene": null,
-  "next_gate": "operator_asset_review",
+  "next_gate": "step_by_step_six_bone_skeleton_creation",
   "inherits_art_from": null
 }

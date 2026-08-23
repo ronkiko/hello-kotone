@@ -20,20 +20,20 @@ The six parts are intended for a six-bone rigid cutout. Arms do not bend at
 the elbows or wrists, legs do not bend at the knees or ankles, and this model
 does not use `Polygon2D` deformation, vertex weights or IK.
 
-Each leg is one complete rigid hip-to-foot part. Its upper edge follows the
-visible diagonal hip seam and includes the corresponding hip/buttock cap.
-The torso alpha ends at that same seam, so a future leg bone rotates from a
-point inside the hip cap instead of behaving like a narrow thigh inserted
-vertically into the torso.
+Each leg is one complete rigid hip-to-foot part. The torso keeps the complete
+pelvis and stable buttock silhouette. A rounded proximal overlap at the top of
+each leg sits behind that shell and is centred on the internal femoral-head
+position. The visible lower edge of the torso is higher at the front and curves
+down under the buttock; it is not the rotation axis.
 
 `preview/neutral_assembly.png` is only a visual assembly check. It is not a
 runtime texture and its placement is not an approved rest pose.
 
 ## Current gate
 
-Status: `six_part_assets_draft_operator_review_required`.
+Status: `six_part_assets_approved_ready_for_skeleton`.
 
-Before any `Skeleton2D` or `Bone2D` node is created, the operator reviews:
+The operator accepted the six-part asset construction after reviewing:
 
 - head-to-body scale;
 - shoulder and neck joins;
@@ -42,4 +42,6 @@ Before any `Skeleton2D` or `Bone2D` node is created, the operator reviews:
 - consistent left-facing direction;
 - absence of background pixels or cropped silhouettes.
 
-No skeleton work may begin until this asset gate is explicitly accepted.
+The next gate creates the six-bone hierarchy step by step in the Godot editor.
+Asset placement in the preview must not be copied as unverified bone
+coordinates; every pivot is measured and inspected with the operator.
