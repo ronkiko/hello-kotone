@@ -44,10 +44,11 @@ def main() -> None:
     parts = {part["name"]: part for part in manifest["parts"]}
     TARGET.mkdir(parents=True, exist_ok=True)
     ASSETS.mkdir(parents=True, exist_ok=True)
+    (ASSETS / "arm_near.png").unlink(missing_ok=True)
 
     resources: list[str] = []
     resource_by_name: dict[str, str] = {}
-    for index, name in enumerate(["body_head_pelvis", "arm_near", "thigh", "calf", "foot"], start=1):
+    for index, name in enumerate(["body_head_pelvis", "upper_arm", "forearm", "hand", "thigh", "calf", "foot"], start=1):
         part = parts[name]
         source = PARTS_DIR / part["file"]
         if sha256(source) != part["sha256"]:
@@ -61,10 +62,12 @@ def main() -> None:
 
     hip_x, hip_y = manifest["pivots"]["hip"]
     shoulder_x, shoulder_y = manifest["pivots"]["shoulder"]
+    elbow_x, elbow_y = manifest["pivots"]["elbow"]
+    wrist_x, wrist_y = manifest["pivots"]["wrist"]
     knee_x, knee_y = manifest["pivots"]["knee"]
     ankle_x, ankle_y = manifest["pivots"]["ankle"]
 
-    rig_lines = [f'''[gd_scene load_steps=6 format=3]
+    rig_lines = [f'''[gd_scene load_steps=8 format=3]
 
 {chr(10).join(resources)}
 
@@ -80,11 +83,17 @@ def main() -> None:
         bone("NearLeg", "Skeleton2D/Hip", 0, 0),
         bone("NearLower", "Skeleton2D/Hip/NearLeg", knee_x - hip_x, knee_y - hip_y),
         bone("NearFoot", "Skeleton2D/Hip/NearLeg/NearLower", ankle_x - knee_x, ankle_y - knee_y, True),
-        bone("ArmFar", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y, True),
-        bone("ArmNear", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y, True),
+        bone("ArmFarUpper", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y),
+        bone("ArmFarLower", "Skeleton2D/Hip/ArmFarUpper", elbow_x - shoulder_x, elbow_y - shoulder_y),
+        bone("ArmFarHand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", wrist_x - elbow_x, wrist_y - elbow_y, True),
+        bone("ArmNearUpper", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y),
+        bone("ArmNearLower", "Skeleton2D/Hip/ArmNearUpper", elbow_x - shoulder_x, elbow_y - shoulder_y),
+        bone("ArmNearHand", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower", wrist_x - elbow_x, wrist_y - elbow_y, True),
     ])
     rig_lines.extend([
-        art("far_arm", "Skeleton2D/Hip/ArmFar", resource_by_name["arm_near"], parts["arm_near"]["pivot_local"], 0),
+        art("far_upper_arm", "Skeleton2D/Hip/ArmFarUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 0),
+        art("far_forearm", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 0),
+        art("far_hand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower/ArmFarHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 0),
         art("far_thigh", "Skeleton2D/Hip/FarLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 1),
         art("far_calf", "Skeleton2D/Hip/FarLeg/FarLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 2),
         art("far_foot", "Skeleton2D/Hip/FarLeg/FarLower/FarFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 3),
@@ -92,7 +101,9 @@ def main() -> None:
         art("near_thigh", "Skeleton2D/Hip/NearLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 5),
         art("near_calf", "Skeleton2D/Hip/NearLeg/NearLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 6),
         art("near_foot", "Skeleton2D/Hip/NearLeg/NearLower/NearFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 7),
-        art("arm_near", "Skeleton2D/Hip/ArmNear", resource_by_name["arm_near"], parts["arm_near"]["pivot_local"], 8),
+        art("near_upper_arm", "Skeleton2D/Hip/ArmNearUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 8),
+        art("near_forearm", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 9),
+        art("near_hand", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower/ArmNearHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 10),
     ])
     (TARGET / "neutral_rig.tscn").write_text("\n".join(rig_lines), encoding="utf-8")
 
@@ -117,7 +128,7 @@ offset_left = 24.0
 offset_top = 20.0
 offset_right = 1500.0
 offset_bottom = 56.0
-text = "KTN-RC3-M03 SIDE GAIT GATE — expected: clean right profile, two alternating legs and arms"
+text = "KTN-RC3-M03 SIDE GAIT GATE — expected: measured shoulder/elbow/wrist chains"
 theme_override_font_sizes/font_size = 22
 z_index = 100
 

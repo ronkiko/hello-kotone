@@ -45,8 +45,9 @@ func _apply_idle_pose(delta: float) -> void:
 	_phase = fmod(_phase + delta * 1.5, TAU)
 	var breath := sin(_phase)
 	_set_position("Hip", HIP_REST + Vector2(0, -1.5 * breath), delta)
-	_set_rotation("Hip/ArmFar", deg_to_rad(-1.5 * breath), delta)
-	_set_rotation("Hip/ArmNear", deg_to_rad(1.5 * breath), delta)
+	_set_rotation("Hip/ArmFarUpper", deg_to_rad(-1.5 * breath), delta)
+	_set_rotation("Hip/ArmNearUpper", deg_to_rad(1.5 * breath), delta)
+	_reset_arm_joints(delta)
 	_reset_legs(delta)
 
 
@@ -67,8 +68,12 @@ func _apply_grounded_gait(delta: float, speed_ratio: float) -> void:
 	_set_rotation("Hip/FarLeg", deg_to_rad(far_pose.x * intensity), delta)
 	_set_rotation("Hip/FarLeg/FarLower", deg_to_rad(far_pose.y * intensity), delta)
 	_set_rotation("Hip/FarLeg/FarLower/FarFoot", deg_to_rad(-far_pose.x - far_pose.y * 0.65), delta)
-	_set_rotation("Hip/ArmFar", deg_to_rad(-stride * 12.0 * intensity), delta)
-	_set_rotation("Hip/ArmNear", deg_to_rad(stride * 12.0 * intensity), delta)
+	_set_rotation("Hip/ArmFarUpper", deg_to_rad(-stride * 12.0 * intensity), delta)
+	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(6.0 + maxf(0.0, stride) * 8.0), delta)
+	_set_rotation("Hip/ArmFarUpper/ArmFarLower/ArmFarHand", deg_to_rad(-3.0), delta)
+	_set_rotation("Hip/ArmNearUpper", deg_to_rad(stride * 12.0 * intensity), delta)
+	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(6.0 + maxf(0.0, -stride) * 8.0), delta)
+	_set_rotation("Hip/ArmNearUpper/ArmNearLower/ArmNearHand", deg_to_rad(-3.0), delta)
 
 
 func _sample_leg(cycle: float) -> Vector2:
@@ -88,8 +93,10 @@ func _sample_leg(cycle: float) -> Vector2:
 
 func _apply_air_pose(delta: float) -> void:
 	_set_position("Hip", HIP_REST + Vector2(0, 3), delta)
-	_set_rotation("Hip/ArmFar", deg_to_rad(14.0), delta)
-	_set_rotation("Hip/ArmNear", deg_to_rad(-18.0), delta)
+	_set_rotation("Hip/ArmFarUpper", deg_to_rad(14.0), delta)
+	_set_rotation("Hip/ArmNearUpper", deg_to_rad(-18.0), delta)
+	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(18.0), delta)
+	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(24.0), delta)
 	_set_rotation("Hip/NearLeg", deg_to_rad(-10.0), delta)
 	_set_rotation("Hip/NearLeg/NearLower", deg_to_rad(24.0), delta)
 	_set_rotation("Hip/FarLeg", deg_to_rad(8.0), delta)
@@ -100,6 +107,14 @@ func _reset_legs(delta: float) -> void:
 	for path in [
 		"Hip/NearLeg", "Hip/NearLeg/NearLower", "Hip/NearLeg/NearLower/NearFoot",
 		"Hip/FarLeg", "Hip/FarLeg/FarLower", "Hip/FarLeg/FarLower/FarFoot",
+	]:
+		_set_rotation(path, 0.0, delta)
+
+
+func _reset_arm_joints(delta: float) -> void:
+	for path in [
+		"Hip/ArmFarUpper/ArmFarLower", "Hip/ArmFarUpper/ArmFarLower/ArmFarHand",
+		"Hip/ArmNearUpper/ArmNearLower", "Hip/ArmNearUpper/ArmNearLower/ArmNearHand",
 	]:
 		_set_rotation(path, 0.0, delta)
 

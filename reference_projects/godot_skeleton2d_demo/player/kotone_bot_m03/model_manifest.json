@@ -23,16 +23,23 @@
     1165
   ],
   "direction_policy": "right_source_mirror_visual_pivot_for_left",
-  "construction": "clean_side_body_two_instances_of_one_rigid_arm_two_instances_of_one_three_segment_leg",
+  "construction": "clean_side_body_two_instances_of_one_three_segment_arm_and_one_three_segment_leg",
   "known_limitations": [
-    "one_side_arm_art_is_reused_for_near_and_far_layers",
-    "arms_are_rigid_at_elbow_for_first_side_gait_gate",
+    "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
     "one_side_leg_art_is_reused_for_near_and_far_layers"
   ],
   "pivots": {
     "shoulder": [
-      620,
-      205
+      594,
+      254
+    ],
+    "elbow": [
+      595,
+      390
+    ],
+    "wrist": [
+      597,
+      521
     ],
     "hip": [
       625,
@@ -70,25 +77,67 @@
       "sha256": "83970b0655e0a02ec7d17c53ecce338688fd87db015b7432a189628d9dcaa8d0"
     },
     {
-      "name": "arm_near",
-      "file": "arm_near.png",
+      "name": "upper_arm",
+      "file": "upper_arm.png",
       "offset": [
-        592,
-        185
+        564,
+        232
       ],
       "size": [
-        56,
-        360
+        53,
+        171
       ],
       "pivot_global": [
-        620,
-        205
+        594,
+        254
       ],
       "pivot_local": [
-        28,
-        20
+        30,
+        22
       ],
-      "sha256": "dcb9b461f881169057992da2a6425d125b388c6c33c91d12e36e67a84dd6174c"
+      "sha256": "6e91cafda31b404c91ca0475e8c658d40176639f78516ba63a0077742b149873"
+    },
+    {
+      "name": "forearm",
+      "file": "forearm.png",
+      "offset": [
+        576,
+        377
+      ],
+      "size": [
+        48,
+        157
+      ],
+      "pivot_global": [
+        595,
+        390
+      ],
+      "pivot_local": [
+        19,
+        13
+      ],
+      "sha256": "427ec0d236598c8e0c6792a9942e4260033f4fa70643fba60659012bc096588c"
+    },
+    {
+      "name": "hand",
+      "file": "hand.png",
+      "offset": [
+        583,
+        508
+      ],
+      "size": [
+        42,
+        114
+      ],
+      "pivot_global": [
+        597,
+        521
+      ],
+      "pivot_local": [
+        14,
+        13
+      ],
+      "sha256": "94460b4816ff022b1cb8876f9be83e466e001e512788f2e5af1d649d0c110e4b"
     },
     {
       "name": "thigh",
@@ -155,7 +204,9 @@
     }
   ],
   "draw_order_back_to_front": [
-    "far_arm",
+    "far_upper_arm",
+    "far_forearm",
+    "far_hand",
     "far_foot",
     "far_calf",
     "far_thigh",
@@ -163,7 +214,9 @@
     "near_foot",
     "near_calf",
     "near_thigh",
-    "arm_near"
+    "near_upper_arm",
+    "near_forearm",
+    "near_hand"
   ],
   "asset_manifest": "../../../../../godot/assets/rc3/mannequin/parts/side/m03/m03_side_asset_manifest.json"
 }

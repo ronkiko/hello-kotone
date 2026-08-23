@@ -52,9 +52,9 @@ model rather than promoted as the side-scroller player.
 
 `KTN-RC3-M03` is the first true side-facing mechanical gate. It uses the only
 available coherent side turnaround, cleaned to a right-facing 1254 x 1254
-registration source without a baked-in arm, one separately generated complete
-rigid arm instantiated for both near and far layers, and one three-piece side
-leg instantiated for both near and far layers. Run `./m03-side-preview.sh`; it
+registration source without a baked-in arm, one separately generated arm split
+at its measured elbow and wrist and instantiated for both near and far layers,
+and one three-piece side leg instantiated for both near and far layers. Run `./m03-side-preview.sh`; it
 animates both legs and both arms in place without changing `level.tscn` or the
 active M01 rollback player. The
 launcher performs a headless import pass first, so a fresh checkout has valid
@@ -62,6 +62,7 @@ Texture2D resources before the preview scene is parsed.
 
 For the next arm-rig revision, use
 `../human_skeleton2d_reference/human_skeleton_2d.tscn` as the hierarchy and
-joint-registration reference. Its arm is a measured three-link chain
-(`UpperArm -> LowerArm -> Hand`), unlike M03's temporary independently scaled
-single-piece arm. The reference is GPLv3 and remains outside the runtime.
+joint-registration reference. M03 now follows its three-link arm hierarchy
+(`UpperArm -> LowerArm -> Hand`) with sprite origins registered to the measured
+shoulder, elbow, and wrist. The reference is GPLv3 and remains outside the
+runtime.

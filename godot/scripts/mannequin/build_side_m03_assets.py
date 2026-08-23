@@ -22,7 +22,14 @@ BODY_CUTOFF_Y = 620
 HIP_PIVOT = (625, 575)
 KNEE_PIVOT = (625, 775)
 ANKLE_PIVOT = (625, 1060)
-SHOULDER_PIVOT = (620, 205)
+SHOULDER_PIVOT = (594, 254)
+ELBOW_PIVOT = (595, 390)
+WRIST_PIVOT = (597, 521)
+
+ARM_TARGET_HEIGHT = 390
+ARM_SHOULDER_LOCAL = (30, 22)
+ARM_ELBOW_LOCAL = (31, 158)
+ARM_WRIST_LOCAL = (33, 289)
 
 BODY_SHA256 = "964a70f4432741cf8f446d225fe0389f8ddbeeedb6d442c75e4f4307c996c56d"
 ARM_SHA256 = "c57ef48c465d2f270d27674a1253363d1ce08ad4cfd19fc6efc53fb867585df5"
@@ -62,7 +69,7 @@ def normalize_arm() -> Image.Image:
     if bbox is None:
         raise SystemExit("empty side arm source")
     cropped = source.crop(bbox)
-    target_height = 360
+    target_height = ARM_TARGET_HEIGHT
     target_width = round(cropped.width * target_height / cropped.height)
     return cropped.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
@@ -70,6 +77,18 @@ def normalize_arm() -> Image.Image:
 def horizontal_slice(source: Image.Image, top: int, bottom: int) -> Image.Image:
     result = Image.new("RGBA", source.size, (0, 0, 0, 0))
     result.alpha_composite(source.crop((0, top, source.width, bottom)), dest=(0, top))
+    return result
+
+
+def arm_slice(
+    source: Image.Image,
+    top: int,
+    bottom: int,
+) -> Image.Image:
+    result = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
+    arm_left = SHOULDER_PIVOT[0] - ARM_SHOULDER_LOCAL[0]
+    arm_top = SHOULDER_PIVOT[1] - ARM_SHOULDER_LOCAL[1]
+    result.alpha_composite(source.crop((0, top, source.width, bottom)), dest=(arm_left, arm_top + top))
     return result
 
 
@@ -99,6 +118,7 @@ def main() -> None:
     require_source(BODY_SOURCE, BODY_SHA256)
     require_source(ARM_SOURCE, ARM_SHA256)
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "arm_near.png").unlink(missing_ok=True)
 
     normalized = normalize_body()
     normalized_path = OUTPUT / "kotone_side_right_normalized.png"
@@ -110,14 +130,15 @@ def main() -> None:
     foot = horizontal_slice(normalized, 1015, FIGURE_ALPHA_BOUNDS[3])
 
     arm = normalize_arm()
-    arm_canvas = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
-    arm_left = SHOULDER_PIVOT[0] - arm.width // 2
-    arm_top = SHOULDER_PIVOT[1] - 20
-    arm_canvas.alpha_composite(arm, dest=(arm_left, arm_top))
+    upper_arm = arm_slice(arm, 0, 171)
+    forearm = arm_slice(arm, 145, 302)
+    hand = arm_slice(arm, 276, ARM_TARGET_HEIGHT)
 
     parts = [
         save_trimmed(body, "body_head_pelvis", HIP_PIVOT),
-        save_trimmed(arm_canvas, "arm_near", SHOULDER_PIVOT),
+        save_trimmed(upper_arm, "upper_arm", SHOULDER_PIVOT),
+        save_trimmed(forearm, "forearm", ELBOW_PIVOT),
+        save_trimmed(hand, "hand", WRIST_PIVOT),
         save_trimmed(thigh, "thigh", HIP_PIVOT),
         save_trimmed(calf, "calf", KNEE_PIVOT),
         save_trimmed(foot, "foot", ANKLE_PIVOT),
@@ -140,21 +161,24 @@ def main() -> None:
         "normalized_source_sha256": sha256(normalized_path),
         "normalized_alpha_bounds": list(FIGURE_ALPHA_BOUNDS),
         "direction_policy": "right_source_mirror_visual_pivot_for_left",
-        "construction": "clean_side_body_two_instances_of_one_rigid_arm_two_instances_of_one_three_segment_leg",
+        "construction": "clean_side_body_two_instances_of_one_three_segment_arm_and_one_three_segment_leg",
         "known_limitations": [
-            "one_side_arm_art_is_reused_for_near_and_far_layers",
-            "arms_are_rigid_at_elbow_for_first_side_gait_gate",
+            "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
             "one_side_leg_art_is_reused_for_near_and_far_layers",
         ],
         "pivots": {
             "shoulder": list(SHOULDER_PIVOT),
+            "elbow": list(ELBOW_PIVOT),
+            "wrist": list(WRIST_PIVOT),
             "hip": list(HIP_PIVOT),
             "knee": list(KNEE_PIVOT),
             "ankle": list(ANKLE_PIVOT),
         },
         "parts": parts,
         "draw_order_back_to_front": [
-            "far_arm",
+            "far_upper_arm",
+            "far_forearm",
+            "far_hand",
             "far_foot",
             "far_calf",
             "far_thigh",
@@ -162,7 +186,9 @@ def main() -> None:
             "near_foot",
             "near_calf",
             "near_thigh",
-            "arm_near",
+            "near_upper_arm",
+            "near_forearm",
+            "near_hand",
         ],
     }
     (OUTPUT / "m03_side_asset_manifest.json").write_text(
