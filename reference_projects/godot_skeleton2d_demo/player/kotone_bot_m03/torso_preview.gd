@@ -3,7 +3,6 @@ extends Node2D
 const LEFT_ANGLE := deg_to_rad(-10.0)
 const REST_ANGLE := 0.0
 const RIGHT_ANGLE := deg_to_rad(10.0)
-const HEAD_REST_AXIS := PI / 2.0
 
 @onready var head: Bone2D = $Rig/Skeleton2D/Torso/Head
 @onready var instruction: Label = $Instruction
@@ -29,5 +28,5 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _set_angle(angle: float) -> void:
-	head.rotation = HEAD_REST_AXIS + angle
+	head.rotation = angle
 	instruction.text = "KTN-RC3-M03  STEP 2/6: HEAD  |  Q -10 deg  R REST  E +10 deg  |  current: %.1f deg" % rad_to_deg(angle)

@@ -10,25 +10,20 @@
 [node name="Torso" type="Bone2D" parent="Skeleton2D"]
 # The rig root is the pelvis pivot. All artwork is registered around (0, 0).
 position = Vector2(0, 0)
-rotation = -1.570796
-rest = Transform2D(0, -1, 1, 0, 0, 0)
-auto_calculate_length_and_angle = false
-length = 300.0
-bone_angle = 0.0
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+auto_calculate_length_and_angle = true
 
 [node name="Art_torso" type="Sprite2D" parent="Skeleton2D/Torso"]
 texture = ExtResource("1_torso")
 centered = false
 # Keep the Sprite2D node on the joint and shift only its texture rectangle.
 position = Vector2(0, 0)
-rotation = 1.570796
 offset = Vector2(-110, -350)
 
 [node name="Head" type="Bone2D" parent="Skeleton2D/Torso"]
-# Attach exactly to the far end of the 300 px Torso bone.
-position = Vector2(300, 0)
-rotation = 1.570796
-rest = Transform2D(0, 1, -1, 0, 300, 0)
+# The child bone root is the real neck joint in Torso-local coordinates.
+position = Vector2(16, -328)
+rest = Transform2D(1, 0, 0, 1, 16, -328)
 auto_calculate_length_and_angle = false
 length = 190.0
 bone_angle = -1.570796

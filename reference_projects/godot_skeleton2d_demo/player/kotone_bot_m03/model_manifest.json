@@ -28,8 +28,9 @@
     "bone_count": 2,
     "bones": ["Torso", "Head"],
     "torso_pivot_local": [110, 350],
-    "torso_axis_length": 300,
-    "torso_axis_angle_degrees": -90.0
+    "torso_axis_length": 328.39,
+    "torso_axis_angle_degrees": -87.21,
+    "head_joint_local": [16, -328]
   },
   "runtime_scene": "torso_rig.tscn",
   "preview_scene": "torso_preview.tscn",
