@@ -15,8 +15,9 @@ prevents gaps when a complete rigid leg rotates at the hip.
 ## Step 1/6: Torso
 
 The first isolated rig gate contains exactly one root bone: `Torso`. Its pivot
-is registered at `(110, 350)` inside `torso.png`, near the pelvis centre. The
-`Torso` node itself has this exact position, rather than world origin. Its
+is registered at `(110, 350)` inside `torso.png`, near the pelvis centre.
+`Torso` itself stays at scene `(0, 0)`; `Art_torso` is offset around it so that
+this image-space point lands exactly on the root. Its
 300 px local axis is rotated exactly -90 degrees, so the visible bone points
 upward through the waist and chest. The torso
 sprite is the only art node and is a direct child of this bone.
