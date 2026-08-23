@@ -189,27 +189,27 @@
   },
   "successor_model": {
     "id": "KTN-RC3-M02",
-    "purpose": "segmented_jointed_mannequin_grounded_gait_prototype",
-    "asset_count": 15,
-    "bone_count": 15,
-    "joint_caps": 12,
-    "construction": "rigid_sprite_cutouts_parented_to_bone2d_with_explicit_joint_caps",
-    "active_scene": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02/player.tscn",
-    "visibility_gate": "operator_confirmed_complete_neutral_render_2026_08_23",
-    "status": "retained_front_registration_model_not_side_player"
-  },
-  "side_model": {
-    "id": "KTN-RC3-M03",
-    "purpose": "first_true_side_facing_grounded_gait_prototype",
+    "purpose": "side_facing_grounded_gait_prototype",
     "view": "side_right",
-    "asset_manifest": "parts/side/m03/m03_side_asset_manifest.json",
-    "unique_asset_count": 5,
-    "bone_count": 8,
-    "construction": "static_side_body_one_rigid_near_arm_two_instances_of_one_three_segment_leg",
-    "isolated_preview": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m03/preview.tscn",
-    "status": "isolated_animated_preview_ready_for_operator_gate"
+    "asset_manifest": "parts/side/m02/m02_side_asset_manifest.json",
+    "unique_asset_count": 7,
+    "bone_count": 13,
+    "construction": "rounded_joint_rigid_side_cutouts_parented_to_bone2d",
+    "active_scene": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02/player.tscn",
+    "isolated_preview": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02/preview.tscn",
+    "status": "isolated_animated_preview_under_visual_revision"
   },
-  "current_gate": "ktn_rc3_m03_isolated_side_gait_visual_review",
+  "clean_model": {
+    "id": "KTN-RC3-M03",
+    "purpose": "clean_model_rebuild_from_new_coherent_source",
+    "asset_manifest": "parts/side/m03/m03_side_asset_manifest.json",
+    "unique_asset_count": 0,
+    "bone_count": 0,
+    "construction": "none",
+    "isolated_preview": null,
+    "status": "clean_rebuild_reserved"
+  },
+  "current_gate": "ktn_rc3_m02_isolated_side_gait_visual_review",
   "prohibited_before_approval": [
     "clothing_layers"
   ],
@@ -222,10 +222,10 @@
     "ktn_rc3_m01_runtime_integration_approved",
     "ktn_rc3_m01_whole_limb_binding_approved",
     "ktn_rc3_m01_gait_rejected_as_dangling",
-    "ktn_rc3_m02_segmented_scene_runtime_art_invisible",
-    "ktn_rc3_m02_isolated_visible_render_repair_approved",
-    "ktn_rc3_m03_side_source_registered",
-    "ktn_rc3_m03_isolated_side_gait_visual_review_pending",
+    "legacy_front_m02_removed",
+    "former_m03_side_model_promoted_to_m02",
+    "ktn_rc3_m02_isolated_side_gait_visual_review_pending",
+    "ktn_rc3_m03_clean_rebuild_reserved",
     "clothing_layers_allowed"
   ]
 }

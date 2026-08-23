@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static gate for the playable KTN-RC3-M02 segmented mannequin."""
+"""Static gate for the isolated KTN-RC3-M02 side gait preview."""
 
 from __future__ import annotations
 
@@ -8,18 +8,14 @@ import json
 import re
 from pathlib import Path
 
+from PIL import Image
+
 
 ROOT = Path(__file__).resolve().parents[3]
 PROJECT = ROOT / "reference_projects/godot_skeleton2d_demo"
 MODEL = PROJECT / "player/kotone_bot_m02"
-SCENE = MODEL / "player.tscn"
-SCRIPT = MODEL / "player.gd"
-LEVEL = PROJECT / "level.tscn"
-PARTS = ROOT / "godot/assets/rc3/mannequin/parts/front"
-PARTS_MANIFEST = PARTS / "front_parts_manifest.json"
-PROVEN_NEUTRAL = ROOT / "godot/scenes/mannequin/kotone_front_neutral_rig.tscn"
-NEUTRAL_RIG = MODEL / "neutral_rig.tscn"
-NEUTRAL_PREVIEW = MODEL / "neutral_visibility_test.tscn"
+PARTS = ROOT / "godot/assets/rc3/mannequin/parts/side/m02"
+MANIFEST_PATH = PARTS / "m02_side_asset_manifest.json"
 
 
 def require(condition: bool, message: str) -> None:
@@ -27,48 +23,80 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit(f"FAIL: {message}")
 
 
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def main() -> None:
-    scene = SCENE.read_text(encoding="utf-8")
-    controller = SCRIPT.read_text(encoding="utf-8")
-    level = LEVEL.read_text(encoding="utf-8")
-    manifest = json.loads(PARTS_MANIFEST.read_text(encoding="utf-8"))
-    neutral = NEUTRAL_RIG.read_text(encoding="utf-8")
-    preview = NEUTRAL_PREVIEW.read_text(encoding="utf-8")
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    rig = (MODEL / "neutral_rig.tscn").read_text(encoding="utf-8")
+    preview = (MODEL / "preview.tscn").read_text(encoding="utf-8")
+    preview_script = (MODEL / "preview.gd").read_text(encoding="utf-8")
+    player = (MODEL / "player.tscn").read_text(encoding="utf-8")
+    player_script = (MODEL / "player.gd").read_text(encoding="utf-8")
+    level = (PROJECT / "level.tscn").read_text(encoding="utf-8")
+    launcher = (PROJECT / "m02-side-preview.sh").read_text(encoding="utf-8")
+    clean_m03 = json.loads((PROJECT / "player/kotone_bot_m03/model_manifest.json").read_text(encoding="utf-8"))
 
-    require(len(re.findall(r'type="Bone2D"', scene)) == 15, "expected 15 bones")
-    require(len(re.findall(r'name="Art_[^"]+" type="Sprite2D"', scene)) == 15, "expected 15 rigid art parts")
-    require(len(re.findall(r'name="Joint_[^"]+" type="Polygon2D"', scene)) == 24, "expected 12 two-layer joint caps")
-    require('path="res://player/kotone_bot_m01/player.tscn" id="4"' in level, "safe M01 rollback is not active")
-    require('func _sample_leg' in controller, "contact-cycle sampler missing")
-    require('Contact -> mid-stance -> toe-off -> bent-knee swing -> contact.' in controller, "grounded gait contract missing")
-    require('deg_to_rad(left.y * intensity)' in controller, "left knee does not flex toward travel direction")
-    require('deg_to_rad(right.y * intensity)' in controller, "right knee does not flex toward travel direction")
-    require('collision_mask = 28' in scene and 'floor_snap_length = 20.0' in scene, "tested floor collision contract missing")
+    require(manifest["technical_model"] == "KTN-RC3-M02", "wrong model id")
+    require(manifest["view"] == "side_right", "M02 source direction changed")
+    require(manifest["source_body"].endswith("kotone_side_right_no_arms_source.png"), "clean no-arm body source missing")
+    require(manifest["normalized_alpha_bounds"] == [546, 54, 708, 1165], "side registration changed")
+    require(manifest["pivots"]["hip"] == [619, 575], "measured hip pivot changed")
+    require(manifest["pivots"]["knee"] == [609, 775], "measured knee pivot changed")
+    require(manifest["pivots"]["ankle"] == [593, 1060], "measured ankle pivot changed")
+    require(manifest["pivots"]["shoulder"] == [594, 254], "measured shoulder pivot changed")
+    require(manifest["pivots"]["elbow"] == [595, 390], "measured elbow pivot changed")
+    require(manifest["pivots"]["wrist"] == [597, 521], "measured wrist pivot changed")
+    require(len(re.findall(r'type="Bone2D"', rig)) == 13, "expected thirteen M02 bones")
+    require(len(re.findall(r'name="Art_[^"]+" type="Sprite2D"', rig)) == 13, "expected thirteen M02 art nodes")
+    require('name="Art_far_upper_arm"' in rig and 'name="Art_near_upper_arm"' in rig, "two upper arms missing")
+    require('name="Art_far_forearm"' in rig and 'name="Art_near_forearm"' in rig, "two forearms missing")
+    require('name="Art_far_hand"' in rig and 'name="Art_near_hand"' in rig, "two hands missing")
+    require(rig.count("visible = false") == 3, "temporary far-arm visibility policy changed")
+    require('name="Art_far_thigh"' in rig and 'name="Art_near_thigh"' in rig, "duplicated leg layers missing")
+    require('instance=ExtResource("2_rig")' in preview, "preview does not instance M02 rig")
+    require('func _sample_ankle' in preview_script, "six-key ankle gait sampler missing")
+    require('func _apply_leg_ik' in preview_script, "preview two-bone leg IK missing")
+    require('KEY_1' in preview_script and 'KEY_2' in preview_script, "idle/walk preview controls missing")
+    require('Vector3(-22.0, 480.0, 0.0)' in preview_script, "balanced measured idle stance missing")
+    require('UPPER_REST_ANGLE' in preview_script and 'LOWER_REST_ANGLE' in preview_script, "slanted rest-axis compensation missing")
+    require('func _apply_leg_ik' in player_script, "playable two-bone leg IK missing")
+    require('Six-frame Kotone walk contract' in player_script, "playable six-frame gait contract missing")
+    require('visual_pivot.scale.x = 1.0 if direction > 0.0 else -1.0' in player_script, "direction mirror policy missing")
+    require('zoom = Vector2(6, 6)' in player, "world camera zoom changed")
+    require('path="res://player/kotone_bot_m01/player.tscn" id="4"' in level, "isolated gate must not replace active M01")
+    require('godot --headless --path "$SCRIPT_DIR" --import' in launcher, "fresh-clone texture import pass missing")
 
-    expected_neutral = PROVEN_NEUTRAL.read_text(encoding="utf-8").replace(
-        "res://assets/rc3/mannequin/parts/front/",
-        "res://player/kotone_bot_m02/assets/",
-    ).replace(
-        '[node name="KotoneFrontNeutralRig" type="Node2D"]',
-        '[node name="M02NeutralRig" type="Node2D"]',
-    )
-    require(neutral == expected_neutral, "neutral visibility rig drifted from proven Task 4F scene")
-    require(len(re.findall(r'type="Bone2D"', neutral)) == 15, "neutral gate must contain 15 bones")
-    require(len(re.findall(r'type="Sprite2D"', neutral)) == 15, "neutral gate must contain 15 sprites")
-    require('instance=ExtResource("1_rig")' in preview, "neutral preview does not instance the proven rig")
+    for runtime_asset in ("body_head_pelvis.png", "upper_arm.png", "forearm.png", "hand.png", "thigh.png", "calf.png", "foot.png"):
+        require(f'"$ASSET_DIR/{runtime_asset}"' in launcher, f"launcher guard missing: {runtime_asset}")
+
+    require(not (PARTS / "arm_near.png").exists(), "obsolete rigid arm remains in built parts")
+    require(not (MODEL / "assets/arm_near.png").exists(), "obsolete rigid arm remains in runtime assets")
+
+    normalized = Image.open(PARTS / "kotone_side_right_normalized.png").convert("RGBA")
+    require(normalized.size == (1254, 1254), "normalized side canvas changed")
+    require(normalized.getchannel("A").getbbox() == (546, 54, 708, 1165), "normalized side alpha bounds changed")
 
     for part in manifest["parts"]:
+        built = PARTS / part["file"]
         copied = MODEL / "assets" / part["file"]
-        require(copied.is_file(), f"missing {part['name']}")
-        require(hashlib.sha256(copied.read_bytes()).hexdigest() == part["sha256"], f"hash mismatch for {part['name']}")
-        px, py = part["pivot_local"]
-        snippet = f'name="Art_{part["name"]}" type="Sprite2D"'
-        require(snippet in scene, f"scene node missing for {part['name']}")
-        require(f'position = Vector2({-px}, {-py})' in scene, f"pivot registration missing for {part['name']}")
+        require(built.is_file(), f"missing built M02 part: {part['name']}")
+        require(copied.is_file(), f"missing copied M02 part: {part['name']}")
+        require(sha256(built) == part["sha256"], f"built hash mismatch: {part['name']}")
+        require(sha256(copied) == part["sha256"], f"runtime hash mismatch: {part['name']}")
+        require(Image.open(built).convert("RGBA").getchannel("A").getbbox() is not None, f"empty alpha: {part['name']}")
 
     require((PROJECT / "player/player.tscn").is_file(), "gBot reference removed")
-    require((PROJECT / "player/kotone_bot_m01/player.tscn").is_file(), "M01 rollback scene removed")
-    print("KTN-RC3-M02 DISABLED + TASK 4F PARITY VISIBILITY GATE STATIC VALIDATION PASSED")
+    require((PROJECT / "player/kotone_bot_m01/player.tscn").is_file(), "M01 rollback removed")
+    require((PROJECT / "player/kotone_bot_m02/player.tscn").is_file(), "current M02 side player removed")
+    require(not (MODEL / "neutral_visibility_test.tscn").exists(), "deleted front M02 gate remains")
+    require(clean_m03["technical_model"] == "KTN-RC3-M03", "clean M03 reservation id changed")
+    require(clean_m03["status"] == "clean_rebuild_reserved", "M03 is no longer a clean reservation")
+    require(clean_m03["assets"] == [] and clean_m03["runtime_scene"] is None, "M03 inherited runtime content")
+    require(not (PROJECT / "player/kotone_bot_m03/player.tscn").exists(), "M03 must not have a runtime scene yet")
+    require(not (PROJECT / "m02-neutral-preview.sh").exists(), "deleted front M02 launcher remains")
+    print("KTN-RC3-M02 ISOLATED SIDE GAIT STATIC VALIDATION PASSED")
 
 
 if __name__ == "__main__":

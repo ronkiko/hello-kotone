@@ -1,105 +1,160 @@
 #!/usr/bin/env python3
-"""Build KTN-RC3-M02 as a rigid cutout mannequin with explicit joint caps."""
+"""Build the isolated and playable KTN-RC3-M02 side mannequin scenes."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import math
 import shutil
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SOURCE_DIR = ROOT / "godot/assets/rc3/mannequin/parts/front"
-MANIFEST = SOURCE_DIR / "front_parts_manifest.json"
+PARTS_DIR = ROOT / "godot/assets/rc3/mannequin/parts/side/m02"
+MANIFEST_PATH = PARTS_DIR / "m02_side_asset_manifest.json"
 TARGET = ROOT / "reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02"
 ASSETS = TARGET / "assets"
-OUTPUT = TARGET / "player.tscn"
-PROVEN_NEUTRAL = ROOT / "godot/scenes/mannequin/kotone_front_neutral_rig.tscn"
-NEUTRAL_RIG = TARGET / "neutral_rig.tscn"
-NEUTRAL_PREVIEW = TARGET / "neutral_visibility_test.tscn"
-
-BONES = [
-    ("Hip", "VisualPivot/Sprite2D/Skeleton2D", (627, 545)),
-    ("Chest", "VisualPivot/Sprite2D/Skeleton2D/Hip", (0, -115)),
-    ("Head", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest", (0, -225)),
-    ("RightArm", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest", (-75, -186)),
-    ("RightForearm", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest/RightArm", (-138, 19)),
-    ("RightHand", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest/RightArm/RightForearm", (-114, 7)),
-    ("LeftArm", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest", (75, -186)),
-    ("LeftForearm", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest/LeftArm", (138, 19)),
-    ("LeftHand", "VisualPivot/Sprite2D/Skeleton2D/Hip/Chest/LeftArm/LeftForearm", (114, 7)),
-    ("RightLeg", "VisualPivot/Sprite2D/Skeleton2D/Hip", (-72, 20)),
-    ("RightLowerLeg", "VisualPivot/Sprite2D/Skeleton2D/Hip/RightLeg", (0, 200)),
-    ("RightFoot", "VisualPivot/Sprite2D/Skeleton2D/Hip/RightLeg/RightLowerLeg", (0, 275)),
-    ("LeftLeg", "VisualPivot/Sprite2D/Skeleton2D/Hip", (72, 20)),
-    ("LeftLowerLeg", "VisualPivot/Sprite2D/Skeleton2D/Hip/LeftLeg", (0, 200)),
-    ("LeftFoot", "VisualPivot/Sprite2D/Skeleton2D/Hip/LeftLeg/LeftLowerLeg", (0, 275)),
-]
-
-PART_BONES = {
-    "head_neck": "Hip/Chest/Head",
-    "torso": "Hip/Chest",
-    "pelvis": "Hip",
-    "upper_arm_right": "Hip/Chest/RightArm",
-    "forearm_right": "Hip/Chest/RightArm/RightForearm",
-    "hand_right": "Hip/Chest/RightArm/RightForearm/RightHand",
-    "upper_arm_left": "Hip/Chest/LeftArm",
-    "forearm_left": "Hip/Chest/LeftArm/LeftForearm",
-    "hand_left": "Hip/Chest/LeftArm/LeftForearm/LeftHand",
-    "thigh_right": "Hip/RightLeg",
-    "calf_right": "Hip/RightLeg/RightLowerLeg",
-    "foot_right": "Hip/RightLeg/RightLowerLeg/RightFoot",
-    "thigh_left": "Hip/LeftLeg",
-    "calf_left": "Hip/LeftLeg/LeftLowerLeg",
-    "foot_left": "Hip/LeftLeg/LeftLowerLeg/LeftFoot",
-}
-
-CAPS = [
-    ("ShoulderRight", "Hip/Chest/RightArm", 23),
-    ("ElbowRight", "Hip/Chest/RightArm/RightForearm", 15),
-    ("WristRight", "Hip/Chest/RightArm/RightForearm/RightHand", 10),
-    ("ShoulderLeft", "Hip/Chest/LeftArm", 23),
-    ("ElbowLeft", "Hip/Chest/LeftArm/LeftForearm", 15),
-    ("WristLeft", "Hip/Chest/LeftArm/LeftForearm/LeftHand", 10),
-    ("HipRight", "Hip/RightLeg", 25),
-    ("KneeRight", "Hip/RightLeg/RightLowerLeg", 20),
-    ("AnkleRight", "Hip/RightLeg/RightLowerLeg/RightFoot", 12),
-    ("HipLeft", "Hip/LeftLeg", 25),
-    ("KneeLeft", "Hip/LeftLeg/LeftLowerLeg", 20),
-    ("AnkleLeft", "Hip/LeftLeg/LeftLowerLeg/LeftFoot", 12),
-]
 
 
-def circle(radius: float, count: int = 20) -> str:
-    values: list[str] = []
-    for index in range(count):
-        angle = math.tau * index / count
-        values.extend((f"{math.cos(angle) * radius:.4f}", f"{math.sin(angle) * radius:.4f}"))
-    return "PackedVector2Array(" + ", ".join(values) + ")"
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def bone(name: str, parent: str, x: int, y: int, terminal: bool = False) -> str:
+    terminal_fields = ""
+    if terminal:
+        terminal_fields = "auto_calculate_length_and_angle = false\nlength = 40.0\nbone_angle = 0.0\n"
+    return f'''[node name="{name}" type="Bone2D" parent="{parent}"]
+position = Vector2({x}, {y})
+rest = Transform2D(1, 0, 0, 1, {x}, {y})
+{terminal_fields}'''
+
+
+def art(
+    name: str,
+    parent: str,
+    resource: str,
+    pivot: list[int],
+    z_index: int,
+    visible: bool = True,
+) -> str:
+    lines = [
+        f'[node name="Art_{name}" type="Sprite2D" parent="{parent}"]',
+        f'texture = ExtResource("{resource}")',
+        "centered = false",
+        f"position = Vector2({-pivot[0]}, {-pivot[1]})",
+        f"z_index = {z_index}",
+    ]
+    if not visible:
+        lines.append("visible = false")
+    return "\n".join(lines)
 
 
 def main() -> None:
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     parts = {part["name"]: part for part in manifest["parts"]}
-    order = manifest["layer_order_back_to_front"]
+    TARGET.mkdir(parents=True, exist_ok=True)
     ASSETS.mkdir(parents=True, exist_ok=True)
+    (ASSETS / "arm_near.png").unlink(missing_ok=True)
 
-    resources = ['[ext_resource type="Script" path="res://player/kotone_bot_m02/player.gd" id="1_script"]']
-    for index, name in enumerate(order, start=2):
-        source = SOURCE_DIR / parts[name]["file"]
-        digest = hashlib.sha256(source.read_bytes()).hexdigest()
-        if digest != parts[name]["sha256"]:
-            raise SystemExit(f"FAIL: source hash changed for {name}")
-        shutil.copy2(source, ASSETS / parts[name]["file"])
+    resources: list[str] = []
+    resource_by_name: dict[str, str] = {}
+    for index, name in enumerate(["body_head_pelvis", "upper_arm", "forearm", "hand", "thigh", "calf", "foot"], start=1):
+        part = parts[name]
+        source = PARTS_DIR / part["file"]
+        if sha256(source) != part["sha256"]:
+            raise SystemExit(f"FAIL: M02 asset hash changed for {name}")
+        shutil.copy2(source, ASSETS / part["file"])
+        resource_id = f"{index}_{name}"
+        resource_by_name[name] = resource_id
         resources.append(
-            f'[ext_resource type="Texture2D" path="res://player/kotone_bot_m02/assets/{parts[name]["file"]}" id="{index}_{name}"]'
+            f'[ext_resource type="Texture2D" path="res://player/kotone_bot_m02/assets/{part["file"]}" id="{resource_id}"]'
         )
 
-    lines = [f'''[gd_scene load_steps=18 format=3]
+    hip_x, hip_y = manifest["pivots"]["hip"]
+    shoulder_x, shoulder_y = manifest["pivots"]["shoulder"]
+    elbow_x, elbow_y = manifest["pivots"]["elbow"]
+    wrist_x, wrist_y = manifest["pivots"]["wrist"]
+    knee_x, knee_y = manifest["pivots"]["knee"]
+    ankle_x, ankle_y = manifest["pivots"]["ankle"]
+
+    rig_lines = [f'''[gd_scene load_steps=8 format=3]
 
 {chr(10).join(resources)}
+
+[node name="M02SideRig" type="Node2D"]
+
+[node name="Skeleton2D" type="Skeleton2D" parent="."]
+''']
+    rig_lines.extend([
+        bone("Hip", "Skeleton2D", hip_x, hip_y),
+        bone("FarLeg", "Skeleton2D/Hip", 0, 0),
+        bone("FarLower", "Skeleton2D/Hip/FarLeg", knee_x - hip_x, knee_y - hip_y),
+        bone("FarFoot", "Skeleton2D/Hip/FarLeg/FarLower", ankle_x - knee_x, ankle_y - knee_y, True),
+        bone("NearLeg", "Skeleton2D/Hip", 0, 0),
+        bone("NearLower", "Skeleton2D/Hip/NearLeg", knee_x - hip_x, knee_y - hip_y),
+        bone("NearFoot", "Skeleton2D/Hip/NearLeg/NearLower", ankle_x - knee_x, ankle_y - knee_y, True),
+        bone("ArmFarUpper", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y),
+        bone("ArmFarLower", "Skeleton2D/Hip/ArmFarUpper", elbow_x - shoulder_x, elbow_y - shoulder_y),
+        bone("ArmFarHand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", wrist_x - elbow_x, wrist_y - elbow_y, True),
+        bone("ArmNearUpper", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y),
+        bone("ArmNearLower", "Skeleton2D/Hip/ArmNearUpper", elbow_x - shoulder_x, elbow_y - shoulder_y),
+        bone("ArmNearHand", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower", wrist_x - elbow_x, wrist_y - elbow_y, True),
+    ])
+    rig_lines.extend([
+        art("far_upper_arm", "Skeleton2D/Hip/ArmFarUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 0, False),
+        art("far_forearm", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 0, False),
+        art("far_hand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower/ArmFarHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 0, False),
+        art("far_thigh", "Skeleton2D/Hip/FarLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 1),
+        art("far_calf", "Skeleton2D/Hip/FarLeg/FarLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 2),
+        art("far_foot", "Skeleton2D/Hip/FarLeg/FarLower/FarFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 3),
+        art("body_head_pelvis", "Skeleton2D/Hip", resource_by_name["body_head_pelvis"], parts["body_head_pelvis"]["pivot_local"], 4),
+        art("near_thigh", "Skeleton2D/Hip/NearLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 5),
+        art("near_calf", "Skeleton2D/Hip/NearLeg/NearLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 6),
+        art("near_foot", "Skeleton2D/Hip/NearLeg/NearLower/NearFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 7),
+        art("near_upper_arm", "Skeleton2D/Hip/ArmNearUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 8),
+        art("near_forearm", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 9),
+        art("near_hand", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower/ArmNearHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 10),
+    ])
+    (TARGET / "neutral_rig.tscn").write_text("\n".join(rig_lines), encoding="utf-8")
+
+    (TARGET / "preview.tscn").write_text(
+        '''[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://player/kotone_bot_m02/preview.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="2_rig"]
+
+[node name="M02SideAnimatedPreview" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+color = Color(0.18, 0.20, 0.24, 1)
+z_index = -100
+
+[node name="Instruction" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 1500.0
+offset_bottom = 56.0
+text = "KTN-RC3-M02  AUTO  |  0 AUTO  1 IDLE  2 WALK"
+theme_override_font_sizes/font_size = 22
+z_index = 100
+
+[node name="Rig" parent="." instance=ExtResource("2_rig")]
+position = Vector2(458, 80)
+scale = Vector2(0.8, 0.8)
+''',
+        encoding="utf-8",
+    )
+
+    (TARGET / "player.tscn").write_text(
+        '''[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://player/kotone_bot_m02/player.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="2_rig"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(22, 44)
@@ -117,94 +172,28 @@ script = ExtResource("1_script")
 position = Vector2(-25.08, -46.56)
 scale = Vector2(0.04, 0.04)
 
-[node name="Skeleton2D" type="Skeleton2D" parent="VisualPivot/Sprite2D"]
-''']
+[node name="Rig" parent="VisualPivot/Sprite2D" instance=ExtResource("2_rig")]
 
-    for name, parent, position in BONES:
-        lines.append(f'''[node name="{name}" type="Bone2D" parent="{parent}"]
-position = Vector2({position[0]}, {position[1]})
-rest = Transform2D(1, 0, 0, 1, {position[0]}, {position[1]})
-''')
-
-    for z_index, name in enumerate(order):
-        part = parts[name]
-        pivot_x, pivot_y = part["pivot_local"]
-        parent = "VisualPivot/Sprite2D/Skeleton2D/" + PART_BONES[name]
-        resource_id = f"{z_index + 2}_{name}"
-        lines.append(f'''[node name="Art_{name}" type="Sprite2D" parent="{parent}"]
-texture = ExtResource("{resource_id}")
-centered = false
-position = Vector2({-pivot_x}, {-pivot_y})
-z_index = {z_index}
-''')
-
-    for index, (name, bone_path, radius) in enumerate(CAPS):
-        parent = "VisualPivot/Sprite2D/Skeleton2D/" + bone_path
-        lines.append(f'''[node name="Joint_{name}_Outer" type="Polygon2D" parent="{parent}"]
-polygon = {circle(radius)}
-color = Color(0.49, 0.30, 0.27, 1)
-z_index = {30 + index * 2}
-
-[node name="Joint_{name}_Inner" type="Polygon2D" parent="{parent}"]
-polygon = {circle(radius - 3)}
-color = Color(0.96, 0.72, 0.60, 1)
-z_index = {31 + index * 2}
-''')
-
-    lines.append('''[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -22)
 shape = SubResource("RectangleShape2D_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, -32)
-zoom = Vector2(4, 4)
+zoom = Vector2(6, 6)
 process_callback = 0
-''')
-
-    OUTPUT.write_text("\n".join(lines), encoding="utf-8")
-
-    # Visibility gate: keep the rig itself byte-for-byte equivalent to the
-    # already rendered Task 4F scene. Only resource paths and the root name
-    # differ because this copy lives in the standalone gBot demo project.
-    neutral = PROVEN_NEUTRAL.read_text(encoding="utf-8")
-    neutral = neutral.replace(
-        "res://assets/rc3/mannequin/parts/front/",
-        "res://player/kotone_bot_m02/assets/",
-    )
-    neutral = neutral.replace(
-        '[node name="KotoneFrontNeutralRig" type="Node2D"]',
-        '[node name="M02NeutralRig" type="Node2D"]',
-    )
-    NEUTRAL_RIG.write_text(neutral, encoding="utf-8")
-
-    NEUTRAL_PREVIEW.write_text(
-        '''[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="1_rig"]
-
-[node name="M02NeutralVisibilityTest" type="Node2D"]
-
-[node name="Background" type="ColorRect" parent="."]
-offset_right = 1920.0
-offset_bottom = 1080.0
-mouse_filter = 2
-color = Color(0.18, 0.20, 0.24, 1)
-z_index = -100
-
-[node name="Instruction" type="Label" parent="."]
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 860.0
-offset_bottom = 56.0
-text = "KTN-RC3-M02 VISIBILITY GATE — expected: all 15 neutral cutout parts"
-theme_override_font_sizes/font_size = 22
-z_index = 100
-
-[node name="Rig" parent="." instance=ExtResource("1_rig")]
 ''',
         encoding="utf-8",
     )
-    print("KTN-RC3-M02 CUTOUT + NEUTRAL VISIBILITY SCENES BUILD COMPLETE")
+
+    runtime_manifest = dict(manifest)
+    runtime_manifest["status"] = "isolated_animated_preview_ready"
+    runtime_manifest["asset_manifest"] = "../../../../../godot/assets/rc3/mannequin/parts/side/m02/m02_side_asset_manifest.json"
+    (TARGET / "model_manifest.json").write_text(
+        json.dumps(runtime_manifest, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print("KTN-RC3-M02 SIDE SCENES BUILD COMPLETE")
 
 
 if __name__ == "__main__":

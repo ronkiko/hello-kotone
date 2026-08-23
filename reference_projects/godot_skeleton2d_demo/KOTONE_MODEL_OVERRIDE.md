@@ -4,12 +4,12 @@ This official Skeleton2D demo is the temporary playable training field for
 `KTN-RC3-M01`.
 
 - Active player: `res://player/kotone_bot_m01/player.tscn`
-- Disabled experiment: `res://player/kotone_bot_m02/player.tscn`
+- Current side prototype: `res://player/kotone_bot_m02/player.tscn`
+- Clean rebuild slot: `res://player/kotone_bot_m03/` (no runtime scene yet)
 - Preserved original: `res://player/player.tscn`
 - Selection point: external resource id `4` in `level.tscn`
 - Launcher: `./demobot.sh`
-- Isolated M02 visibility gate: `./m02-neutral-preview.sh`
-- Isolated animated M03 side gate: `./m03-side-preview.sh`
+- Isolated animated M02 side gate: `./m02-side-preview.sh`
 
 The original gBot scene, art, controller and launcher are unchanged and remain
 the construction reference. To restore gBot, change only resource id `4` in
@@ -31,43 +31,29 @@ floor-aligned collision. Its camera zoom is 6 instead of 4, so the model,
 platforms and environment are presented 150% larger without changing their
 physical proportions.
 
-`KTN-RC3-M02` is the next mechanical approximation. It reconstructs the same
-approved silhouette from 15 independently pivoted rigid parts and adds visible
-two-layer joint caps. Its gait has explicit contact, mid-stance, toe-off and
-bent-knee swing phases. Its first live launch rendered only the joint caps; the
-15 art sprites were invisible. M02 is therefore disabled and must remain an
-isolated diagnostic scene until a Godot render visibly proves every segment.
-M01 and gBot remain available; only resource id `4` selects the active model.
+The former front-facing `KTN-RC3-M02` experiment and its generated runtime
+directory were deleted. The side-facing prototype previously numbered M03 was
+promoted intact to `KTN-RC3-M02`; this is a numbering change, not a visual
+approval.
 
-The first M02 recovery gate deliberately contains no controller, collision,
-camera, animation or joint caps. `neutral_rig.tscn` is generated directly from
-the previously rendered Task 4F neutral scene, with only standalone-demo
-texture paths and the root name changed. Run `./m02-neutral-preview.sh` and
-accept the gate only if the complete neutral mannequin is visible. Do not
-change `level.tscn` during this test.
-
-The operator visually confirmed the complete M02 neutral render on 2026-08-23.
-M02 remains front-facing, so it is retained as a registration and comparison
-model rather than promoted as the side-scroller player.
-
-`KTN-RC3-M03` is the first true side-facing mechanical gate. It uses the only
+`KTN-RC3-M02` is the current side-facing mechanical gate. It uses the only
 available coherent side turnaround, cleaned to a right-facing 1254 x 1254
 registration source without a baked-in arm, one separately generated arm split
 at its measured elbow and wrist and instantiated for both near and far layers,
-and one three-piece side leg instantiated for both near and far layers. Run `./m03-side-preview.sh`; it
-animates both legs and both arms in place without changing `level.tscn` or the
+and one three-piece side leg instantiated for both near and far layers. Run
+`./m02-side-preview.sh`; it animates the rig in place without changing `level.tscn` or the
 active M01 rollback player. The
 launcher performs a headless import pass first, so a fresh checkout has valid
 Texture2D resources before the preview scene is parsed.
 
 For the next arm-rig revision, use
 `../human_skeleton2d_reference/human_skeleton_2d.tscn` as the hierarchy and
-joint-registration reference. M03 now follows its three-link arm hierarchy
+joint-registration reference. M02 follows its three-link arm hierarchy
 (`UpperArm -> LowerArm -> Hand`) with sprite origins registered to the measured
 shoulder, elbow, and wrist. The reference is GPLv3 and remains outside the
 runtime.
 
-The M03 motion gate uses a two-link analytic leg solver with the measured
+The M02 motion gate uses a two-link analytic leg solver with the measured
 200 px hip-to-knee and 285 px knee-to-ankle lengths. Idle keeps the two ankle
 targets subtly staggered instead of stacking every cutout exactly. Walk uses
 six keys per cycle (contact, loading, midstance, heel lift, toe-off, swing),
@@ -83,3 +69,7 @@ hip `(619, 575)`, knee `(609, 775)`, and ankle `(593, 1060)`. The IK solver
 compensates for both non-vertical rest vectors. The duplicated far-arm artwork
 is temporarily hidden because its hand reads as an unrelated foot behind the
 pelvis; its bone chain remains available for a later distinct far-arm source.
+
+`KTN-RC3-M03` is intentionally clean. It contains no inherited M02 textures,
+rig, animation, controller, or runnable scene. Its directory and manifest only
+reserve the identifier for a new model built from a new coherent source.

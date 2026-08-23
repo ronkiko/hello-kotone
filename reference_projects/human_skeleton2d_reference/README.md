@@ -12,7 +12,7 @@ Reference-only copy of **Human Skeleton 2D 1.1.3** by René van der Ark.
 This directory is not part of the Hello Kotone runtime. It is retained as a
 rigging reference and its art must not be copied into the game model.
 
-## What M03 must copy from the rig
+## What M02 copies from the rig
 
 The useful part is the transform contract, not the sample proportions:
 
@@ -28,9 +28,7 @@ The useful part is the transform contract, not the sample proportions:
    rotation relative to that rest pose; it does not compensate for incorrectly
    cropped or scaled art.
 
-The current M03 arm violates this contract: it is an independently generated
-single rigid image, scaled by a fixed target height, and attached to an
-estimated shoulder coordinate. The next M03 revision must measure shoulder,
-elbow, wrist, and fingertip on one coherent side source, split the arm into
-upper arm, forearm, and hand, and derive both bone lengths and sprite pivots
-from those same joint coordinates.
+The current M02 side prototype follows this three-link transform contract and
+keeps the reference outside runtime. M03 is reserved for a clean rebuild and
+may reuse the transform method, but must not copy M02 artwork or generated
+cutouts.

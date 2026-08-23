@@ -14,17 +14,17 @@ into the full mannequin.
 - `KTN-RC3-M01` is the first complete technical mannequin. It keeps Kotone's
   approved proportions and neutral surface but deliberately targets the demo's
   forgiving whole-region construction. Its purpose is assembly and locomotion.
-- `KTN-RC3-M02` is the later anatomical refinement. Elbows, knees, shoulders,
-  hips, wrists and ankles are redrawn or retopologized only after M01 can idle,
-  walk, run and jump as a coherent body.
+- `KTN-RC3-M02` is the current side-facing cutout prototype, promoted from the
+  former M03 number after the rejected front M02 experiment was deleted.
+- `KTN-RC3-M03` is reserved for a clean model rebuilt from a new coherent
+  source. It inherits requirements and measurements, not M02 art or rig files.
 
 These numbers identify rig mannequins, not new canon character designs.
 
 The word "gBot-method" refers only to the construction technique. M01 must not
 copy the robot's gait, pose timing, proportions or personality. Kotone-bot is a
 human-proportioned neutral mannequin and its locomotion target is a restrained
-human walk. M02 improves joint anatomy without replacing the learned
-Skeleton2D/Polygon2D architecture.
+human walk. M02 remains a diagnostic cutout rig; M03 is the clean rebuild.
 
 The vendored official demo under `reference_projects/godot_skeleton2d_demo/`
 remains the permanent reference and the temporary playable test field. Its
@@ -69,7 +69,7 @@ islands. Names are anatomical, not viewer-relative:
 6. `leg_left` — one continuous hip-to-toes texture.
 
 The demo's seventh `Chin` polygon is documented but intentionally deferred:
-jaw motion is unrelated to the M01 locomotion proof. M02 or the later face pass
+jaw motion is unrelated to the M01 locomotion proof. M03 or the later face pass
 may add `face_lower` without changing the six-part body contract. Hair, clothes,
 badge and facial expressions are later overlays and are not part of this
 neutral mechanics atlas.
@@ -172,10 +172,11 @@ Only the `PackedScene` resource with id `4` in `level.tscn` points to
 The replacement copies the example's construction class, not its robotic
 motion. M01 proved loading, collision, movement, jumping and live whole-limb
 bone binding, but its locked-joint gait was visually rejected as suspended.
-The active `KTN-RC3-M02` therefore uses the approved 15 registration cutouts as
-rigid bone children with explicit joint caps. Its first gait introduces
-contact, stance, toe-off and swing phases. This is still a mechanical
-mannequin, not final Kotone animation.
+The isolated `KTN-RC3-M02` uses the available side source as rigid bone
+children with rounded joint cutouts. Its gait introduces contact, stance,
+toe-off and swing phases. This is still a mechanical mannequin and remains
+outside the active M01 world player. M03 starts clean after M02 has yielded
+enough mechanics and silhouette measurements.
 
 ## Authoritative references
 

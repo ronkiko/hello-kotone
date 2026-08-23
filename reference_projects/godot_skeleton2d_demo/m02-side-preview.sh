@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-ASSET_DIR="$SCRIPT_DIR/player/kotone_bot_m03/assets"
+ASSET_DIR="$SCRIPT_DIR/player/kotone_bot_m02/assets"
 REQUIRED_ASSETS=(
   "$ASSET_DIR/body_head_pelvis.png"
   "$ASSET_DIR/upper_arm.png"
@@ -16,7 +16,7 @@ REQUIRED_ASSETS=(
 
 for asset_path in "${REQUIRED_ASSETS[@]}"; do
   if [[ ! -s "$asset_path" ]]; then
-    echo "M03 preview asset is missing or empty: $asset_path" >&2
+    echo "M02 preview asset is missing or empty: $asset_path" >&2
     exit 1
   fi
 done
@@ -26,4 +26,4 @@ done
 godot --headless --path "$SCRIPT_DIR" --import
 
 exec godot --path "$SCRIPT_DIR" \
-  res://player/kotone_bot_m03/preview.tscn "$@"
+  res://player/kotone_bot_m02/preview.tscn "$@"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the first right-facing KTN-RC3-M03 side cutout asset set."""
+"""Build the first right-facing KTN-RC3-M02 side cutout asset set."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 SOURCE_DIR = ROOT / "godot/assets/rc3/mannequin/source/side"
 BODY_SOURCE = SOURCE_DIR / "kotone_side_right_no_arms_source.png"
 ARM_SOURCE = SOURCE_DIR / "kotone_side_arm_down_source.png"
-OUTPUT = ROOT / "godot/assets/rc3/mannequin/parts/side/m03"
+OUTPUT = ROOT / "godot/assets/rc3/mannequin/parts/side/m02"
 
 CANVAS_SIZE = (1254, 1254)
 FIGURE_ALPHA_BOUNDS = (546, 54, 708, 1165)
@@ -124,7 +124,7 @@ def save_trimmed(
 ) -> dict[str, object]:
     bbox = canvas.getchannel("A").getbbox()
     if bbox is None:
-        raise SystemExit(f"empty M03 part: {name}")
+        raise SystemExit(f"empty M02 part: {name}")
     trimmed = canvas.crop(bbox)
     path = OUTPUT / f"{name}.png"
     trimmed.save(path, optimize=True)
@@ -181,7 +181,7 @@ def main() -> None:
 
     manifest = {
         "schema_version": 1,
-        "technical_model": "KTN-RC3-M03",
+        "technical_model": "KTN-RC3-M02",
         "character": "kotone",
         "release": "rc3",
         "view": "side_right",
@@ -227,11 +227,11 @@ def main() -> None:
             "near_hand",
         ],
     }
-    (OUTPUT / "m03_side_asset_manifest.json").write_text(
+    (OUTPUT / "m02_side_asset_manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
     )
-    print("KTN-RC3-M03 SIDE ASSET BUILD COMPLETE")
+    print("KTN-RC3-M02 SIDE ASSET BUILD COMPLETE")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,5 @@
-extends CharacterBody2D
+extends Node2D
 
-const RUN_SPEED := 200.0
-const WALK_SPEED := 92.0
-const ACCELERATION := 900.0
-const JUMP_VELOCITY := -400.0
 const HIP_REST := Vector2(619, 575)
 const UPPER_LEG_VECTOR := Vector2(-10, 200)
 const LOWER_LEG_VECTOR := Vector2(-16, 285)
@@ -11,43 +7,47 @@ const UPPER_LEG_LENGTH := 200.249844
 const LOWER_LEG_LENGTH := 285.448769
 const UPPER_REST_ANGLE := 0.0499584
 const LOWER_REST_ANGLE := 0.0560815
+const AUTO_MODE := -1
+const IDLE_MODE := 0
+const WALK_MODE := 1
 
-@onready var visual_pivot: Node2D = $VisualPivot
-@onready var skeleton: Skeleton2D = $VisualPivot/Sprite2D/Rig/Skeleton2D
+@onready var skeleton: Skeleton2D = $Rig/Skeleton2D
+@onready var instruction: Label = $Instruction
 
-var _phase := 0.0
-
-
-func _physics_process(delta: float) -> void:
-	if Input.is_action_just_pressed(&"jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-	elif Input.is_action_just_released(&"jump") and velocity.y < 0.0:
-		velocity.y *= 0.6
-	if not is_on_floor():
-		velocity.y = minf(400.0, velocity.y + get_gravity().y * delta)
-	var direction := Input.get_axis(&"move_left", &"move_right")
-	var target_speed := WALK_SPEED if Input.is_action_pressed(&"walk") else RUN_SPEED
-	velocity.x = move_toward(velocity.x, direction * target_speed, ACCELERATION * delta)
-	if not is_zero_approx(direction):
-		visual_pivot.scale.x = 1.0 if direction > 0.0 else -1.0
-	move_and_slide()
-	_update_pose(delta)
+var _elapsed := 0.0
+var _gait_phase := 0.0
+var _forced_mode := AUTO_MODE
 
 
-func _update_pose(delta: float) -> void:
-	if not is_on_floor():
-		_apply_air_pose(delta)
-		return
-	var speed_ratio := absf(velocity.x) / RUN_SPEED
-	if speed_ratio < 0.03:
-		_apply_idle_pose(delta)
+func _process(delta: float) -> void:
+	_elapsed += delta
+	var mode := _forced_mode
+	if mode == AUTO_MODE:
+		mode = IDLE_MODE if fmod(_elapsed, 9.0) < 3.0 else WALK_MODE
+	if mode == IDLE_MODE:
+		_apply_idle(delta)
 	else:
-		_apply_grounded_gait(delta, speed_ratio)
+		_apply_walk(delta)
+	instruction.text = "KTN-RC3-M02  %s  |  0 AUTO  1 IDLE  2 WALK" % ("IDLE" if mode == IDLE_MODE else "WALK")
 
 
-func _apply_idle_pose(delta: float) -> void:
-	_phase = fmod(_phase + delta * 1.5, TAU)
-	var breath := sin(_phase)
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return
+	match key_event.keycode:
+		KEY_0:
+			_forced_mode = AUTO_MODE
+		KEY_1:
+			_forced_mode = IDLE_MODE
+		KEY_2:
+			_forced_mode = WALK_MODE
+
+
+func _apply_idle(delta: float) -> void:
+	var breath := sin(_elapsed * 1.5)
 	_set_position("Hip", HIP_REST + Vector2(0, -breath), delta)
 	_set_rotation("Hip", 0.0, delta)
 	_apply_leg_ik("Hip/NearLeg", Vector3(-22.0, 480.0, 0.0), delta)
@@ -61,30 +61,25 @@ func _apply_idle_pose(delta: float) -> void:
 	_set_rotation("Hip/ArmNearUpper/ArmNearLower/ArmNearHand", deg_to_rad(-2.0), delta)
 
 
-func _apply_grounded_gait(delta: float, speed_ratio: float) -> void:
-	_phase = fmod(_phase + delta * lerpf(5.0, 6.2, speed_ratio), TAU)
-	var near_cycle := _phase / TAU
+func _apply_walk(delta: float) -> void:
+	_gait_phase = fmod(_gait_phase + delta * 5.2, TAU)
+	var near_cycle := _gait_phase / TAU
 	var far_cycle := fposmod(near_cycle + 0.5, 1.0)
-	var intensity := lerpf(0.72, 1.0, speed_ratio)
-	var stride := sin(_phase)
-	var near_ankle := _sample_ankle(near_cycle)
-	var far_ankle := _sample_ankle(far_cycle)
-	near_ankle.x *= intensity
-	far_ankle.x *= intensity
-	_set_position("Hip", HIP_REST + Vector2(0, absf(cos(_phase)) * 1.5), delta)
+	var stride := sin(_gait_phase)
+	_set_position("Hip", HIP_REST + Vector2(0, absf(cos(_gait_phase)) * 1.5), delta)
 	_set_rotation("Hip", 0.0, delta)
-	_apply_leg_ik("Hip/NearLeg", near_ankle, delta)
-	_apply_leg_ik("Hip/FarLeg", far_ankle, delta)
-	_set_rotation("Hip/ArmFarUpper", deg_to_rad(-stride * 8.0 * intensity), delta)
+	_apply_leg_ik("Hip/NearLeg", _sample_ankle(near_cycle), delta)
+	_apply_leg_ik("Hip/FarLeg", _sample_ankle(far_cycle), delta)
+	_set_rotation("Hip/ArmFarUpper", deg_to_rad(-stride * 8.0), delta)
 	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(5.0 + maxf(0.0, stride) * 4.0), delta)
 	_set_rotation("Hip/ArmFarUpper/ArmFarLower/ArmFarHand", deg_to_rad(-3.0), delta)
-	_set_rotation("Hip/ArmNearUpper", deg_to_rad(stride * 8.0 * intensity), delta)
+	_set_rotation("Hip/ArmNearUpper", deg_to_rad(stride * 8.0), delta)
 	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(5.0 + maxf(0.0, -stride) * 4.0), delta)
 	_set_rotation("Hip/ArmNearUpper/ArmNearLower/ArmNearHand", deg_to_rad(-3.0), delta)
 
 
 func _sample_ankle(cycle: float) -> Vector3:
-	# Six-frame Kotone walk contract: contact, loading, midstance, heel lift, toe-off, swing.
+	# Six measured gait keys: contact, loading, midstance, heel lift, toe-off, swing.
 	var keys := [
 		Vector3(22.0, 480.0, deg_to_rad(-4.0)),
 		Vector3(2.0, 484.0, 0.0),
@@ -118,18 +113,6 @@ func _apply_leg_ik(path: String, ankle_pose: Vector3, delta: float) -> void:
 	_set_rotation(path, hip_rotation, delta)
 	_set_rotation(lower_path, lower_rotation, delta)
 	_set_rotation(foot_path, ankle_pose.z - hip_rotation - lower_rotation, delta)
-
-
-func _apply_air_pose(delta: float) -> void:
-	_set_position("Hip", HIP_REST + Vector2(0, 3), delta)
-	_set_rotation("Hip/ArmFarUpper", deg_to_rad(14.0), delta)
-	_set_rotation("Hip/ArmNearUpper", deg_to_rad(-18.0), delta)
-	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(18.0), delta)
-	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(24.0), delta)
-	_set_rotation("Hip/NearLeg", deg_to_rad(-10.0), delta)
-	_set_rotation("Hip/NearLeg/NearLower", deg_to_rad(24.0), delta)
-	_set_rotation("Hip/FarLeg", deg_to_rad(8.0), delta)
-	_set_rotation("Hip/FarLeg/FarLower", deg_to_rad(18.0), delta)
 
 
 func _set_rotation(path: String, target: float, delta: float) -> void:

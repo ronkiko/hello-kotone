@@ -1,9 +1,9 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://player/kotone_bot_m03/preview.gd" id="1_script"]
-[ext_resource type="PackedScene" path="res://player/kotone_bot_m03/neutral_rig.tscn" id="2_rig"]
+[ext_resource type="Script" path="res://player/kotone_bot_m02/preview.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://player/kotone_bot_m02/neutral_rig.tscn" id="2_rig"]
 
-[node name="M03SideAnimatedPreview" type="Node2D"]
+[node name="M02SideAnimatedPreview" type="Node2D"]
 script = ExtResource("1_script")
 
 [node name="Background" type="ColorRect" parent="."]
@@ -18,7 +18,7 @@ offset_left = 24.0
 offset_top = 20.0
 offset_right = 1500.0
 offset_bottom = 56.0
-text = "KTN-RC3-M03  AUTO  |  0 AUTO  1 IDLE  2 WALK"
+text = "KTN-RC3-M02  AUTO  |  0 AUTO  1 IDLE  2 WALK"
 theme_override_font_sizes/font_size = 22
 z_index = 100
 

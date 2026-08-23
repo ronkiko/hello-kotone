@@ -5,7 +5,7 @@
   "release": "rc3",
   "view": "side_right",
   "purpose": "first_side_facing_grounded_gait_prototype",
-  "status": "isolated_animated_preview_ready",
+  "status": "isolated_visibility_gate_pending",
   "source_body": "../../../source/side/kotone_side_right_no_arms_source.png",
   "source_body_sha256": "964a70f4432741cf8f446d225fe0389f8ddbeeedb6d442c75e4f4307c996c56d",
   "source_arm": "../../../source/side/kotone_side_arm_down_source.png",
@@ -218,6 +218,5 @@
     "near_upper_arm",
     "near_forearm",
     "near_hand"
-  ],
-  "asset_manifest": "../../../../../godot/assets/rc3/mannequin/parts/side/m02/m02_side_asset_manifest.json"
+  ]
 }
