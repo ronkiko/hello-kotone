@@ -3,9 +3,73 @@
   "technical_model": "KTN-RC3-M03",
   "character": "kotone",
   "release": "rc3",
-  "purpose": "clean_model_rebuild_from_new_coherent_source",
-  "status": "clean_rebuild_reserved",
-  "source": null,
-  "parts": [],
-  "inherits_art_from": null
+  "view": "side_left",
+  "purpose": "operator_reviewed_minimal_rigid_cutout_model",
+  "status": "six_part_assets_draft_operator_review_required",
+  "construction": "six_rigid_rgba_parts_without_joint_deformation",
+  "direction_policy": "authoritative_left_source_mirror_complete_model_for_right",
+  "source": {
+    "kind": "generated_parts_sheet_derived_from_operator_side_mannequin",
+    "reference": "operator-provided layer-female-mannequin.png",
+    "background_processing": "external_white_background_flood_removed_then_low_alpha_normalized",
+    "proportion_correction": "head_scaled_to_85_percent_before_extraction",
+    "approved": false
+  },
+  "rig_contract": {
+    "part_count": 6,
+    "planned_bone_count": 6,
+    "deformable_meshes": false,
+    "weight_painting": false,
+    "inverse_kinematics": false
+  },
+  "parts": [
+    {
+      "name": "torso",
+      "file": "torso.png",
+      "size": [209, 510],
+      "alpha_bounds": [12, 12, 185, 486],
+      "sha256": "f9f263a595af47c69e04cd5d99151cbde58de008d20107d59e5e26517fa5f3d4"
+    },
+    {
+      "name": "head",
+      "file": "head.png",
+      "size": [161, 207],
+      "alpha_bounds": [10, 10, 141, 187],
+      "sha256": "f1bd08e31a5690c481083283b5cb11af8cd180351a6b2f55c66b9e080398fb5b"
+    },
+    {
+      "name": "arm_far",
+      "file": "arm_far.png",
+      "size": [102, 536],
+      "alpha_bounds": [12, 12, 78, 512],
+      "sha256": "e1b418fe2cf32039897a37d7f1990b14f0586171a4ad4c49678591ba1694e6e5"
+    },
+    {
+      "name": "arm_near",
+      "file": "arm_near.png",
+      "size": [110, 536],
+      "alpha_bounds": [12, 12, 86, 512],
+      "sha256": "4691292894bd7e7eb8945f23ce1e44b94822e44291a70e346121a454410a8b04"
+    },
+    {
+      "name": "leg_far",
+      "file": "leg_far.png",
+      "size": [195, 738],
+      "alpha_bounds": [12, 12, 171, 714],
+      "sha256": "a36439b317a9959a2b842e503dd7b25df5753c516af27f262bf704b001116f18"
+    },
+    {
+      "name": "leg_near",
+      "file": "leg_near.png",
+      "size": [195, 738],
+      "alpha_bounds": [12, 12, 171, 714],
+      "sha256": "3d68efbb377ef20ec6d6c9ea4c7e1d7e7e1bcabf64730bac34e9db8e8213523c"
+    }
+  ],
+  "preview": {
+    "file": "preview/neutral_assembly.png",
+    "status": "visual_only_not_a_runtime_asset",
+    "sha256": "e82f54aa45d5a8923c80e9968b48d7e0d35fba2aec1cb939fbdc5b974246567f"
+  },
+  "next_gate": "operator_accepts_or_rejects_each_asset_before_skeleton_creation"
 }

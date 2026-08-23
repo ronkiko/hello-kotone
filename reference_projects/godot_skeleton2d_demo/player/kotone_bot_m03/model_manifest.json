@@ -3,10 +3,27 @@
   "technical_model": "KTN-RC3-M03",
   "character": "kotone",
   "release": "rc3",
-  "purpose": "clean_model_rebuild_from_new_coherent_source",
-  "status": "clean_rebuild_reserved",
-  "source": null,
-  "assets": [],
+  "view": "side_left",
+  "purpose": "minimal_operator_observable_rigid_model",
+  "status": "six_part_assets_draft_operator_review_required",
+  "asset_source": "../../../../../godot/assets/rc3/mannequin/parts/side/m03",
+  "assets": [
+    "assets/torso.png",
+    "assets/head.png",
+    "assets/arm_far.png",
+    "assets/arm_near.png",
+    "assets/leg_far.png",
+    "assets/leg_near.png"
+  ],
+  "planned_skeleton": {
+    "bone_count": 6,
+    "hierarchy": {
+      "Torso": ["Head", "ArmFar", "ArmNear", "LegFar", "LegNear"]
+    },
+    "joint_deformation": false,
+    "ik": false
+  },
   "runtime_scene": null,
+  "next_gate": "operator_asset_review",
   "inherits_art_from": null
 }
