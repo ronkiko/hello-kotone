@@ -22,8 +22,9 @@ offset = Vector2(-110, -350)
 
 [node name="Head" type="Bone2D" parent="Skeleton2D/Torso"]
 # The child bone root is the real neck joint in Torso-local coordinates.
-position = Vector2(16, -328)
 rest = Transform2D(1, 0, 0, 1, 16, -328)
+# Keep the current editor pose explicitly equal to the saved rest pose.
+transform = Transform2D(1, 0, 0, 1, 16, -328)
 auto_calculate_length_and_angle = false
 length = 190.0
 bone_angle = -1.570796
