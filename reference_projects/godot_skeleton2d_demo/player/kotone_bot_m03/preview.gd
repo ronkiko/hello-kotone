@@ -75,12 +75,12 @@ func _apply_walk(delta: float) -> void:
 func _sample_ankle(cycle: float) -> Vector3:
 	# Six measured gait keys: contact, loading, midstance, heel lift, toe-off, swing.
 	var keys := [
-		Vector3(60.0, 478.0, deg_to_rad(-6.0)),
-		Vector3(35.0, 484.0, 0.0),
+		Vector3(48.0, 480.0, deg_to_rad(-4.0)),
+		Vector3(28.0, 484.0, 0.0),
 		Vector3(0.0, 484.0, 0.0),
-		Vector3(-45.0, 480.0, deg_to_rad(8.0)),
-		Vector3(-55.0, 465.0, deg_to_rad(10.0)),
-		Vector3(5.0, 450.0, deg_to_rad(-3.0)),
+		Vector3(-30.0, 482.0, deg_to_rad(4.0)),
+		Vector3(-42.0, 475.0, deg_to_rad(7.0)),
+		Vector3(12.0, 468.0, deg_to_rad(-2.0)),
 	]
 	var scaled := fposmod(cycle, 1.0) * keys.size()
 	var index := int(floor(scaled)) % keys.size()
