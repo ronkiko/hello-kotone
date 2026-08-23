@@ -56,4 +56,6 @@ registration source, one separately generated complete rigid near arm, and one
 three-piece side leg instantiated for both near and far layers. The source's
 foreshortened far arm remains baked into the static body for this first gait
 gate. Run `./m03-side-preview.sh`; it animates the two legs and near arm in
-place without changing `level.tscn` or the active M01 rollback player.
+place without changing `level.tscn` or the active M01 rollback player. The
+launcher performs a headless import pass first, so a fresh checkout has valid
+Texture2D resources before the preview scene is parsed.

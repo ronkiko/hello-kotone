@@ -35,6 +35,7 @@ def main() -> None:
     player = (MODEL / "player.tscn").read_text(encoding="utf-8")
     player_script = (MODEL / "player.gd").read_text(encoding="utf-8")
     level = (PROJECT / "level.tscn").read_text(encoding="utf-8")
+    launcher = (PROJECT / "m03-side-preview.sh").read_text(encoding="utf-8")
 
     require(manifest["technical_model"] == "KTN-RC3-M03", "wrong model id")
     require(manifest["view"] == "side_right", "M03 source direction changed")
@@ -49,6 +50,10 @@ def main() -> None:
     require('visual_pivot.scale.x = 1.0 if direction > 0.0 else -1.0' in player_script, "direction mirror policy missing")
     require('zoom = Vector2(6, 6)' in player, "world camera zoom changed")
     require('path="res://player/kotone_bot_m01/player.tscn" id="4"' in level, "isolated gate must not replace active M01")
+    require('godot --headless --path "$SCRIPT_DIR" --import' in launcher, "fresh-clone texture import pass missing")
+
+    for runtime_asset in ("body_head_pelvis.png", "arm_near.png", "thigh.png", "calf.png", "foot.png"):
+        require(f'"$ASSET_DIR/{runtime_asset}"' in launcher, f"launcher guard missing: {runtime_asset}")
 
     normalized = Image.open(PARTS / "kotone_side_right_normalized.png").convert("RGBA")
     require(normalized.size == (1254, 1254), "normalized side canvas changed")
