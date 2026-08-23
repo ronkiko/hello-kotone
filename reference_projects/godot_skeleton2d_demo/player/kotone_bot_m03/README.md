@@ -16,11 +16,11 @@ prevents gaps when a complete rigid leg rotates at the hip.
 
 The first isolated rig gate contains exactly one root bone: `Torso`. Its pivot
 is registered at `(110, 350)` inside `torso.png`, near the pelvis centre.
-`Torso` stays at scene `(0, 0)`. `Art_torso` also stays at local `(0, 0)`, while
-its `Sprite2D.offset` is `(-110, -350)`, so that exact source pixel lands on the
-root. The torso root keeps an identity transform and uses the explicit measured
-pelvis-to-neck axis. The art remains upright and unscaled without compensating
-rotations.
+`Torso` stays at scene `(0, 0)`. The visible torso is a four-vertex `Polygon2D`
+inside the sibling `Polygons` node, bound to `Skeleton2D` and fully weighted to
+`Torso`, matching the rendering pattern of the upstream robot. Its vertices
+place source pixel `(110, 350)` on the root. The torso root keeps an identity
+transform and uses the explicit measured pelvis-to-neck axis.
 
 Open `res://player/kotone_bot_m03/torso_rig.tscn` in the Godot editor and select
 `M03TorsoRig/Skeleton2D/Torso`. Do not add or move nodes yet. The operator first
@@ -32,11 +32,12 @@ may rotate. There is intentionally no head, arm, leg, animation or game player.
 
 Expected editor state:
 
-- the scene tree has `M03TorsoRig -> Skeleton2D -> Torso -> Art_torso`;
+- the scene tree has `M03TorsoRig -> Skeleton2D -> Torso`, plus
+  `M03TorsoRig -> Polygons -> Torso`;
 - the bone origin is inside the pelvis, not on the lower skin edge;
 - the bone axis points upward through the torso and ends near the shoulder;
-- `Art_torso` is upright and unscaled; its Sprite2D texture offset puts the
-  pelvis point at the root;
+- the torso Polygon2D has `Skeleton = ../../Skeleton2D` and all four vertices
+  weighted to `Torso`;
 - the Inspector shows automatic length/angle calculation disabled;
 - no other `Bone2D` node exists at this gate.
 
@@ -45,19 +46,16 @@ Expected editor state:
 `Head` is the only new bone. It is a child of `Torso` and its root is placed
 directly at the measured neck joint: Torso-local `(16, -328)`. `Torso` has the
 matching explicit pelvis-to-neck axis. The head sprite's internal neck point
-`(80, 190)` is registered to that root. The head has no facial, jaw, hair, or
-deformation bones.
-
-`rig.gd` calls `Bone2D.apply_rest()` when the scene opens. In Godot, a bone's
-saved `rest` transform is separate from its live `Node2D` transform; this call
-makes the visible sprite use the saved joint coordinates before any rotation is
-applied.
+`(80, 190)` is registered to that root. The visible head is a four-vertex
+Polygon2D, weighted 100% to `Torso/Head`; it follows the skeleton just as the
+robot head does. The model has no facial, jaw, hair, or deformation bones.
 
 In the editor, select `Skeleton2D/Torso/Head` and check:
 
 - its origin is at the neck, not at the centre of the head;
 - the bone axis rises through the head;
-- `Art_head` has no scale and uses offset `(-80, -190)`;
+- the `Polygons/Head` node resolves `Skeleton` to `Skeleton2D` and contains
+  only the `Torso/Head` weight;
 - rotating `Head` moves the whole head around the neck while the torso stays
   fixed.
 

@@ -1,11 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/torso.png" id="1_torso"]
 [ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/head.png" id="2_head"]
-[ext_resource type="Script" path="res://player/kotone_bot_m03/rig.gd" id="3_rig"]
 
 [node name="M03TorsoRig" type="Node2D"]
-script = ExtResource("3_rig")
 
 [node name="Skeleton2D" type="Skeleton2D" parent="."]
 
@@ -17,13 +15,6 @@ auto_calculate_length_and_angle = false
 length = 328.39
 bone_angle = -1.52205
 
-[node name="Art_torso" type="Sprite2D" parent="Skeleton2D/Torso"]
-texture = ExtResource("1_torso")
-centered = false
-# Keep the Sprite2D node on the joint and shift only its texture rectangle.
-position = Vector2(0, 0)
-offset = Vector2(-110, -350)
-
 [node name="Head" type="Bone2D" parent="Skeleton2D/Torso"]
 # The child bone root is the real neck joint in Torso-local coordinates.
 position = Vector2(16, -328)
@@ -32,8 +23,22 @@ auto_calculate_length_and_angle = false
 length = 190.0
 bone_angle = -1.570796
 
-[node name="Art_head" type="Sprite2D" parent="Skeleton2D/Torso/Head"]
+[node name="Polygons" type="Node2D" parent="."]
+
+[node name="Torso" type="Polygon2D" parent="Polygons"]
+texture = ExtResource("1_torso")
+skeleton = NodePath("../../Skeleton2D")
+# Source torso pivot (110, 350) is at the Torso bone root (0, 0).
+polygon = PackedVector2Array(-110, -350, 107, -350, 107, 85, -110, 85)
+uv = PackedVector2Array(0, 0, 217, 0, 217, 435, 0, 435)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+bones = ["Torso", PackedFloat32Array(1, 1, 1, 1)]
+
+[node name="Head" type="Polygon2D" parent="Polygons"]
 texture = ExtResource("2_head")
-centered = false
-# Head source neck point: (80, 190). Keep this point at the Head root.
-offset = Vector2(-80, -190)
+skeleton = NodePath("../../Skeleton2D")
+# Source head neck point (80, 190) is at the Head bone joint (16, -328).
+polygon = PackedVector2Array(-64, -518, 97, -518, 97, -311, -64, -311)
+uv = PackedVector2Array(0, 0, 161, 0, 161, 207, 0, 207)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+bones = ["Torso/Head", PackedFloat32Array(1, 1, 1, 1)]
