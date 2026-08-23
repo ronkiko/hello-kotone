@@ -195,9 +195,9 @@
     "joint_caps": 12,
     "construction": "rigid_sprite_cutouts_parented_to_bone2d_with_explicit_joint_caps",
     "active_scene": "../../../../reference_projects/godot_skeleton2d_demo/player/kotone_bot_m02/player.tscn",
-    "status": "ready_for_runtime_visual_gate"
+    "status": "disabled_after_runtime_invisible_art_segments"
   },
-  "current_gate": "ktn_rc3_m02_segmented_runtime_visual_gate",
+  "current_gate": "ktn_rc3_m02_isolated_visible_render_repair",
   "prohibited_before_approval": [
     "clothing_layers"
   ],
@@ -210,8 +210,8 @@
     "ktn_rc3_m01_runtime_integration_approved",
     "ktn_rc3_m01_whole_limb_binding_approved",
     "ktn_rc3_m01_gait_rejected_as_dangling",
-    "ktn_rc3_m02_segmented_scene_ready",
-    "ktn_rc3_m02_grounded_gait_runtime_approval_pending",
+    "ktn_rc3_m02_segmented_scene_runtime_art_invisible",
+    "ktn_rc3_m02_isolated_visible_render_repair_pending",
     "clothing_layers_allowed"
   ]
 }

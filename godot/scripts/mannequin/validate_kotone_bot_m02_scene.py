@@ -33,7 +33,7 @@ def main() -> None:
     require(len(re.findall(r'type="Bone2D"', scene)) == 15, "expected 15 bones")
     require(len(re.findall(r'name="Art_[^"]+" type="Sprite2D"', scene)) == 15, "expected 15 rigid art parts")
     require(len(re.findall(r'name="Joint_[^"]+" type="Polygon2D"', scene)) == 24, "expected 12 two-layer joint caps")
-    require('path="res://player/kotone_bot_m02/player.tscn" id="4"' in level, "level does not select M02")
+    require('path="res://player/kotone_bot_m01/player.tscn" id="4"' in level, "safe M01 rollback is not active")
     require('func _sample_leg' in controller, "contact-cycle sampler missing")
     require('Contact -> mid-stance -> toe-off -> bent-knee swing -> contact.' in controller, "grounded gait contract missing")
     require('deg_to_rad(left.y * intensity)' in controller, "left knee does not flex toward travel direction")
@@ -51,7 +51,7 @@ def main() -> None:
 
     require((PROJECT / "player/player.tscn").is_file(), "gBot reference removed")
     require((PROJECT / "player/kotone_bot_m01/player.tscn").is_file(), "M01 rollback scene removed")
-    print("KTN-RC3-M02 SEGMENTED PLAYER STATIC VALIDATION PASSED")
+    print("KTN-RC3-M02 DISABLED ISOLATED SCENE STATIC VALIDATION PASSED")
 
 
 if __name__ == "__main__":

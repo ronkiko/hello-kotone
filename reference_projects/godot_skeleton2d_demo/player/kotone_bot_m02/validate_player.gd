@@ -1,9 +1,6 @@
 extends SceneTree
 
 const PLAYER_SCENE := "res://player/kotone_bot_m02/player.tscn"
-const LEVEL_SCENE := "res://level.tscn"
-
-
 func _init() -> void:
 	var player := (load(PLAYER_SCENE) as PackedScene).instantiate()
 	_assert(player is CharacterBody2D, "M02 root is CharacterBody2D")
@@ -13,13 +10,8 @@ func _init() -> void:
 	_assert(_count_named_prefix(skeleton, "Joint_") == 24, "24 joint-cap layers exist")
 	_assert(_count_type(skeleton, "Bone2D") == 15, "15 Bone2D nodes exist")
 
-	var level := (load(LEVEL_SCENE) as PackedScene).instantiate()
-	var active := level.get_node_or_null("SkeletalPlayer")
-	_assert(active != null, "level player exists")
-	_assert(active.scene_file_path == PLAYER_SCENE, "level selects M02")
 	player.free()
-	level.free()
-	print("KTN-RC3-M02 SEGMENTED PLAYER GODOT VALIDATION PASSED")
+	print("KTN-RC3-M02 DISABLED ISOLATED SCENE GODOT VALIDATION PASSED")
 	quit(0)
 
 

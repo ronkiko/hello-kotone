@@ -11,5 +11,5 @@
   "motion": "procedural_contact_midstance_toeoff_swing_cycle",
   "original_gbot_preserved": true,
   "m01_preserved": true,
-  "status": "ready_for_runtime_visual_gate"
+  "status": "disabled_after_runtime_invisible_art_segments"
 }
