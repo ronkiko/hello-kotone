@@ -30,13 +30,24 @@ rest = Transform2D(1, 0, 0, 1, {x}, {y})
 {terminal_fields}'''
 
 
-def art(name: str, parent: str, resource: str, pivot: list[int], z_index: int) -> str:
-    return f'''[node name="Art_{name}" type="Sprite2D" parent="{parent}"]
-texture = ExtResource("{resource}")
-centered = false
-position = Vector2({-pivot[0]}, {-pivot[1]})
-z_index = {z_index}
-'''
+def art(
+    name: str,
+    parent: str,
+    resource: str,
+    pivot: list[int],
+    z_index: int,
+    visible: bool = True,
+) -> str:
+    lines = [
+        f'[node name="Art_{name}" type="Sprite2D" parent="{parent}"]',
+        f'texture = ExtResource("{resource}")',
+        "centered = false",
+        f"position = Vector2({-pivot[0]}, {-pivot[1]})",
+        f"z_index = {z_index}",
+    ]
+    if not visible:
+        lines.append("visible = false")
+    return "\n".join(lines)
 
 
 def main() -> None:
@@ -91,9 +102,9 @@ def main() -> None:
         bone("ArmNearHand", "Skeleton2D/Hip/ArmNearUpper/ArmNearLower", wrist_x - elbow_x, wrist_y - elbow_y, True),
     ])
     rig_lines.extend([
-        art("far_upper_arm", "Skeleton2D/Hip/ArmFarUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 0),
-        art("far_forearm", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 0),
-        art("far_hand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower/ArmFarHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 0),
+        art("far_upper_arm", "Skeleton2D/Hip/ArmFarUpper", resource_by_name["upper_arm"], parts["upper_arm"]["pivot_local"], 0, False),
+        art("far_forearm", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower", resource_by_name["forearm"], parts["forearm"]["pivot_local"], 0, False),
+        art("far_hand", "Skeleton2D/Hip/ArmFarUpper/ArmFarLower/ArmFarHand", resource_by_name["hand"], parts["hand"]["pivot_local"], 0, False),
         art("far_thigh", "Skeleton2D/Hip/FarLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 1),
         art("far_calf", "Skeleton2D/Hip/FarLeg/FarLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 2),
         art("far_foot", "Skeleton2D/Hip/FarLeg/FarLower/FarFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 3),

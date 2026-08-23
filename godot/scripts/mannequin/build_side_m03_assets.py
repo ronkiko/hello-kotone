@@ -19,9 +19,9 @@ OUTPUT = ROOT / "godot/assets/rc3/mannequin/parts/side/m03"
 CANVAS_SIZE = (1254, 1254)
 FIGURE_ALPHA_BOUNDS = (546, 54, 708, 1165)
 BODY_CUTOFF_Y = 620
-HIP_PIVOT = (625, 575)
-KNEE_PIVOT = (625, 775)
-ANKLE_PIVOT = (625, 1060)
+HIP_PIVOT = (619, 575)
+KNEE_PIVOT = (609, 775)
+ANKLE_PIVOT = (593, 1060)
 SHOULDER_PIVOT = (594, 254)
 ELBOW_PIVOT = (595, 390)
 WRIST_PIVOT = (597, 521)
@@ -200,6 +200,7 @@ def main() -> None:
         "known_limitations": [
             "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
             "one_side_leg_art_is_reused_for_near_and_far_layers",
+            "far_arm_art_is_hidden_until_a_distinct_far_side_arm_source_exists",
         ],
         "pivots": {
             "shoulder": list(SHOULDER_PIVOT),

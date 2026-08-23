@@ -26,7 +26,8 @@
   "construction": "rounded_joint_side_cutouts_with_two_instances_of_one_three_segment_arm_and_leg",
   "known_limitations": [
     "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
-    "one_side_leg_art_is_reused_for_near_and_far_layers"
+    "one_side_leg_art_is_reused_for_near_and_far_layers",
+    "far_arm_art_is_hidden_until_a_distinct_far_side_arm_source_exists"
   ],
   "pivots": {
     "shoulder": [
@@ -42,15 +43,15 @@
       521
     ],
     "hip": [
-      625,
+      619,
       575
     ],
     "knee": [
-      625,
+      609,
       775
     ],
     "ankle": [
-      625,
+      593,
       1060
     ]
   },
@@ -67,11 +68,11 @@
         566
       ],
       "pivot_global": [
-        625,
+        619,
         575
       ],
       "pivot_local": [
-        79,
+        73,
         521
       ],
       "sha256": "83970b0655e0a02ec7d17c53ecce338688fd87db015b7432a189628d9dcaa8d0"
@@ -151,14 +152,14 @@
         288
       ],
       "pivot_global": [
-        625,
+        619,
         575
       ],
       "pivot_local": [
-        79,
+        73,
         55
       ],
-      "sha256": "4630e2383942b15ef9954bf55ba6ef26918e2105991ea34003ec16f226ab78b9"
+      "sha256": "05f4061ac9306767652641479e53b7b765bde18a9feaaba3dd07d410cc627baa"
     },
     {
       "name": "calf",
@@ -168,39 +169,39 @@
         749
       ],
       "size": [
-        98,
+        94,
         338
       ],
       "pivot_global": [
-        625,
+        609,
         775
       ],
       "pivot_local": [
-        75,
+        59,
         26
       ],
-      "sha256": "a265643e1fc92adbfe653e7e530b70aceb0b80b7a63a1a2eb64fe2a53de195bf"
+      "sha256": "62d63320aa3a1176a1f1b3835d05c22f57dff8360d8ea0f17e84de93e406bdb6"
     },
     {
       "name": "foot",
       "file": "foot.png",
       "offset": [
         555,
-        1041
+        1040
       ],
       "size": [
         126,
-        124
+        125
       ],
       "pivot_global": [
-        625,
+        593,
         1060
       ],
       "pivot_local": [
-        70,
-        19
+        38,
+        20
       ],
-      "sha256": "a339893dd1ef2e214fbcde06ef477271c44fb0b4a0031867001e4a9ba5c7c99d"
+      "sha256": "388aa9806d964c42726ddec39cdd5e821bcb7dd8f3fad7bf5a802699b8dc7c7c"
     }
   ],
   "draw_order_back_to_front": [

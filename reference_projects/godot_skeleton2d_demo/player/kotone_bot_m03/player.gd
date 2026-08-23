@@ -4,9 +4,13 @@ const RUN_SPEED := 200.0
 const WALK_SPEED := 92.0
 const ACCELERATION := 900.0
 const JUMP_VELOCITY := -400.0
-const HIP_REST := Vector2(625, 575)
-const UPPER_LEG_LENGTH := 200.0
-const LOWER_LEG_LENGTH := 285.0
+const HIP_REST := Vector2(619, 575)
+const UPPER_LEG_VECTOR := Vector2(-10, 200)
+const LOWER_LEG_VECTOR := Vector2(-16, 285)
+const UPPER_LEG_LENGTH := 200.249844
+const LOWER_LEG_LENGTH := 285.448769
+const UPPER_REST_ANGLE := 0.0499584
+const LOWER_REST_ANGLE := 0.0560815
 
 @onready var visual_pivot: Node2D = $VisualPivot
 @onready var skeleton: Skeleton2D = $VisualPivot/Sprite2D/Rig/Skeleton2D
@@ -46,8 +50,8 @@ func _apply_idle_pose(delta: float) -> void:
 	var breath := sin(_phase)
 	_set_position("Hip", HIP_REST + Vector2(0, -breath), delta)
 	_set_rotation("Hip", 0.0, delta)
-	_apply_leg_ik("Hip/NearLeg", Vector3(8.0, 480.0, 0.0), delta)
-	_apply_leg_ik("Hip/FarLeg", Vector3(-8.0, 478.0, 0.0), delta)
+	_apply_leg_ik("Hip/NearLeg", Vector3(-22.0, 480.0, 0.0), delta)
+	_apply_leg_ik("Hip/FarLeg", Vector3(-30.0, 478.0, 0.0), delta)
 	var arm_breath := deg_to_rad(breath * 0.35)
 	_set_rotation("Hip/ArmFarUpper", arm_breath, delta)
 	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(2.0), delta)
@@ -68,7 +72,7 @@ func _apply_grounded_gait(delta: float, speed_ratio: float) -> void:
 	near_ankle.x *= intensity
 	far_ankle.x *= intensity
 	_set_position("Hip", HIP_REST + Vector2(0, absf(cos(_phase)) * 1.5), delta)
-	_set_rotation("Hip", deg_to_rad(stride * 0.6 * intensity), delta)
+	_set_rotation("Hip", 0.0, delta)
 	_apply_leg_ik("Hip/NearLeg", near_ankle, delta)
 	_apply_leg_ik("Hip/FarLeg", far_ankle, delta)
 	_set_rotation("Hip/ArmFarUpper", deg_to_rad(-stride * 8.0 * intensity), delta)
@@ -82,12 +86,12 @@ func _apply_grounded_gait(delta: float, speed_ratio: float) -> void:
 func _sample_ankle(cycle: float) -> Vector3:
 	# Six-frame Kotone walk contract: contact, loading, midstance, heel lift, toe-off, swing.
 	var keys := [
-		Vector3(48.0, 480.0, deg_to_rad(-4.0)),
-		Vector3(28.0, 484.0, 0.0),
-		Vector3(0.0, 484.0, 0.0),
-		Vector3(-30.0, 482.0, deg_to_rad(4.0)),
-		Vector3(-42.0, 475.0, deg_to_rad(7.0)),
-		Vector3(12.0, 468.0, deg_to_rad(-2.0)),
+		Vector3(22.0, 480.0, deg_to_rad(-4.0)),
+		Vector3(2.0, 484.0, 0.0),
+		Vector3(-26.0, 484.0, 0.0),
+		Vector3(-56.0, 482.0, deg_to_rad(4.0)),
+		Vector3(-68.0, 475.0, deg_to_rad(7.0)),
+		Vector3(-14.0, 468.0, deg_to_rad(-2.0)),
 	]
 	var scaled := fposmod(cycle, 1.0) * keys.size()
 	var index := int(floor(scaled)) % keys.size()
@@ -106,12 +110,14 @@ func _apply_leg_ik(path: String, ankle_pose: Vector3, delta: float) -> void:
 	var hip_offset := acos(clampf(
 		(UPPER_LEG_LENGTH * UPPER_LEG_LENGTH + distance * distance - LOWER_LEG_LENGTH * LOWER_LEG_LENGTH)
 		/ (2.0 * UPPER_LEG_LENGTH * distance), -1.0, 1.0))
-	var hip_angle := aim_angle - hip_offset
+	var upper_angle := aim_angle - hip_offset
+	var hip_rotation := upper_angle - UPPER_REST_ANGLE
+	var lower_rotation := knee_angle + UPPER_REST_ANGLE - LOWER_REST_ANGLE
 	var lower_path := path + "/" + ("NearLower" if "NearLeg" in path else "FarLower")
 	var foot_path := lower_path + "/" + ("NearFoot" if "NearLeg" in path else "FarFoot")
-	_set_rotation(path, hip_angle, delta)
-	_set_rotation(lower_path, knee_angle, delta)
-	_set_rotation(foot_path, ankle_pose.z - hip_angle - knee_angle, delta)
+	_set_rotation(path, hip_rotation, delta)
+	_set_rotation(lower_path, lower_rotation, delta)
+	_set_rotation(foot_path, ankle_pose.z - hip_rotation - lower_rotation, delta)
 
 
 func _apply_air_pose(delta: float) -> void:

@@ -78,3 +78,8 @@ The limb textures use rounded alpha caps centred on every measured joint; the
 long source overlaps are not allowed to protrude when a knee, ankle, elbow, or
 wrist rotates. In idle the near and far arms share one side-profile pose so the
 duplicated cutouts resolve to one clean silhouette instead of doubled hands.
+The leg pivots follow the measured centreline of the source silhouette at
+hip `(619, 575)`, knee `(609, 775)`, and ankle `(593, 1060)`. The IK solver
+compensates for both non-vertical rest vectors. The duplicated far-arm artwork
+is temporarily hidden because its hand reads as an unrelated foot behind the
+pelvis; its bone chain remains available for a later distinct far-arm source.
