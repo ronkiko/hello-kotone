@@ -59,3 +59,9 @@ animates both legs and both arms in place without changing `level.tscn` or the
 active M01 rollback player. The
 launcher performs a headless import pass first, so a fresh checkout has valid
 Texture2D resources before the preview scene is parsed.
+
+For the next arm-rig revision, use
+`../human_skeleton2d_reference/human_skeleton_2d.tscn` as the hierarchy and
+joint-registration reference. Its arm is a measured three-link chain
+(`UpperArm -> LowerArm -> Hand`), unlike M03's temporary independently scaled
+single-piece arm. The reference is GPLv3 and remains outside the runtime.

@@ -1,0 +1,263 @@
+[gd_scene format=3 uid="uid://tpnfyjky8gv7"]
+
+[node name="Skeleton2D" type="Skeleton2D" unique_id=1663469547]
+
+[node name="Root" type="Bone2D" parent="." unique_id=601854683]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+
+[node name="Back" type="Bone2D" parent="Root" unique_id=1989271171]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+
+[node name="Torso" type="Bone2D" parent="Root/Back" unique_id=703093963]
+position = Vector2(-0.0423943, -32)
+rotation = -1.57454
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(-0.00374094, -0.999993, 0.999993, -0.00374094, -0.0423943, -32)
+
+[node name="Neck" type="Bone2D" parent="Root/Back/Torso" unique_id=1068551358]
+position = Vector2(60.5322, 0.546257)
+rest = Transform2D(1, 0, 0, 1, 60.5322, 0.546257)
+
+[node name="Head" type="Bone2D" parent="Root/Back/Torso/Neck" unique_id=908933295]
+position = Vector2(8.06698, 6.77785)
+rotation = 0.0167314
+rest = Transform2D(0.99986, 0.0167306, -0.0167306, 0.99986, 8.06698, 6.77785)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
+
+[node name="UpperArmL" type="Bone2D" parent="Root/Back/Torso" unique_id=633367508]
+position = Vector2(47.5859, 3.76882)
+rotation = -3.12953
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(-0.999927, -0.0120591, 0.0120591, -0.999927, 47.5859, 3.76882)
+
+[node name="LowerArmL" type="Bone2D" parent="Root/Back/Torso/UpperArmL" unique_id=828008031]
+position = Vector2(51.9489, -1.23016)
+rest = Transform2D(1, 0, 0, 1, 51.9489, -1.23016)
+
+[node name="HandL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL" unique_id=914638327]
+position = Vector2(38.9371, -3.07909)
+rotation = -0.33774
+rest = Transform2D(0.943506, -0.331356, 0.331356, 0.943506, 38.9371, -3.07909)
+
+[node name="ThumbL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL" unique_id=1125271542]
+position = Vector2(2.31053, -2.93143)
+rotation = 0.038052
+rest = Transform2D(0.999276, 0.0380428, -0.0380428, 0.999276, 2.31053, -2.93143)
+auto_calculate_length_and_angle = false
+length = 14.0
+bone_angle = -30.166298
+
+[node name="ThumbTipL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL/ThumbL" unique_id=1771712305]
+position = Vector2(5.90696, -4.7691)
+rotation = -0.476529
+rest = Transform2D(0.888592, -0.458698, 0.458698, 0.888592, 5.90696, -4.7691)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="IndexFingerL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL" unique_id=1886864924]
+position = Vector2(8.26964, -4.26877)
+rotation = -0.123972
+rest = Transform2D(0.992325, -0.123654, 0.123654, 0.992325, 8.26964, -4.26877)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = 0.0
+
+[node name="IndexFingerTipL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL/IndexFingerL" unique_id=1202828191]
+position = Vector2(6.15718, -0.0884997)
+rest = Transform2D(1, 0, 0, 1, 6.15718, -0.0884997)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="MiddleFingerL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL" unique_id=129473069]
+position = Vector2(7.6117, -1.31287)
+rotation = 0.0241998
+rest = Transform2D(0.999707, 0.0241975, -0.0241975, 0.999707, 7.6117, -1.31287)
+auto_calculate_length_and_angle = false
+length = 14.0
+bone_angle = 0.0
+
+[node name="MiddleFingerTipL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL/MiddleFingerL" unique_id=706884272]
+position = Vector2(6.80064, 0.0367111)
+rest = Transform2D(1, 0, 0, 1, 6.80064, 0.0367111)
+auto_calculate_length_and_angle = false
+length = 7.0
+bone_angle = 0.0
+
+[node name="RingFingerL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL" unique_id=2105779853]
+position = Vector2(7.19842, 0.980638)
+rotation = 0.181905
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(0.983501, 0.180903, -0.180903, 0.983501, 7.19842, 0.980638)
+auto_calculate_length_and_angle = false
+length = 13.0
+bone_angle = 0.0
+
+[node name="RingFingerTipL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL/RingFingerL" unique_id=135096267]
+position = Vector2(6.24069, 0.177655)
+rest = Transform2D(1, 0, 0, 1, 6.24069, 0.177655)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="PinkieL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL" unique_id=494427705]
+position = Vector2(7.12388, 3.9812)
+rotation = 0.230659
+rest = Transform2D(0.973516, 0.228619, -0.228619, 0.973516, 7.12388, 3.9812)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 0.0
+
+[node name="PinkieTipL" type="Bone2D" parent="Root/Back/Torso/UpperArmL/LowerArmL/HandL/PinkieL" unique_id=2098501253]
+position = Vector2(5.22822, 0.0505259)
+rest = Transform2D(1, 0, 0, 1, 5.22822, 0.0505259)
+auto_calculate_length_and_angle = false
+length = 4.0
+bone_angle = 0.0
+
+[node name="UpperArmR" type="Bone2D" parent="Root/Back/Torso" unique_id=858596325]
+position = Vector2(46.8204, -8.38692)
+rotation = -3.12953
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(-0.999927, -0.0120591, 0.0120591, -0.999927, 46.8204, -8.38692)
+
+[node name="LowerArmR" type="Bone2D" parent="Root/Back/Torso/UpperArmR" unique_id=657103127]
+position = Vector2(53.0732, -1.30351)
+rest = Transform2D(1, 0, 0, 1, 53.0732, -1.30351)
+
+[node name="HandR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR" unique_id=504439601]
+position = Vector2(39.2158, -3.56514)
+rotation = -0.33774
+rest = Transform2D(0.943506, -0.331356, 0.331356, 0.943506, 39.2158, -3.56514)
+
+[node name="ThumbR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR" unique_id=1338877805]
+position = Vector2(2.31053, -2.93143)
+rotation = 0.038052
+rest = Transform2D(0.999276, 0.0380428, -0.0380428, 0.999276, 2.31053, -2.93143)
+auto_calculate_length_and_angle = false
+length = 14.0
+bone_angle = -30.166298
+
+[node name="ThumbTipR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR/ThumbR" unique_id=407600444]
+position = Vector2(5.90696, -4.7691)
+rotation = -0.476529
+rest = Transform2D(0.888592, -0.458698, 0.458698, 0.888592, 5.90696, -4.7691)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="IndexFingerR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR" unique_id=1228052436]
+position = Vector2(8.26964, -4.26877)
+rotation = -0.123972
+rest = Transform2D(0.992325, -0.123654, 0.123654, 0.992325, 8.26964, -4.26877)
+auto_calculate_length_and_angle = false
+length = 12.0
+bone_angle = 0.0
+
+[node name="IndexFingerTipR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR/IndexFingerR" unique_id=1357931383]
+position = Vector2(6.15718, -0.0884997)
+rest = Transform2D(1, 0, 0, 1, 6.15718, -0.0884997)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="MiddleFingerR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR" unique_id=2048187833]
+position = Vector2(7.6117, -1.31287)
+rotation = 0.0241998
+rest = Transform2D(0.999707, 0.0241975, -0.0241975, 0.999707, 7.6117, -1.31287)
+auto_calculate_length_and_angle = false
+length = 14.0
+bone_angle = 0.0
+
+[node name="MiddleFingerTipR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR/MiddleFingerR" unique_id=164941891]
+position = Vector2(6.80064, 0.0367111)
+rest = Transform2D(1, 0, 0, 1, 6.80064, 0.0367111)
+auto_calculate_length_and_angle = false
+length = 7.0
+bone_angle = 0.0
+
+[node name="RingFingerR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR" unique_id=711230663]
+position = Vector2(7.19842, 0.980638)
+rotation = 0.181905
+scale = Vector2(0.99999994, 0.99999994)
+rest = Transform2D(0.983501, 0.180903, -0.180903, 0.983501, 7.19842, 0.980638)
+auto_calculate_length_and_angle = false
+length = 13.0
+bone_angle = 0.0
+
+[node name="RingFingerTipR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR/RingFingerR" unique_id=1080006587]
+position = Vector2(6.24069, 0.177655)
+rest = Transform2D(1, 0, 0, 1, 6.24069, 0.177655)
+auto_calculate_length_and_angle = false
+length = 6.0
+bone_angle = 0.0
+
+[node name="PinkieR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR" unique_id=1797083183]
+position = Vector2(7.12388, 3.9812)
+rotation = 0.230659
+rest = Transform2D(0.973516, 0.228619, -0.228619, 0.973516, 7.12388, 3.9812)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 0.0
+
+[node name="PinkieTipR" type="Bone2D" parent="Root/Back/Torso/UpperArmR/LowerArmR/HandR/PinkieR" unique_id=1301975502]
+position = Vector2(5.22822, 0.0505259)
+rest = Transform2D(1, 0, 0, 1, 5.22822, 0.0505259)
+auto_calculate_length_and_angle = false
+length = 4.0
+bone_angle = 0.0
+
+[node name="UpperLegL" type="Bone2D" parent="Root" unique_id=2059626978]
+position = Vector2(-0.631955, -5.24917)
+rest = Transform2D(1, 0, 0, 1, -0.631955, -5.24917)
+
+[node name="LowerLegL" type="Bone2D" parent="Root/UpperLegL" unique_id=193247889]
+position = Vector2(-4.74825, 91.5716)
+rotation = 1.66284
+rest = Transform2D(-0.091917, 0.995767, -0.995767, -0.091917, -4.74825, 91.5716)
+
+[node name="AnkleL" type="Bone2D" parent="Root/UpperLegL/LowerLegL" unique_id=1097923396]
+position = Vector2(56.0129, 3.65062)
+rest = Transform2D(1, 0, 0, 1, 56.0129, 3.65062)
+
+[node name="FootL" type="Bone2D" parent="Root/UpperLegL/LowerLegL/AnkleL" unique_id=1756926732]
+position = Vector2(12.2587, 0.219343)
+rotation = -1.56278
+scale = Vector2(0.999999, 0.999999)
+rest = Transform2D(0.00801371, -0.999967, 0.999967, 0.00801371, 12.2587, 0.219343)
+
+[node name="ToesL" type="Bone2D" parent="Root/UpperLegL/LowerLegL/AnkleL/FootL" unique_id=1785881865]
+position = Vector2(19.7426, 0.434268)
+rest = Transform2D(1, 0, 0, 1, 19.7426, 0.434268)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 0.0
+
+[node name="UpperLegR" type="Bone2D" parent="Root" unique_id=1673594137]
+position = Vector2(-0.631955, -5.24917)
+rest = Transform2D(1, 0, 0, 1, -0.631955, -5.24917)
+
+[node name="LowerLegR" type="Bone2D" parent="Root/UpperLegR" unique_id=785312941]
+position = Vector2(-4.74825, 91.5716)
+rotation = 1.66284
+rest = Transform2D(-0.091917, 0.995767, -0.995767, -0.091917, -4.74825, 91.5716)
+
+[node name="AnkleR" type="Bone2D" parent="Root/UpperLegR/LowerLegR" unique_id=2004957408]
+position = Vector2(56.0129, 3.65062)
+rest = Transform2D(1, 0, 0, 1, 56.0129, 3.65062)
+
+[node name="FootR" type="Bone2D" parent="Root/UpperLegR/LowerLegR/AnkleR" unique_id=2139123997]
+position = Vector2(12.2587, 0.219343)
+rotation = -1.56278
+scale = Vector2(0.999999, 0.999999)
+rest = Transform2D(0.00801371, -0.999967, 0.999967, 0.00801371, 12.2587, 0.219343)
+
+[node name="ToesR" type="Bone2D" parent="Root/UpperLegR/LowerLegR/AnkleR/FootR" unique_id=1177227104]
+position = Vector2(19.7426, 0.434268)
+rest = Transform2D(1, 0, 0, 1, 19.7426, 0.434268)
+auto_calculate_length_and_angle = false
+length = 9.0
+bone_angle = 0.0
