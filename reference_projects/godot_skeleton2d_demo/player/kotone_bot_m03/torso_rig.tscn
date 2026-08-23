@@ -1,9 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/torso.png" id="1_torso"]
 [ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/head.png" id="2_head"]
+[ext_resource type="Script" path="res://player/kotone_bot_m03/rig.gd" id="3_rig"]
 
 [node name="M03TorsoRig" type="Node2D"]
+script = ExtResource("3_rig")
 
 [node name="Skeleton2D" type="Skeleton2D" parent="."]
 

@@ -32,6 +32,7 @@ def main() -> None:
     rig = (MODEL / "torso_rig.tscn").read_text(encoding="utf-8")
     preview = (MODEL / "torso_preview.tscn").read_text(encoding="utf-8")
     preview_script = (MODEL / "torso_preview.gd").read_text(encoding="utf-8")
+    rig_script = (MODEL / "rig.gd").read_text(encoding="utf-8")
     launcher = (PROJECT / "m03-torso-preview.sh").read_text(encoding="utf-8")
 
     require(model_manifest["technical_model"] == "KTN-RC3-M03", "wrong model id")
@@ -53,6 +54,8 @@ def main() -> None:
     require('[node name="Art_head" type="Sprite2D" parent="Skeleton2D/Torso/Head"]' in rig, "head art is not bound to Head")
     require('offset = Vector2(-80, -190)' in rig, "head texture neck registration changed")
     require('path="res://player/kotone_bot_m03/assets/head.png"' in rig, "head texture missing")
+    require('script = ExtResource("3_rig")' in rig, "M03 rig must apply its rest pose on load")
+    require("@tool" in rig_script and "bone.apply_rest()" in rig_script, "M03 rig must synchronize current transforms with rest poses")
     require('instance=ExtResource("2_rig")' in preview, "preview does not instance torso rig")
     require("KEY_Q" in preview_script and "KEY_R" in preview_script and "KEY_E" in preview_script, "manual angle controls missing")
     require("HEAD_REST_AXIS" not in preview_script and "$Rig/Skeleton2D/Torso/Head" in preview_script, "preview must control Head without axis compensation")

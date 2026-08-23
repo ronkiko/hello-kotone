@@ -48,6 +48,11 @@ matching explicit pelvis-to-neck axis. The head sprite's internal neck point
 `(80, 190)` is registered to that root. The head has no facial, jaw, hair, or
 deformation bones.
 
+`rig.gd` calls `Bone2D.apply_rest()` when the scene opens. In Godot, a bone's
+saved `rest` transform is separate from its live `Node2D` transform; this call
+makes the visible sprite use the saved joint coordinates before any rotation is
+applied.
+
 In the editor, select `Skeleton2D/Torso/Head` and check:
 
 - its origin is at the neck, not at the centre of the head;
