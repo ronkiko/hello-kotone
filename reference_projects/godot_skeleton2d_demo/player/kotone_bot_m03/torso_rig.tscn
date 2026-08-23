@@ -7,6 +7,7 @@
 [node name="Skeleton2D" type="Skeleton2D" parent="."]
 
 [node name="Torso" type="Bone2D" parent="Skeleton2D"]
+position = Vector2(110, 350)
 rotation = -1.570796
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 auto_calculate_length_and_angle = false
