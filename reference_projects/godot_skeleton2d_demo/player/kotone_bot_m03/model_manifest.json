@@ -29,7 +29,7 @@
     "bones": ["Torso"],
     "torso_pivot_local": [110, 350],
     "torso_axis_length": 300,
-    "torso_axis_angle_degrees": -86.1859
+    "torso_axis_angle_degrees": -90.0
   },
   "runtime_scene": "torso_rig.tscn",
   "preview_scene": "torso_preview.tscn",

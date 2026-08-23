@@ -16,10 +16,10 @@ prevents gaps when a complete rigid leg rotates at the hip.
 
 The first isolated rig gate contains exactly one root bone: `Torso`. Its pivot
 is registered at `(110, 350)` inside `torso.png`, near the pelvis centre.
-`Torso` itself stays at scene `(0, 0)`; `Art_torso` is offset around it so that
-this image-space point lands exactly on the root. Its
-300 px local axis is rotated exactly -90 degrees, so the visible bone points
-upward through the waist and chest. The torso
+`Torso` stays at scene `(0, 0)` and `Art_torso` is placed at `(-110, -350)`,
+so that exact source pixel lands on the root. The texture remains unrotated and
+unscaled. The separate `bone_angle` is -90 degrees, so the visible bone points
+upward through the waist and chest without rotating the artwork. The torso
 sprite is the only art node and is a direct child of this bone.
 
 Open `res://player/kotone_bot_m03/torso_rig.tscn` in the Godot editor and select
@@ -35,8 +35,8 @@ Expected editor state:
 - the scene tree has `M03TorsoRig -> Skeleton2D -> Torso -> Art_torso`;
 - the bone origin is inside the pelvis, not on the lower skin edge;
 - the bone axis points upward through the torso and ends near the shoulder;
-- `Art_torso` preserves the upright source image at rest; its local offset and
-  counter-rotation only compensate for the bone's -90 degree rest axis;
+- `Art_torso` is upright and unscaled; its negative local offset puts the pelvis
+  point at the root;
 - the Inspector shows explicit length/angle calculation disabled;
 - no other `Bone2D` node exists at this gate.
 
