@@ -23,7 +23,7 @@
     1165
   ],
   "direction_policy": "right_source_mirror_visual_pivot_for_left",
-  "construction": "clean_side_body_two_instances_of_one_three_segment_arm_and_one_three_segment_leg",
+  "construction": "rounded_joint_side_cutouts_with_two_instances_of_one_three_segment_arm_and_leg",
   "known_limitations": [
     "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
     "one_side_leg_art_is_reused_for_near_and_far_layers"
@@ -95,7 +95,7 @@
         30,
         22
       ],
-      "sha256": "6e91cafda31b404c91ca0475e8c658d40176639f78516ba63a0077742b149873"
+      "sha256": "ac90650dfcca773294079361e88895518d3f268b0938a19586555520e6d62c19"
     },
     {
       "name": "forearm",
@@ -105,7 +105,7 @@
         377
       ],
       "size": [
-        48,
+        45,
         157
       ],
       "pivot_global": [
@@ -116,7 +116,7 @@
         19,
         13
       ],
-      "sha256": "427ec0d236598c8e0c6792a9942e4260033f4fa70643fba60659012bc096588c"
+      "sha256": "4c046e0ad26965c91f9b6db48e1ec02516f0c28693b574c8a38b04f79290e4aa"
     },
     {
       "name": "hand",
@@ -137,7 +137,7 @@
         14,
         13
       ],
-      "sha256": "94460b4816ff022b1cb8876f9be83e466e001e512788f2e5af1d649d0c110e4b"
+      "sha256": "b5ecd168255d00d634742e335de8cbde79ab5c62eba4f305f4a79f5046a23a18"
     },
     {
       "name": "thigh",
@@ -148,7 +148,7 @@
       ],
       "size": [
         130,
-        315
+        288
       ],
       "pivot_global": [
         625,
@@ -158,18 +158,18 @@
         79,
         55
       ],
-      "sha256": "4429597e13773fcb04ba3870de3c2b7607b27722dbb5bff9cd96dad50a55dd61"
+      "sha256": "4630e2383942b15ef9954bf55ba6ef26918e2105991ea34003ec16f226ab78b9"
     },
     {
       "name": "calf",
       "file": "calf.png",
       "offset": [
         550,
-        735
+        749
       ],
       "size": [
-        101,
-        370
+        98,
+        338
       ],
       "pivot_global": [
         625,
@@ -177,20 +177,20 @@
       ],
       "pivot_local": [
         75,
-        40
+        26
       ],
-      "sha256": "7d4dc60bedc421d4b65fa33d0b1461d3644c9ce2fb7c1ffc14ff2c85b40c7ab1"
+      "sha256": "a265643e1fc92adbfe653e7e530b70aceb0b80b7a63a1a2eb64fe2a53de195bf"
     },
     {
       "name": "foot",
       "file": "foot.png",
       "offset": [
         555,
-        1015
+        1041
       ],
       "size": [
         126,
-        150
+        124
       ],
       "pivot_global": [
         625,
@@ -198,9 +198,9 @@
       ],
       "pivot_local": [
         70,
-        45
+        19
       ],
-      "sha256": "978fddb30266d07714b02bf2d959dede299b99bd55d0ab55884398747907fde6"
+      "sha256": "a339893dd1ef2e214fbcde06ef477271c44fb0b4a0031867001e4a9ba5c7c99d"
     }
   ],
   "draw_order_back_to_front": [

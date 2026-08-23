@@ -103,13 +103,13 @@ z_index = 1
 [node name="Art_far_calf" type="Sprite2D" parent="Skeleton2D/Hip/FarLeg/FarLower"]
 texture = ExtResource("6_calf")
 centered = false
-position = Vector2(-75, -40)
+position = Vector2(-75, -26)
 z_index = 2
 
 [node name="Art_far_foot" type="Sprite2D" parent="Skeleton2D/Hip/FarLeg/FarLower/FarFoot"]
 texture = ExtResource("7_foot")
 centered = false
-position = Vector2(-70, -45)
+position = Vector2(-70, -19)
 z_index = 3
 
 [node name="Art_body_head_pelvis" type="Sprite2D" parent="Skeleton2D/Hip"]
@@ -127,13 +127,13 @@ z_index = 5
 [node name="Art_near_calf" type="Sprite2D" parent="Skeleton2D/Hip/NearLeg/NearLower"]
 texture = ExtResource("6_calf")
 centered = false
-position = Vector2(-75, -40)
+position = Vector2(-75, -26)
 z_index = 6
 
 [node name="Art_near_foot" type="Sprite2D" parent="Skeleton2D/Hip/NearLeg/NearLower/NearFoot"]
 texture = ExtResource("7_foot")
 centered = false
-position = Vector2(-70, -45)
+position = Vector2(-70, -19)
 z_index = 7
 
 [node name="Art_near_upper_arm" type="Sprite2D" parent="Skeleton2D/Hip/ArmNearUpper"]

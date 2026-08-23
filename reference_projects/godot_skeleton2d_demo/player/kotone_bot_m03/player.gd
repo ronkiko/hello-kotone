@@ -48,12 +48,13 @@ func _apply_idle_pose(delta: float) -> void:
 	_set_rotation("Hip", 0.0, delta)
 	_apply_leg_ik("Hip/NearLeg", Vector3(8.0, 480.0, 0.0), delta)
 	_apply_leg_ik("Hip/FarLeg", Vector3(-8.0, 478.0, 0.0), delta)
-	_set_rotation("Hip/ArmFarUpper", deg_to_rad(2.0 - breath), delta)
-	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(4.0), delta)
-	_set_rotation("Hip/ArmFarUpper/ArmFarLower/ArmFarHand", deg_to_rad(-3.0), delta)
-	_set_rotation("Hip/ArmNearUpper", deg_to_rad(-1.0 + breath), delta)
-	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(5.0), delta)
-	_set_rotation("Hip/ArmNearUpper/ArmNearLower/ArmNearHand", deg_to_rad(-3.0), delta)
+	var arm_breath := deg_to_rad(breath * 0.35)
+	_set_rotation("Hip/ArmFarUpper", arm_breath, delta)
+	_set_rotation("Hip/ArmFarUpper/ArmFarLower", deg_to_rad(2.0), delta)
+	_set_rotation("Hip/ArmFarUpper/ArmFarLower/ArmFarHand", deg_to_rad(-2.0), delta)
+	_set_rotation("Hip/ArmNearUpper", arm_breath, delta)
+	_set_rotation("Hip/ArmNearUpper/ArmNearLower", deg_to_rad(2.0), delta)
+	_set_rotation("Hip/ArmNearUpper/ArmNearLower/ArmNearHand", deg_to_rad(-2.0), delta)
 
 
 func _apply_grounded_gait(delta: float, speed_ratio: float) -> void:

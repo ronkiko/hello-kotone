@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -92,6 +92,31 @@ def arm_slice(
     return result
 
 
+def rounded_joint_clip(
+    canvas: Image.Image,
+    start: tuple[int, int] | None,
+    end: tuple[int, int] | None,
+    start_radius: int = 0,
+    end_radius: int = 0,
+) -> Image.Image:
+    """Clip a straight cutout to rounded joint caps around its bone pivots."""
+    mask = Image.new("L", CANVAS_SIZE, 0)
+    draw = ImageDraw.Draw(mask)
+    top = start[1] if start is not None else 0
+    bottom = end[1] if end is not None else CANVAS_SIZE[1]
+    draw.rectangle((0, top, CANVAS_SIZE[0], bottom), fill=255)
+    if start is not None:
+        sx, sy = start
+        draw.ellipse((sx - start_radius, sy - start_radius, sx + start_radius, sy + start_radius), fill=255)
+    if end is not None:
+        ex, ey = end
+        draw.ellipse((ex - end_radius, ey - end_radius, ex + end_radius, ey + end_radius), fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(0.75))
+    clipped = canvas.copy()
+    clipped.putalpha(ImageChops.multiply(canvas.getchannel("A"), mask))
+    return clipped
+
+
 def save_trimmed(
     canvas: Image.Image,
     name: str,
@@ -130,9 +155,19 @@ def main() -> None:
     foot = horizontal_slice(normalized, 1015, FIGURE_ALPHA_BOUNDS[3])
 
     arm = normalize_arm()
-    upper_arm = arm_slice(arm, 0, 171)
-    forearm = arm_slice(arm, 145, 302)
-    hand = arm_slice(arm, 276, ARM_TARGET_HEIGHT)
+    upper_arm = rounded_joint_clip(
+        arm_slice(arm, 0, 171), SHOULDER_PIVOT, ELBOW_PIVOT, 25, 18
+    )
+    forearm = rounded_joint_clip(
+        arm_slice(arm, 145, 302), ELBOW_PIVOT, WRIST_PIVOT, 18, 14
+    )
+    hand = rounded_joint_clip(
+        arm_slice(arm, 276, ARM_TARGET_HEIGHT), WRIST_PIVOT, None, 14
+    )
+
+    thigh = rounded_joint_clip(thigh, None, KNEE_PIVOT, end_radius=30)
+    calf = rounded_joint_clip(calf, KNEE_PIVOT, ANKLE_PIVOT, 24, 24)
+    foot = rounded_joint_clip(foot, ANKLE_PIVOT, None, 18)
 
     parts = [
         save_trimmed(body, "body_head_pelvis", HIP_PIVOT),
@@ -161,7 +196,7 @@ def main() -> None:
         "normalized_source_sha256": sha256(normalized_path),
         "normalized_alpha_bounds": list(FIGURE_ALPHA_BOUNDS),
         "direction_policy": "right_source_mirror_visual_pivot_for_left",
-        "construction": "clean_side_body_two_instances_of_one_three_segment_arm_and_one_three_segment_leg",
+        "construction": "rounded_joint_side_cutouts_with_two_instances_of_one_three_segment_arm_and_leg",
         "known_limitations": [
             "one_side_three_segment_arm_art_is_reused_for_near_and_far_layers",
             "one_side_leg_art_is_reused_for_near_and_far_layers",

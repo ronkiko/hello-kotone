@@ -74,3 +74,7 @@ six keys per cycle (contact, loading, midstance, heel lift, toe-off, swing),
 with the far leg offset by half a cycle and a restrained opposing arm swing.
 The preview alternates three seconds of idle with six seconds of walk; press
 `1` for a fixed idle, `2` for a fixed walk, or `0` to restore automatic mode.
+The limb textures use rounded alpha caps centred on every measured joint; the
+long source overlaps are not allowed to protrude when a knee, ankle, elbow, or
+wrist rotates. In idle the near and far arms share one side-profile pose so the
+duplicated cutouts resolve to one clean silhouette instead of doubled hands.
