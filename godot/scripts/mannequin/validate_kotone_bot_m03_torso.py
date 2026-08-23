@@ -39,6 +39,7 @@ def main() -> None:
     require(model_manifest["runtime_scene"] == "torso_rig.tscn", "wrong M03 rig scene")
     require(len(re.findall(r'type="Bone2D"', rig)) == 1, "expected exactly one Bone2D")
     require('[node name="Torso" type="Bone2D" parent="Skeleton2D"]' in rig, "Torso root bone missing")
+    require("position = Vector2(0, 0)" in rig, "Torso root must stay at scene origin")
     require('position = Vector2(350, -110)' in rig, "torso artwork must be registered around the root origin")
     require("auto_calculate_length_and_angle = false" in rig, "Torso bone must use explicit geometry")
     require("rotation = -1.570796" in rig, "Torso bone must point vertically upward")

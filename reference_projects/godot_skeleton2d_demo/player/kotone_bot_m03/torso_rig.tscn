@@ -7,6 +7,8 @@
 [node name="Skeleton2D" type="Skeleton2D" parent="."]
 
 [node name="Torso" type="Bone2D" parent="Skeleton2D"]
+# The rig root is the pelvis pivot.  All artwork is registered around (0, 0).
+position = Vector2(0, 0)
 rotation = -1.570796
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 auto_calculate_length_and_angle = false
