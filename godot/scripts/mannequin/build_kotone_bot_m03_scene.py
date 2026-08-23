@@ -80,17 +80,19 @@ def main() -> None:
         bone("NearLeg", "Skeleton2D/Hip", 0, 0),
         bone("NearLower", "Skeleton2D/Hip/NearLeg", knee_x - hip_x, knee_y - hip_y),
         bone("NearFoot", "Skeleton2D/Hip/NearLeg/NearLower", ankle_x - knee_x, ankle_y - knee_y, True),
+        bone("ArmFar", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y, True),
         bone("ArmNear", "Skeleton2D/Hip", shoulder_x - hip_x, shoulder_y - hip_y, True),
     ])
     rig_lines.extend([
-        art("far_thigh", "Skeleton2D/Hip/FarLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 0),
-        art("far_calf", "Skeleton2D/Hip/FarLeg/FarLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 1),
-        art("far_foot", "Skeleton2D/Hip/FarLeg/FarLower/FarFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 2),
-        art("body_head_pelvis", "Skeleton2D/Hip", resource_by_name["body_head_pelvis"], parts["body_head_pelvis"]["pivot_local"], 3),
-        art("near_thigh", "Skeleton2D/Hip/NearLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 4),
-        art("near_calf", "Skeleton2D/Hip/NearLeg/NearLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 5),
-        art("near_foot", "Skeleton2D/Hip/NearLeg/NearLower/NearFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 6),
-        art("arm_near", "Skeleton2D/Hip/ArmNear", resource_by_name["arm_near"], parts["arm_near"]["pivot_local"], 7),
+        art("far_arm", "Skeleton2D/Hip/ArmFar", resource_by_name["arm_near"], parts["arm_near"]["pivot_local"], 0),
+        art("far_thigh", "Skeleton2D/Hip/FarLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 1),
+        art("far_calf", "Skeleton2D/Hip/FarLeg/FarLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 2),
+        art("far_foot", "Skeleton2D/Hip/FarLeg/FarLower/FarFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 3),
+        art("body_head_pelvis", "Skeleton2D/Hip", resource_by_name["body_head_pelvis"], parts["body_head_pelvis"]["pivot_local"], 4),
+        art("near_thigh", "Skeleton2D/Hip/NearLeg", resource_by_name["thigh"], parts["thigh"]["pivot_local"], 5),
+        art("near_calf", "Skeleton2D/Hip/NearLeg/NearLower", resource_by_name["calf"], parts["calf"]["pivot_local"], 6),
+        art("near_foot", "Skeleton2D/Hip/NearLeg/NearLower/NearFoot", resource_by_name["foot"], parts["foot"]["pivot_local"], 7),
+        art("arm_near", "Skeleton2D/Hip/ArmNear", resource_by_name["arm_near"], parts["arm_near"]["pivot_local"], 8),
     ])
     (TARGET / "neutral_rig.tscn").write_text("\n".join(rig_lines), encoding="utf-8")
 
@@ -115,7 +117,7 @@ offset_left = 24.0
 offset_top = 20.0
 offset_right = 1500.0
 offset_bottom = 56.0
-text = "KTN-RC3-M03 SIDE GAIT GATE — expected: right profile, two alternating legs, one rigid near arm"
+text = "KTN-RC3-M03 SIDE GAIT GATE — expected: clean right profile, two alternating legs and arms"
 theme_override_font_sizes/font_size = 22
 z_index = 100
 

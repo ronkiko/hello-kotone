@@ -18,7 +18,7 @@ offset_left = 24.0
 offset_top = 20.0
 offset_right = 1500.0
 offset_bottom = 56.0
-text = "KTN-RC3-M03 SIDE GAIT GATE — expected: right profile, two alternating legs, one rigid near arm"
+text = "KTN-RC3-M03 SIDE GAIT GATE — expected: clean right profile, two alternating legs and arms"
 theme_override_font_sizes/font_size = 22
 z_index = 100
 

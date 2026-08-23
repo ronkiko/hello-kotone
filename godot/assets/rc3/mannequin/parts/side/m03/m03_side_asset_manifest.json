@@ -6,8 +6,8 @@
   "view": "side_right",
   "purpose": "first_side_facing_grounded_gait_prototype",
   "status": "isolated_visibility_gate_pending",
-  "source_body": "../../../source/side/kotone_side_left_mannequin_source.png",
-  "source_body_sha256": "4ff6fed6b151ec3b4fe310507566a0ed7655a54b1cb5b2a58895d5629ddd2760",
+  "source_body": "../../../source/side/kotone_side_right_no_arms_source.png",
+  "source_body_sha256": "964a70f4432741cf8f446d225fe0389f8ddbeeedb6d442c75e4f4307c996c56d",
   "source_arm": "../../../source/side/kotone_side_arm_down_source.png",
   "source_arm_sha256": "c57ef48c465d2f270d27674a1253363d1ce08ad4cfd19fc6efc53fb867585df5",
   "canvas": [
@@ -15,7 +15,7 @@
     1254
   ],
   "normalized_source": "kotone_side_right_normalized.png",
-  "normalized_source_sha256": "00ea0674ba7a04fc779136928681b8101da5c724cb88ba2c54a465cc322c69c7",
+  "normalized_source_sha256": "eaa8aafbb93cdd7234a4f83615444f685380d7613791d86ce2ec1ee98780e3c2",
   "normalized_alpha_bounds": [
     546,
     54,
@@ -23,10 +23,10 @@
     1165
   ],
   "direction_policy": "right_source_mirror_visual_pivot_for_left",
-  "construction": "static_side_body_one_rigid_near_arm_two_instances_of_one_three_segment_leg",
+  "construction": "clean_side_body_two_instances_of_one_rigid_arm_two_instances_of_one_three_segment_leg",
   "known_limitations": [
-    "source_far_arm_is_foreshortened_and_remains_baked_into_body",
-    "near_arm_is_rigid_at_elbow_for_first_side_gait_gate",
+    "one_side_arm_art_is_reused_for_near_and_far_layers",
+    "arms_are_rigid_at_elbow_for_first_side_gait_gate",
     "one_side_leg_art_is_reused_for_near_and_far_layers"
   ],
   "pivots": {
@@ -67,7 +67,7 @@
         79,
         521
       ],
-      "sha256": "33fb39a8e3c55b87d68ad8ca97606bd85376406bc593f2b470d9aa85eb2208dc"
+      "sha256": "83970b0655e0a02ec7d17c53ecce338688fd87db015b7432a189628d9dcaa8d0"
     },
     {
       "name": "arm_near",
@@ -98,7 +98,7 @@
         520
       ],
       "size": [
-        131,
+        130,
         315
       ],
       "pivot_global": [
@@ -109,17 +109,17 @@
         79,
         55
       ],
-      "sha256": "c61d52ca0582b54811ced865a1402eaff1b9093f30bd3e6c760b67087eea5589"
+      "sha256": "4429597e13773fcb04ba3870de3c2b7607b27722dbb5bff9cd96dad50a55dd61"
     },
     {
       "name": "calf",
       "file": "calf.png",
       "offset": [
-        552,
+        550,
         735
       ],
       "size": [
-        100,
+        101,
         370
       ],
       "pivot_global": [
@@ -127,20 +127,20 @@
         775
       ],
       "pivot_local": [
-        73,
+        75,
         40
       ],
-      "sha256": "7ab80f807d72df68b7995b994d422e54898cd1f5588c17114062b0732f93151c"
+      "sha256": "7d4dc60bedc421d4b65fa33d0b1461d3644c9ce2fb7c1ffc14ff2c85b40c7ab1"
     },
     {
       "name": "foot",
       "file": "foot.png",
       "offset": [
-        557,
+        555,
         1015
       ],
       "size": [
-        124,
+        126,
         150
       ],
       "pivot_global": [
@@ -148,13 +148,14 @@
         1060
       ],
       "pivot_local": [
-        68,
+        70,
         45
       ],
-      "sha256": "78e542e61c86a4b37af035ccc26cb2c3bee3b1d95ccf8f2fb2a98356d3109f4b"
+      "sha256": "978fddb30266d07714b02bf2d959dede299b99bd55d0ab55884398747907fde6"
     }
   ],
   "draw_order_back_to_front": [
+    "far_arm",
     "far_foot",
     "far_calf",
     "far_thigh",

@@ -11,6 +11,7 @@ func _process(delta: float) -> void:
 	var far_pose := _sample_leg(fposmod(_phase / TAU + 0.5, 1.0))
 	var stride := sin(_phase)
 	set_bone("Hip", deg_to_rad(stride * 1.2))
+	set_bone("Hip/ArmFar", deg_to_rad(-stride * 12.0))
 	set_bone("Hip/ArmNear", deg_to_rad(stride * 12.0))
 	set_bone("Hip/NearLeg", deg_to_rad(near_pose.x))
 	set_bone("Hip/NearLeg/NearLower", deg_to_rad(near_pose.y))

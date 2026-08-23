@@ -51,11 +51,11 @@ M02 remains front-facing, so it is retained as a registration and comparison
 model rather than promoted as the side-scroller player.
 
 `KTN-RC3-M03` is the first true side-facing mechanical gate. It uses the only
-available coherent side turnaround, mirrored to a right-facing 1254 x 1254
-registration source, one separately generated complete rigid near arm, and one
-three-piece side leg instantiated for both near and far layers. The source's
-foreshortened far arm remains baked into the static body for this first gait
-gate. Run `./m03-side-preview.sh`; it animates the two legs and near arm in
-place without changing `level.tscn` or the active M01 rollback player. The
+available coherent side turnaround, cleaned to a right-facing 1254 x 1254
+registration source without a baked-in arm, one separately generated complete
+rigid arm instantiated for both near and far layers, and one three-piece side
+leg instantiated for both near and far layers. Run `./m03-side-preview.sh`; it
+animates both legs and both arms in place without changing `level.tscn` or the
+active M01 rollback player. The
 launcher performs a headless import pass first, so a fresh checkout has valid
 Texture2D resources before the preview scene is parsed.

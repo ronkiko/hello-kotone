@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE_DIR = ROOT / "godot/assets/rc3/mannequin/source/side"
-BODY_SOURCE = SOURCE_DIR / "kotone_side_left_mannequin_source.png"
+BODY_SOURCE = SOURCE_DIR / "kotone_side_right_no_arms_source.png"
 ARM_SOURCE = SOURCE_DIR / "kotone_side_arm_down_source.png"
 OUTPUT = ROOT / "godot/assets/rc3/mannequin/parts/side/m03"
 
@@ -24,7 +24,7 @@ KNEE_PIVOT = (625, 775)
 ANKLE_PIVOT = (625, 1060)
 SHOULDER_PIVOT = (620, 205)
 
-BODY_SHA256 = "4ff6fed6b151ec3b4fe310507566a0ed7655a54b1cb5b2a58895d5629ddd2760"
+BODY_SHA256 = "964a70f4432741cf8f446d225fe0389f8ddbeeedb6d442c75e4f4307c996c56d"
 ARM_SHA256 = "c57ef48c465d2f270d27674a1253363d1ce08ad4cfd19fc6efc53fb867585df5"
 
 
@@ -48,9 +48,8 @@ def normalize_body() -> Image.Image:
     target_width = FIGURE_ALPHA_BOUNDS[2] - FIGURE_ALPHA_BOUNDS[0]
     target_height = FIGURE_ALPHA_BOUNDS[3] - FIGURE_ALPHA_BOUNDS[1]
     resized = cropped.resize((target_width, target_height), Image.Resampling.LANCZOS)
-    right_facing = resized.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     canvas = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
-    canvas.alpha_composite(right_facing, dest=FIGURE_ALPHA_BOUNDS[:2])
+    canvas.alpha_composite(resized, dest=FIGURE_ALPHA_BOUNDS[:2])
     return canvas
 
 
@@ -132,7 +131,7 @@ def main() -> None:
         "view": "side_right",
         "purpose": "first_side_facing_grounded_gait_prototype",
         "status": "isolated_visibility_gate_pending",
-        "source_body": "../../../source/side/kotone_side_left_mannequin_source.png",
+        "source_body": "../../../source/side/kotone_side_right_no_arms_source.png",
         "source_body_sha256": BODY_SHA256,
         "source_arm": "../../../source/side/kotone_side_arm_down_source.png",
         "source_arm_sha256": ARM_SHA256,
@@ -141,10 +140,10 @@ def main() -> None:
         "normalized_source_sha256": sha256(normalized_path),
         "normalized_alpha_bounds": list(FIGURE_ALPHA_BOUNDS),
         "direction_policy": "right_source_mirror_visual_pivot_for_left",
-        "construction": "static_side_body_one_rigid_near_arm_two_instances_of_one_three_segment_leg",
+        "construction": "clean_side_body_two_instances_of_one_rigid_arm_two_instances_of_one_three_segment_leg",
         "known_limitations": [
-            "source_far_arm_is_foreshortened_and_remains_baked_into_body",
-            "near_arm_is_rigid_at_elbow_for_first_side_gait_gate",
+            "one_side_arm_art_is_reused_for_near_and_far_layers",
+            "arms_are_rigid_at_elbow_for_first_side_gait_gate",
             "one_side_leg_art_is_reused_for_near_and_far_layers",
         ],
         "pivots": {
@@ -155,6 +154,7 @@ def main() -> None:
         },
         "parts": parts,
         "draw_order_back_to_front": [
+            "far_arm",
             "far_foot",
             "far_calf",
             "far_thigh",
