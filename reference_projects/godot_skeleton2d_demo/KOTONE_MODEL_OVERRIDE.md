@@ -25,6 +25,11 @@ ankles remain locked. This distinguishes a working bone/mesh binding from a
 subtle or malformed final gait. It is a diagnostic motion proof, not the final
 walk animation.
 
+The active M01 keeps its original 0.04 world-relative scale and 22x44
+floor-aligned collision. Its camera zoom is 6 instead of 4, so the model,
+platforms and environment are presented 150% larger without changing their
+physical proportions.
+
 `KTN-RC3-M02` is the next mechanical approximation. It reconstructs the same
 approved silhouette from 15 independently pivoted rigid parts and adds visible
 two-layer joint caps. Its gait has explicit contact, mid-stance, toe-off and

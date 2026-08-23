@@ -251,7 +251,7 @@ shape = SubResource("RectangleShape2D_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(0, -32)
-zoom = Vector2(4, 4)
+zoom = Vector2(6, 6)
 process_callback = 0
 ''')
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

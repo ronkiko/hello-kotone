@@ -10,7 +10,11 @@ func _init() -> void:
 	var player := packed_player.instantiate()
 	_assert(player is CharacterBody2D, "root is CharacterBody2D")
 	_assert(player.name == &"SkeletalPlayer", "root keeps level-facing player name")
-	_assert(player.get_node_or_null("Camera2D") is Camera2D, "player camera exists")
+	var camera := player.get_node_or_null("Camera2D") as Camera2D
+	_assert(camera != null, "player camera exists")
+	_assert(camera.zoom == Vector2(6, 6), "camera enlarges the whole world uniformly")
+	var visual := player.get_node("VisualPivot/Sprite2D") as Node2D
+	_assert(visual.scale == Vector2(0.04, 0.04), "model keeps its world-relative scale")
 
 	var skeleton := player.get_node_or_null("VisualPivot/Sprite2D/Skeleton2D") as Skeleton2D
 	_assert(skeleton != null, "Skeleton2D exists")
