@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://player/kotone_bot_m03/assets/torso.png" id="1_torso"]
+
+[node name="M03TorsoRig" type="Node2D"]
+
+[node name="Skeleton2D" type="Skeleton2D" parent="."]
+
+[node name="Torso" type="Bone2D" parent="Skeleton2D"]
+rest = Transform2D(1, 0, 0, 1, 0, 0)
+auto_calculate_length_and_angle = false
+length = 300.0
+bone_angle = -1.50423
+
+[node name="Art_torso" type="Sprite2D" parent="Skeleton2D/Torso"]
+texture = ExtResource("1_torso")
+centered = false
+position = Vector2(-110, -350)
+

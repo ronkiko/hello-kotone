@@ -5,7 +5,7 @@ This official Skeleton2D demo is the temporary playable training field for
 
 - Active player: `res://player/kotone_bot_m01/player.tscn`
 - Current side prototype: `res://player/kotone_bot_m02/player.tscn`
-- Approved six-part rebuild: `res://player/kotone_bot_m03/` (no runtime scene yet)
+- Step-by-step six-part rebuild: `res://player/kotone_bot_m03/` (Torso gate only)
 - Preserved original: `res://player/player.tscn`
 - Selection point: external resource id `4` in `level.tscn`
 - Launcher: `./demobot.sh`
@@ -72,6 +72,7 @@ pelvis; its bone chain remains available for a later distinct far-arm source.
 
 `KTN-RC3-M03` is an independent six-part rigid model built from a coherent
 left-facing mannequin source. Its approved asset gate contains torso, head,
-two whole rigid arms and two whole rigid legs. It still has no rig, animation,
-controller or runnable scene; the six bones will be created one at a time with
-operator inspection in the Godot editor.
+two whole rigid arms and two whole rigid legs. The current Step 1 scene contains
+only the root `Torso` bone and its torso sprite. It is not a game player. The
+remaining five bones are added one at a time after operator inspection in the
+Godot editor.
