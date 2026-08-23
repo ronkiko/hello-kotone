@@ -18,7 +18,7 @@ offset_left = 24.0
 offset_top = 20.0
 offset_right = 1500.0
 offset_bottom = 56.0
-text = "KTN-RC3-M03 SIDE GAIT GATE — expected: measured shoulder/elbow/wrist chains"
+text = "KTN-RC3-M03  AUTO  |  0 AUTO  1 IDLE  2 WALK"
 theme_override_font_sizes/font_size = 22
 z_index = 100
 

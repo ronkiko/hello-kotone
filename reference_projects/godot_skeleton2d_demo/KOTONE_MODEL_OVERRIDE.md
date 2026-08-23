@@ -66,3 +66,11 @@ joint-registration reference. M03 now follows its three-link arm hierarchy
 (`UpperArm -> LowerArm -> Hand`) with sprite origins registered to the measured
 shoulder, elbow, and wrist. The reference is GPLv3 and remains outside the
 runtime.
+
+The M03 motion gate uses a two-link analytic leg solver with the measured
+200 px hip-to-knee and 285 px knee-to-ankle lengths. Idle keeps the two ankle
+targets subtly staggered instead of stacking every cutout exactly. Walk uses
+six keys per cycle (contact, loading, midstance, heel lift, toe-off, swing),
+with the far leg offset by half a cycle and a restrained opposing arm swing.
+The preview alternates three seconds of idle with six seconds of walk; press
+`1` for a fixed idle, `2` for a fixed walk, or `0` to restore automatic mode.
