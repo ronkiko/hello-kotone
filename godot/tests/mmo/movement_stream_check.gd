@@ -9,6 +9,7 @@ var rejections: Array[String] = []
 var finished := false
 var deadline := 0
 var evidence: Dictionary = {}
+var focus_resumptions := 0
 
 func _initialize() -> void:
 	start.call_deferred()
@@ -80,7 +81,7 @@ func real_wall() -> void:
 	check(client.world_replica.local_player().x == 50, "REAL_SPAWN")
 	await capture("spawn")
 	key(KEY_A, true)
-	while not finished and client.state != "FAILED" and rejections.is_empty(): await process_frame
+	await hold_until_rejection(world, KEY_A, 1)
 	key(KEY_A, false)
 	if finished: return
 	await wait_state("READY")
@@ -89,7 +90,7 @@ func real_wall() -> void:
 	await capture("left-wall")
 	await process_frame
 	key(KEY_D, true)
-	while not finished and client.state != "FAILED" and rejections.size() < 2: await process_frame
+	await hold_until_rejection(world, KEY_D, 2)
 	key(KEY_D, false)
 	if finished: return
 	await wait_state("READY")
@@ -105,7 +106,7 @@ func real_wall() -> void:
 	check(current_scene == world and client.world_replica.local_player().x == 100 and is_equal_approx(world.platform.sprite.position.x,832), "STATE_RECONCILES_PRESENTATION")
 	check(client.world_replica.view().revision == 151, "RECEIPTS_DO_NOT_DOUBLE_APPLY")
 	await capture("reconciled")
-	evidence = {"confirmed_min":0,"confirmed_max":100,"accepted_moves":receipts,"own_moved_events":own_events,"rejections":rejections,"revision":client.world_replica.view().revision,"sprite_tamper_reconciled":true}
+	evidence = {"confirmed_min":0,"confirmed_max":100,"accepted_moves":receipts,"own_moved_events":own_events,"rejections":rejections,"revision":client.world_replica.view().revision,"sprite_tamper_reconciled":true,"test_focus_resumptions":focus_resumptions}
 	world.leave_button.pressed.emit()
 	await wait_state("DISCONNECTED")
 	await process_frame
@@ -114,6 +115,19 @@ func real_wall() -> void:
 	check(client.world_replica.local_player().x == 100, "POSITION_RETAINED_ON_REENTRY")
 	check(client.logout(), "REENTRY_LOGOUT")
 	await wait_state("DISCONNECTED")
+
+func hold_until_rejection(world: Control, code: int, count: int) -> void:
+	while not finished and client.state != "FAILED" and rejections.size() < count:
+		# Desktop automation can lose focus to the operator's other windows. Model
+		# an explicit focus restore + release + fresh press, never a network replay.
+		if not world.input_adapter._focused or world.input_adapter._require_release or not Input.is_physical_key_pressed(code):
+			key(KEY_A, false)
+			key(KEY_D, false)
+			world.input_adapter._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+			world.input_adapter._process(0)
+			key(code, true)
+			focus_resumptions += 1
+		await process_frame
 
 func fixture_case() -> void:
 	var mode: String = options.mode
