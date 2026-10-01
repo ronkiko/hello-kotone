@@ -123,6 +123,9 @@ static func response(value: Variant) -> bool:
 			return fields(data, ["map"]) and map_definition(data.map)
 		"state":
 			return fields(data, ["snapshot"]) and snapshot(data.snapshot)
+		"move":
+			return fields(data, ["epoch", "zone_id", "revision", "player_id"]) \
+				and token(data.epoch) and zone(data.zone_id) and integer(data.revision, 1) and token(data.player_id)
 		"logout":
 			return fields(data, ["flush"]) and fields(data.flush, ["status", "save_version"]) \
 				and ((data.flush.status == "completed" and integer(data.flush.save_version)) \

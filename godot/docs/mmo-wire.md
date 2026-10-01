@@ -15,9 +15,11 @@ MmoClient.connect_world("127.0.0.1", 21060, "player1")
 ```
 
 The client automatically performs Login -> advertised Game endpoint -> enter ->
-map -> state -> READY. `initial_snapshot`, `last_snapshot`, `map_document`,
+verified map/cache -> state -> READY. `initial_snapshot`, `last_snapshot`, `map_document`,
 `player_id` and `session_id` expose confirmed handshake data. Read-only
-`request_state()` / `request_map()` and `logout()` return false when busy.
+`request_state()` / `request_map()`, `move("left"/"right")` and `logout()` return
+false when busy. Move sends direction only and enters MOVING until its receipt
+or known nonterminal rejection. See [human movement](human-movement.md).
 `disconnect_world()` explicitly cancels the connection without promising a flush.
 No connection or request is automatically retried. A public connection is closed
 after 4096 requests; reconnection policy belongs to a later patch.
@@ -26,7 +28,7 @@ Signals: `state_changed`, `world_ready`, `response_received`, `event_received`,
 `fault`, `disconnected`. Login success does not expose its ticket via a signal.
 Faults contain a bounded local code, operation and `outcome_unknown`; server
 messages/raw frames and credentials are not logged. A validated rejection has a
-known outcome; losing a login/enter/logout response has an unknown outcome.
+known outcome; losing a login/enter/move/logout response has an unknown outcome.
 
 The core uses non-blocking StreamPeerTCP partial reads/writes, asynchronous DNS,
 one pending request, one scheduled request, a 75 ms request interval and 16 KiB
@@ -48,8 +50,8 @@ Events are delivered separately from request correlation. Patch 03 adds
 `world_replica`: enter establishes a baseline, events reduce N+1 before dispatch,
 and explicit `request_state()` replaces the whole baseline. During this request
 lifecycle is RESYNCING and replica is STALE/RESYNC_PENDING; preceding events
-continue to reduce without replay. Disk cache and world/map
-rendering belong to patch 04. A READY connection without further requests will
+continue to reduce without replay. Patch 04 adds verified disk cache and world/map rendering; patch 05 adds
+bounded input and smooth confirmed-target presentation. A READY connection without further requests will
 eventually hit the server's authenticated idle timeout; heartbeat/recovery policy
 is deferred to patch 08.
 

@@ -2,6 +2,8 @@ extends Control
 ## Read-only world presentation. All confirmed data comes from WorldReplica.
 
 const Platform = preload("res://scripts/presentation/platform_world.gd")
+const InputAdapter = preload("res://scripts/ui/move_input.gd")
+var input_adapter: Node
 var platform: Node2D
 const LOGIN_SCENE := "res://scenes/mmo/login.tscn"
 @onready var identity: Label = $Layout/Column/Identity
@@ -16,12 +18,16 @@ func _ready() -> void:
 	refresh_button.pressed.connect(MmoClient.request_state)
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
+	MmoClient.move_rejected.connect(_on_move_rejected)
 	MmoClient.world_replica.changed.connect(_show_world)
 	if MmoClient.state != "READY":
 		_return_to_login()
 		return
 	platform = Platform.new()
 	$Layout/Column/View/SubViewport.add_child(platform)
+	input_adapter = InputAdapter.new()
+	input_adapter.client = MmoClient
+	add_child(input_adapter)
 	_show_world()
 	_on_state_changed(MmoClient.state)
 
@@ -46,11 +52,19 @@ func _on_state_changed(value: String) -> void:
 	if value == "LOGGING_OUT":
 		status_label.text = "Leaving world..."
 	elif value == "READY":
-		status_label.text = "Connected to world."
+		status_label.text = "A/D or arrows to walk."
+	elif value == "MOVING":
+		status_label.text = "A/D or arrows to walk."
 	elif value == "RESYNCING":
 		status_label.text = "Refreshing world..."
 	elif value in ["FAILED", "DISCONNECTED"]:
 		_return_to_login()
+
+func _on_move_rejected(code: String) -> void:
+	match code:
+		"OUT_OF_BOUNDS": status_label.text = "World boundary reached."
+		"RATE_LIMITED": status_label.text = "Moving too quickly. Release the key and try again."
+		"WORLD_PAUSED": status_label.text = "World paused. Release the key and try later."
 
 func _on_fault(_info: Dictionary) -> void:
 	_return_to_login()

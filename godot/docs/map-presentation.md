@@ -35,8 +35,9 @@ an entire world or overflow serialized tile coordinates. Viewport resize rebuild
 the strip and updates the camera after deferred UI layout. Refresh updates the
 projection, preserves the scene/session and does not replay events.
 
-This is deliberately a simple repeated platform/background. Remote characters,
-human movement, prediction and reconnect remain later patches.
+This is deliberately a simple repeated platform/background. Patch 05 adds human
+input outside the renderer and smooth movement toward confirmed targets. Remote
+characters, prediction and reconnect remain later patches.
 
 ## Run
 

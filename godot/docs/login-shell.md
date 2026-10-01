@@ -18,7 +18,8 @@ cannot open World. MmoClient remains the same Autoload instance throughout.
 Patch 03 adds confirmed local position from WorldReplica and Refresh world
 (explicit state resync). Leave world remains the logout action.
 Patch 04 renders the platform and Kotone from verified map/confirmed position.
-Human movement is patch 05.
+Patch 05 enables bounded A/D or arrow intentions, confirmed-target smoothing
+and visible nonterminal move rejections. Release a rejected key before retrying.
 
 Leave world requests public logout, waits for its response and returns to Login.
 A lost logout reply returns with an unknown-outcome message; FLUSH_FAILED remains
