@@ -37,3 +37,12 @@ that ignored working-copy directory is available.
 
 Open `godot/project.godot` in Godot 4.x. Gameplay is being built from scratch;
 the RC3 work currently includes character-rig experiments and reference scenes.
+
+## Local deferred materials
+
+`.logacy/3d-models/` holds deferred 3D-model downloads locally. `.logacy/`
+is ignored by Git and is separate from the existing `.legacy/web/` archive.
+
+Godot `.import` sidecars and script `.uid` files are versioned with their
+source assets. Generated `.godot/` caches are ignored in all project folders.
+Root `opencode.json` is a local MCP configuration and is also ignored.

@@ -9,3 +9,10 @@ godot/.import/
 godot/export/
 godot/*.pck
 godot/*.zip
+
+# Local deferred materials and machine-specific MCP settings.
+/.logacy/
+/opencode.json
+
+# Editor caches in every Godot project, including reference projects.
+**/.godot/
