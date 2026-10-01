@@ -8,6 +8,7 @@ const STAGES := {
 	"CONNECTING_GAME": "Connecting to Game...",
 	"ENTERING_WORLD": "Entering world...",
 	"LOADING_MAP": "Loading map...",
+	"LOADING_RULES": "Loading world rules...",
 	"LOADING_STATE": "Loading world state...",
 	"READY": "Ready",
 	"RESYNCING": "Refreshing world...",

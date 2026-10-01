@@ -8,8 +8,9 @@ remains detached from the MMO Kotone instance.
 InputAdapter samples the current key state; it owns no position, saved steps or
 request queue. MmoClient.move accepts only left/right, only in READY and only
 when its one scheduled/pending request slot is empty. It enters MOVING until a
-receipt or a known nonterminal rejection. A 220 ms local cadence conservatively
-paces the current 200 ms Game policy. Network request spacing still applies.
+receipt or a known nonterminal rejection. Validated `world_rules` arrives before READY and supplies authoritative
+movement cadence. Pacing waits that interval after the receipt; no Game interval
+is hardcoded in the client. Rules are world-level and independent of zone/map. Network request spacing still applies.
 An accepted in-flight step may finish after key release; release creates no new
 intent and no accumulated commands are drained later. Fresh held input after a
 successful receipt is a new intention, not replay of a previous request.
@@ -62,7 +63,7 @@ required regression checks.
 Prediction/reconciliation is patch 06, remote characters 07 and recovery/heartbeat
 08. Configurable movement pacing and long-session request-budget handling are
 recorded with triggers and acceptance in the shared permanent future obligations;
-the current 220 ms/4096-request defaults remain explicit Alpha limits.
+the current 4096-request limit remain explicit Alpha limits.
 
 API reference: [Input](https://docs.godotengine.org/en/stable/classes/class_input.html),
 [Node application focus notifications](https://docs.godotengine.org/en/stable/classes/class_node.html).

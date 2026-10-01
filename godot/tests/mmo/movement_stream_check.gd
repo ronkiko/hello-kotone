@@ -57,6 +57,11 @@ func start() -> void:
 	deadline = Time.get_ticks_msec() + (60000 if options.get("mode") == "real_wall" else 12000)
 	check(not client.move("right"), "NO_INPUT_BEFORE_READY")
 	check(client.connect_world("127.0.0.1", int(options.port), "player1"), "CONNECT")
+	if options.get("bootstrap-fault", "false") == "true":
+		await wait_state("FAILED")
+		check(client.last_error.code == options.expect and client.session_id.is_empty() and not client.move("right"), "RULES_GATE_READY_AND_MOVEMENT")
+		finish()
+		return
 	await wait_state("READY")
 	if finished or client.state != "READY": return
 	change_scene_to_file("res://scenes/mmo/world.tscn")
@@ -157,8 +162,16 @@ func fixture_case() -> void:
 	await settle()
 	check(receipts == 1 and own_events == 1 and client.world_replica.local_player().x == 51, "FACT_THEN_RECEIPT_ONCE")
 	check(is_equal_approx(world.platform.sprite.position.x,440), "CONFIRMED_VISUAL_TARGET")
+	if mode == "cadence350":
+		var copy: Dictionary = client.world_rules
+		copy.movement.min_move_interval_ms = 1
+		check(client.world_rules.movement.min_move_interval_ms == 350 and not client.move("right"), "AUTHORITATIVE_CADENCE_NO_LOCAL_200")
 	await create_timer(0.35).timeout
 	check(receipts == 1 and own_events == 1, "NO_RELEASED_INPUT_REPLAY")
+	if mode == "cadence350":
+		check(client.move("right"), "SERVER_POLICY_BUDGET_OPENS")
+		await wait_state("READY")
+		check(receipts == 2 and own_events == 2 and client.world_replica.local_player().x == 52, "ALTERNATE_CADENCE_CONFIRMED")
 	evidence = {"confirmed_x":client.world_replica.local_player().x,"receipts":receipts,"own_events":own_events,"rejections":rejections}
 	check(client.logout(), "FIXTURE_LOGOUT")
 	await wait_state("DISCONNECTED")

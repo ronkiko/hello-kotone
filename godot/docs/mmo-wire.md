@@ -15,7 +15,7 @@ MmoClient.connect_world("127.0.0.1", 21060, "player1")
 ```
 
 The client automatically performs Login -> advertised Game endpoint -> enter ->
-verified map/cache -> state -> READY. `initial_snapshot`, `last_snapshot`, `map_document`,
+verified map/cache -> world_rules -> state -> READY. `initial_snapshot`, `last_snapshot`, `map_document`,
 `player_id` and `session_id` expose confirmed handshake data. Read-only
 `request_state()` / `request_map()`, `move("left"/"right")` and `logout()` return
 false when busy. Move sends direction only and enters MOVING until its receipt

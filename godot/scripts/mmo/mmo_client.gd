@@ -37,7 +37,9 @@ var _scheduled: Dictionary = {}
 var _request_deadline := 0
 var _next_request_at := 0
 var _request_count := 0
-const MOVE_INTERVAL_MS := 220 # Conservative default for the current 200 ms Game policy.
+var _world_rules: Dictionary = {}
+var world_rules: Dictionary:
+	get: return _world_rules.duplicate(true)
 var _next_move_at := 0
 var _move_fact: Dictionary = {}
 
@@ -59,7 +61,7 @@ func move(direction: String) -> bool:
 	if not _public_request("move", {"direction": direction}):
 		return false
 	_move_fact = {}
-	_next_move_at = Time.get_ticks_msec() + MOVE_INTERVAL_MS
+	_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
 	_set_state("MOVING")
 	return true
 
@@ -189,7 +191,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 			var code: String = message.error.code
 			_pending = {}
 			_next_request_at = Time.get_ticks_msec() + REQUEST_INTERVAL_MS
-			_next_move_at = Time.get_ticks_msec() + MOVE_INTERVAL_MS
+			_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
 			_set_state("READY")
 			if state == "READY":
 				move_rejected.emit(code)
@@ -231,6 +233,11 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if not _accept_map(data.map, "server"):
 				return
 			response_received.emit(op, data.duplicate(true))
+		"world_rules":
+			_world_rules = data.duplicate(true)
+			_set_state("LOADING_STATE")
+			_schedule("state", {})
+			response_received.emit(op, data.duplicate(true))
 		"state":
 			if not _snapshot_matches(data.snapshot):
 				_fail("SNAPSHOT_MISMATCH")
@@ -245,6 +252,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if loading and state == "READY":
 				world_ready.emit()
 		"move":
+			_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
 			_move_fact = {}
 			_set_state("READY")
 			if state == "READY":
@@ -268,8 +276,8 @@ func _accept_map(value: Dictionary, source: String) -> bool:
 		# Disk failure affects only reuse; the validated live map remains usable.
 		map_cache.store_verified(value, world_replica.view().map)
 	if state == "LOADING_MAP":
-		_set_state("LOADING_STATE")
-		_schedule("state", {})
+		_set_state("LOADING_RULES")
+		_schedule("world_rules", {})
 	return true
 
 func _map_matches(value: Dictionary) -> bool:
@@ -296,6 +304,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	last_snapshot = {}
 	map_document = {}
 	map_source = ""
+	_world_rules = {}
 	_move_fact = {}
 	_next_move_at = 0
 	if not preserve_replica:
