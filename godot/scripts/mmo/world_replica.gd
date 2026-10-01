@@ -84,6 +84,9 @@ func replace_snapshot(value: Dictionary) -> bool:
 		return _reject("MAP_MISMATCH")
 	if value.revision < _snapshot.revision:
 		return _reject("SNAPSHOT_ROLLBACK")
+	# All facts through this boundary precede state on the ordered TCP stream.
+	if value.revision > _snapshot.revision:
+		return _reject("SNAPSHOT_GAP")
 	_commit(value)
 	return true
 

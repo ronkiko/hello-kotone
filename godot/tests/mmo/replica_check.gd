@@ -80,17 +80,20 @@ func _initialize() -> void:
 		check(not replica.replace_snapshot(baseline(3)), kind + " state cannot repair corrupt stream")
 		check(not replica.install_map(MAP), kind + " map cannot repair corrupt stream")
 
-	for kind in ["rollback", "epoch", "map", "missing_local", "identity", "outside_remote"]:
+	for kind in ["rollback", "gap", "epoch", "map", "missing_local", "identity", "outside_remote"]:
 		replica = ready_replica()
 		var bad := baseline()
 		match kind:
 			"rollback": bad.revision = 0
+			"gap": bad.revision = 2
 			"epoch": bad.epoch = "e2"
 			"map": bad.map.content_version = 2
 			"missing_local": bad.players = [player("p2", "player2")]
 			"identity": bad.players[0].nickname = "player2"
 			"outside_remote": bad.players.append(player("p2", "player2", 101))
 		check(not replica.replace_snapshot(bad) and replica.view().confirmed_local_x == 50, "snapshot " + kind + " rejected atomically")
+		if kind == "gap":
+			check(replica.view().stale_reason == "SNAPSHOT_GAP" and replica.view().reconnect_required and replica.view().revision == 1, "snapshot cannot hide missing events")
 
 	replica = Replica.new()
 	var before_map := baseline(1, [player(), player("p2", "player2", 101)])

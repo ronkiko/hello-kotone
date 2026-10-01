@@ -24,7 +24,10 @@ On a healthy connection, explicit `MmoClient.request_state()` changes lifecycle
 to RESYNCING and replica to STALE/RESYNC_PENDING. Preceding events still reduce;
 the correlated state reply replaces the full snapshot and restores SYNCED/READY.
 Subsequent events must be snapshot revision+1. Nothing is buffered or replayed.
-The snapshot retains zone/map, epoch, local identity and nondecreasing revision.
+The snapshot retains zone/map, epoch and local identity. Its revision must equal
+the already reduced stream revision: preceding facts arrive before state on TCP.
+Lower revision is SNAPSHOT_ROLLBACK; higher revision is SNAPSHOT_GAP. A state reply
+cannot silently advance the sequence over unseen events.
 `world_ready` is emitted only for initial entry, not refresh.
 
 Duplicate, gap, wrong epoch/zone, bad membership or invalid positions invalidate

@@ -56,7 +56,7 @@ func _ready_world() -> void:
 	elif _options.get("mode") == "resync_race":
 		_phase = 2
 		_check(_client.request_state(), "EXPLICIT_RESYNC")
-	elif _options.get("mode") in ["rollback_state", "epoch_state", "map_state"]:
+	elif _options.get("mode") in ["rollback_state", "gap_state", "epoch_state", "map_state"]:
 		_phase = 3
 		_check(_client.request_state(), "INVALID_STATE_REQUEST")
 	elif _options.get("mode") == "load_events":
@@ -133,11 +133,13 @@ func _response(op: String, _data: Dictionary) -> void:
 func _fault(info: Dictionary) -> void:
 	var mode: String = _options.get("mode", "real")
 	var view: Dictionary = _client.world_replica.view()
-	var expected_code := "SNAPSHOT_MISMATCH" if mode in ["rollback_state", "epoch_state", "map_state", "outside_snapshot"] else ("DISCONNECTED" if mode == "disconnect_stale" else "STREAM_DESYNC")
+	var expected_code := "SNAPSHOT_MISMATCH" if mode in ["rollback_state", "gap_state", "epoch_state", "map_state", "outside_snapshot"] else ("DISCONNECTED" if mode == "disconnect_stale" else "STREAM_DESYNC")
 	_check(info.code == expected_code, "EXPECTED_FAULT")
 	_check(view.status == "STALE" and view.resync_required and view.reconnect_required and _client.session_id.is_empty(), "STALE_AND_FENCED")
 	_check(view.confirmed_local_x == 50 and view.revision == 1, "LAST_CONFIRMED_DATA_RETAINED")
 	_check(view.stale_reason == _options.get("reason", ""), "STALE_REASON")
+	if mode == "gap_state":
+		_check(_events.is_empty(), "SNAPSHOT_ADVANCE_WITHOUT_EVENTS_REJECTED")
 	_check(not _client.request_state() and not _client.request_map(), "CORRUPT_STREAM_CANNOT_RESYNC")
 	_evidence.stale_reason = view.stale_reason
 	_evidence.confirmed_revision = view.revision
