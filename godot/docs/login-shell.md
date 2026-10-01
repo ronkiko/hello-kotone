@@ -17,7 +17,8 @@ The transition checks READY again before replacing the scene so that a late faul
 cannot open World. MmoClient remains the same Autoload instance throughout.
 Patch 03 adds confirmed local position from WorldReplica and Refresh world
 (explicit state resync). Leave world remains the logout action.
-Platform/character rendering is patch 04.
+Patch 04 renders the platform and Kotone from verified map/confirmed position.
+Human movement is patch 05.
 
 Leave world requests public logout, waits for its response and returns to Login.
 A lost logout reply returns with an unknown-outcome message; FLUSH_FAILED remains

@@ -1,6 +1,8 @@
 extends Control
 ## Read-only world presentation. All confirmed data comes from WorldReplica.
 
+const Platform = preload("res://scripts/presentation/platform_world.gd")
+var platform: Node2D
 const LOGIN_SCENE := "res://scenes/mmo/login.tscn"
 @onready var identity: Label = $Layout/Column/Identity
 @onready var status_label: Label = $Layout/Column/Status
@@ -18,6 +20,8 @@ func _ready() -> void:
 	if MmoClient.state != "READY":
 		_return_to_login()
 		return
+	platform = Platform.new()
+	$Layout/Column/View/SubViewport.add_child(platform)
 	_show_world()
 	_on_state_changed(MmoClient.state)
 
@@ -29,6 +33,8 @@ func _show_world() -> void:
 		return
 	identity.text = "%s · %s" % [player.nickname, player.zone_id]
 	position_label.text = "Position: %d" % player.x
+	if platform != null:
+		platform.project(MmoClient.map_document, MmoClient.world_replica.view())
 
 func _leave_world() -> void:
 	if not MmoClient.logout():

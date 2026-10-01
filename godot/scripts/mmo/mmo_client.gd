@@ -10,6 +10,7 @@ signal disconnected
 
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
+const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
 const REQUEST_LIMIT := 4096
 const REQUEST_INTERVAL_MS := 75 # Server public minimum is 50 ms.
@@ -21,6 +22,8 @@ var initial_snapshot: Dictionary = {}
 var last_snapshot: Dictionary = {}
 var map_document: Dictionary = {}
 var world_replica := Replica.new()
+var map_cache := MapCache.new()
+var map_source := ""
 var connect_timeout_ms := 5000
 var request_timeout_ms := 20000
 var write_timeout_ms := 5000
@@ -183,19 +186,16 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if session_id.is_empty():
 				return
 			_set_state("LOADING_MAP")
-			_schedule("map", {})
-			response_received.emit(op, data.duplicate(true))
+			var cached := map_cache.load_verified(world_replica.view().map)
+			if cached.is_empty():
+				_schedule("map", {})
+			else:
+				_accept_map(cached, "cache")
+			if not session_id.is_empty():
+				response_received.emit(op, data.duplicate(true))
 		"map":
-			if not _map_matches(data.map):
-				_fail("MAP_MISMATCH")
+			if not _accept_map(data.map, "server"):
 				return
-			map_document = data.map.duplicate(true)
-			if not world_replica.install_map(data.map):
-				_fail("SNAPSHOT_MISMATCH")
-				return
-			if state == "LOADING_MAP":
-				_set_state("LOADING_STATE")
-				_schedule("state", {})
 			response_received.emit(op, data.duplicate(true))
 		"state":
 			if not _snapshot_matches(data.snapshot):
@@ -213,6 +213,25 @@ func _on_frame(frame: PackedByteArray) -> void:
 		"logout":
 			_close_cleanly()
 			response_received.emit(op, data.duplicate(true))
+
+func _accept_map(value: Dictionary, source: String) -> bool:
+	if not _map_matches(value):
+		_fail("MAP_MISMATCH")
+		return false
+	if not world_replica.install_map(value):
+		_fail("SNAPSHOT_MISMATCH")
+		return false
+	if session_id.is_empty():
+		return false
+	map_document = value.duplicate(true)
+	map_source = source
+	if source == "server":
+		# Disk failure affects only reuse; the validated live map remains usable.
+		map_cache.store_verified(value, world_replica.view().map)
+	if state == "LOADING_MAP":
+		_set_state("LOADING_STATE")
+		_schedule("state", {})
+	return true
 
 func _map_matches(value: Dictionary) -> bool:
 	var reference: Dictionary = world_replica.view().map
@@ -237,6 +256,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	initial_snapshot = {}
 	last_snapshot = {}
 	map_document = {}
+	map_source = ""
 	if not preserve_replica:
 		world_replica.clear()
 

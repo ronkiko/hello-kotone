@@ -27,19 +27,23 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## MMO integration — v3.main.5.03
+## MMO integration — v3.main.5.04
 
 `MmoClient` is a persistent Autoload with direct protocol-v4 TCP/JSONL Login/Game
 connections. The project now starts at Login: choose a nickname (default player1),
 set the local Login endpoint and press Connect. Loading stages lead to a separate
 World scene after the map and state have been validated. Leave world waits for
-logout and returns to Login. The Kotone renderer is not connected yet.
+logout and returns to Login. World now renders Kotone on a TileMapLayer platform from the verified server map.
 `WorldReplica` reduces snapshot/events independently of scenes and stores confirmed
-positions. World shows local X and offers explicit Refresh world through state.
+positions. World projects confirmed local X into pixels, follows with Camera2D,
+and offers explicit Refresh world through state. Verified maps persist in user://;
+corrupt or mismatched cache files trigger a public map request. Human movement is
+reserved for patch 05; the standalone local controller is detached in MMO World.
 The shared roadmap lives in the neighboring `ai_research` repository, under
 `v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
 See [MMO wire core and checks](docs/mmo-wire.md) for the API and validation commands.
 See [Login/Loading shell](docs/login-shell.md) for startup and UI acceptance.
+See [Map cache and presentation](docs/map-presentation.md) for projection/cache rules.
 See [World replica](docs/world-replica.md) for reduction/resync rules and checks.
 The build order above describes the earlier standalone prototype; the active MMO
 integration order is defined by series 5 in `ai_research`.
