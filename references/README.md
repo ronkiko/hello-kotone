@@ -7,4 +7,5 @@ only when the Godot project explicitly adopts it in a later design decision.
 
 `kotone-sprites-reference/` contains historical Kotone reference material,
 including earlier RC1 and RC2 source material. Production copies used by the
-legacy game remain under `legacy/web/assets/`.
+legacy game remain under `.legacy/web/assets/` in working copies that retain
+the local archive.

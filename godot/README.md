@@ -2,7 +2,8 @@
 
 This is the new RC3 Godot 2D implementation of Hello Kotone.
 
-The original browser implementation remains in `../legacy/web/` and is used
+The original browser implementation is archived locally in `../.legacy/web/`
+when available and is used
 as a behavior and visual reference only. This project is intentionally built
 from scratch rather than converted from the Canvas implementation.
 
@@ -13,15 +14,15 @@ from scratch rather than converted from the Canvas implementation.
 - Pixel-oriented rendering settings
 - Main scene with world, camera, and UI layers
 - Initial global game state singleton
+- Kotone v2 front-facing idle and left/right walking animations
 - RC3 rigid-cutout experiment archived
 - Fresh front-facing T-pose/Polygon2D rig workspace prepared
 
 ## Planned build order
 
-1. Player scene and horizontal movement
-2. Kotone sprite import and animation
-3. Hallway composition and camera follow
-4. Letters and door interaction
-5. Rooms 2C and 3C
-6. Timer, bell, dialogue, and henshin flow
-7. Audio, settings, and mobile controls
+1. Player collision and world bounds
+2. Hallway composition and camera follow
+3. Letters and door interaction
+4. Rooms 2C and 3C
+5. Timer, bell, dialogue, and henshin flow
+6. Audio, settings, and mobile controls

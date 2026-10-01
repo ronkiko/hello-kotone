@@ -6,23 +6,25 @@ is archived unchanged as a runnable legacy implementation.
 ## Repository layout
 
 ```text
-legacy/web/                 Original Canvas and vanilla JS implementation
-legacy/web/assets/kotone-v1 Historical Kotone model kept for RC1 history
-legacy/web/assets/kotone-v2 Historical Kotone model kept for RC2 history
+.legacy/web/                Local-only archive of the Canvas and vanilla JS game
 references/                 Source and visual reference material
 ```
+
+`.legacy/` is ignored by Git, so the archived browser game is present only in
+working copies where it has been retained locally.
 
 The material under `references/` is reference material, not an automatic
 canonical source for RC3. Canonical art and design decisions will be declared
 explicitly as the Godot project is built.
 
-The public library remains at the repository root. Its game links now point to
-`legacy/web/`, so the legacy implementation remains directly playable without
-changing deployment configuration.
+The game links on the root library page point to `.legacy/web/` when the local
+archive is available. The ignored archive is not included in Git checkouts or
+deployments.
 
 ## Legacy
 
-Run the repository through a static HTTP server and open `/legacy/web/`:
+If `.legacy/web/` is present, run the repository through a static HTTP server
+and open `/.legacy/web/`:
 
 ```text
 python3 -m http.server
@@ -33,6 +35,5 @@ that ignored working-copy directory is available.
 
 ## Godot
 
-Open `godot/project.godot` in Godot 4.x. The project is intentionally minimal;
-gameplay will be implemented from scratch in separate commits after this
-workspace-initialization commit.
+Open `godot/project.godot` in Godot 4.x. Gameplay is being built from scratch;
+the RC3 work currently includes character-rig experiments and reference scenes.

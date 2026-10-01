@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/kotone_v2_idle_front.png" id="1_texture"]
+[ext_resource type="Script" path="res://scripts/kotone_controller.gd" id="2_script"]
+
+[node name="Kotone" type="Sprite2D"]
+texture = ExtResource("1_texture")
+hframes = 6
+script = ExtResource("2_script")
