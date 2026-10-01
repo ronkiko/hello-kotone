@@ -26,3 +26,13 @@ from scratch rather than converted from the Canvas implementation.
 4. Rooms 2C and 3C
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
+
+## MMO integration — v3.main.5.01
+
+`MmoClient` is a persistent Autoload with direct protocol-v4 TCP/JSONL Login/Game
+connections. It starts idle; scenes and the Kotone renderer are not connected yet.
+The shared roadmap lives in the neighboring `ai_research` repository, under
+`v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
+See [MMO wire core and checks](docs/mmo-wire.md) for the API and validation commands.
+The build order above describes the earlier standalone prototype; the active MMO
+integration order is defined by series 5 in `ai_research`.

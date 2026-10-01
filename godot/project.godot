@@ -10,6 +10,8 @@ run/main_scene="res://scenes/main.tscn"
 
 [autoload]
 
+MmoClient="*res://scripts/mmo/mmo_client.gd"
+
 GameState="*res://scripts/game_state.gd"
 
 [display]
