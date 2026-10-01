@@ -28,8 +28,42 @@ func _initialize() -> void:
 	check(Protocol.version_error(bootstrap), "bootstrap version mismatch")
 	bootstrap.supported_versions = [4]
 	check(not Protocol.version_error(bootstrap), "invalid bootstrap rejected")
+	for source in ['{"x":\r1}', '{"x":1}\r ', '{"x":1}\r', '{"x":\n1}']:
+		check(Protocol.decode(source.to_utf8_buffer()).is_empty(), "raw CR/LF anywhere rejected")
+	check(Protocol.decode('{"x":"\\r\\n"}'.to_utf8_buffer()).get("x") == "\r\n", "escaped CR/LF remains legal JSON")
+	for item in [
+		["OUT_OF_BOUNDS", "move", "rejected", true],
+		["OUT_OF_BOUNDS", "state", "rejected", false],
+		["ALREADY_ONLINE", "enter", "rejected", true],
+		["ALREADY_ONLINE", "map", "rejected", false],
+		["NICKNAME_NOT_ALLOWED", "login", "error", false],
+		["MADE_UP_ERROR", "login", "rejected", false],
+		["MADE_UP_ERROR", "login", "error", false],
+		["FLUSH_FAILED", "logout", "error", true],
+		["FLUSH_FAILED", "state", "error", false],
+		["FLUSH_FAILED", null, "error", false],
+		["FLUSH_FAILED", "logout", "rejected", false],
+		["UNSUPPORTED_VERSION", "login", "error", false],
+		["WORLD_PAUSED", "move", "rejected", true],
+		["WORLD_PAUSED", "state", "rejected", false],
+		["RATE_LIMITED", "move", "rejected", true],
+		["RATE_LIMITED", "login", "error", false],
+		["WRITER_BUSY", "enter", "rejected", false],
+		["INVALID_MESSAGE", null, "error", true],
+		["ALREADY_ONLINE", null, "rejected", false],
+	]:
+		check(Protocol.response(failure(item[0], item[1], item[2])) == item[3], "code/status/operation semantics")
+	for op in Protocol.PUBLIC_OPERATIONS:
+		check(Protocol.response(failure("RATE_LIMITED", op, "rejected")), "rate limit public operations")
+	var partial := failure("INTERNAL_ERROR", "login", "error")
+	partial.request_id = null
+	check(not Protocol.response(partial), "partial correlation rejected")
 	print(JSON.stringify({"suite": "protocol", "checks": _checks, "failures": _failures, "result": "PASS" if _failures == 0 else "FAIL"}))
 	quit(0 if _failures == 0 else 1)
+
+func failure(code: String, op: Variant, status: String) -> Dictionary:
+	return {"protocol_version": 4, "type": "response", "request_id": "r1" if op != null else null,
+		"op": op, "status": status, "data": null, "error": {"code": code, "message": "Test rejection"}}
 
 func check(value: bool, label: String) -> void:
 	_checks += 1

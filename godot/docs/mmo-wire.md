@@ -34,10 +34,14 @@ request 20 seconds, partial-frame assembly 10 seconds without extending the
 deadline for each arriving byte. Tests can shorten these timeouts.
 
 The strict parser rejects duplicate keys, trailing commas, invalid UTF-8/scalars,
-fraction/exponent numbers, unsafe integers, depth >16, CRLF and BOM. Successful
+fraction/exponent numbers, unsafe integers, depth >16, raw CR anywhere, CRLF and BOM. Successful
 public responses and event schemas are validated before dispatch; map schema 1
 uses a canonical SHA-256 hash and must match the snapshot reference. Bootstrap
-version errors are recognized without silently downgrading the protocol.
+version errors are recognized without silently downgrading the protocol. Failure
+responses require a known wire code, the correct rejected/error status and a legal
+public operation for that rejection. FLUSH_FAILED requires correlated logout;
+UNSUPPORTED_VERSION is accepted only via the bootstrap envelope. Invalid replies
+leave a pending mutation's outcome unknown.
 
 Events are delivered separately from request correlation. Patch 03 will implement
 the world replica and epoch/revision event reduction. Disk cache and world/map
@@ -74,5 +78,7 @@ frames, malformed/oversized frames, EOF, version/correlation errors, timeout and
 lost mutation replies without replay). Fixtures are only negative test endpoints.
 Runtime/evidence is written to a printed temporary directory; the summary contains
 the commits and source hashes of the tested client files, without keys/tickets.
+For final acceptance, use `--require-committed` on clean checkouts of both repos.
+The report records the exact tested commit pair and rejects changes during the run.
 
 API reference: [StreamPeer partial IO](https://docs.godotengine.org/en/stable/classes/class_streampeer.html).

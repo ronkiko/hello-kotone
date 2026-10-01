@@ -4,9 +4,35 @@ extends RefCounted
 const VERSION := 4
 const MAX_FRAME_BYTES := 65536
 const WireJson = preload("res://scripts/mmo/wire_json.gd")
+const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "move", "logout"]
+# Wire codes/status semantics from protocol v4, independently implemented here.
+# Internal-only WRITER_BUSY has no legal public rejection operation.
+const PUBLIC_ERROR_CODES := [
+	"WORLD_PAUSED", "FLUSH_FAILED", "STORAGE_CONFLICT", "WRITER_BUSY", "INVALID_TICKET",
+	"NOT_AUTHORIZED", "WRONG_ENDPOINT", "SERVER_UNAVAILABLE", "INVALID_MESSAGE",
+	"UNSUPPORTED_VERSION", "UNKNOWN_OPERATION", "MESSAGE_TOO_LARGE", "INVALID_MAP",
+	"NOT_AUTHENTICATED", "ALREADY_AUTHENTICATED", "NICKNAME_NOT_ALLOWED", "ALREADY_ONLINE",
+	"OUT_OF_BOUNDS", "RATE_LIMITED", "RESOURCE_LIMIT", "TIMEOUT", "STORAGE_ERROR", "INTERNAL_ERROR",
+]
+const REJECTION_CODES := [
+	"NOT_AUTHENTICATED", "ALREADY_AUTHENTICATED", "NICKNAME_NOT_ALLOWED", "ALREADY_ONLINE",
+	"OUT_OF_BOUNDS", "RATE_LIMITED", "INVALID_TICKET", "WRITER_BUSY", "WORLD_PAUSED",
+]
+const REJECTION_OPERATIONS := {
+	"WORLD_PAUSED": ["move"],
+	"NOT_AUTHENTICATED": ["map", "state", "move", "logout"],
+	"ALREADY_AUTHENTICATED": ["enter"],
+	"NICKNAME_NOT_ALLOWED": ["login"],
+	"ALREADY_ONLINE": ["enter"],
+	"OUT_OF_BOUNDS": ["move"],
+	"INVALID_TICKET": ["enter"],
+	"WRITER_BUSY": [],
+	"RATE_LIMITED": PUBLIC_OPERATIONS,
+}
 
 static func decode(frame: PackedByteArray) -> Dictionary:
-	if frame.is_empty() or frame.size() + 1 > MAX_FRAME_BYTES or frame[-1] == 13:
+	# TCP removes the delimiter LF; any other raw LF/CR is forbidden in a frame.
+	if frame.is_empty() or frame.size() + 1 > MAX_FRAME_BYTES or frame.has(13) or frame.has(10):
 		return {}
 	return WireJson.new().decode(frame)
 
@@ -77,12 +103,7 @@ static func response(value: Variant) -> bool:
 		or not integer(value.protocol_version, VERSION, VERSION) or value.type != "response":
 		return false
 	if value.status in ["rejected", "error"]:
-		return value.data == null and fields(value.error, ["code", "message"]) \
-			and matches(value.error.code, "^[A-Z_]{1,64}$") and value.error.message is String \
-			and value.error.message.length() >= 1 and value.error.message.length() <= 256 \
-			and not RegEx.create_from_string("[\\x00-\\x1f\\x7f]").search(value.error.message) \
-			and ((token(value.request_id) and value.op in ["login", "enter", "map", "state", "logout"]) \
-				or (value.status == "error" and value.request_id == null and value.op == null))
+		return failure_response(value)
 	if value.status != "ok" or value.error != null or not token(value.request_id):
 		return false
 	var data: Variant = value.data
@@ -107,6 +128,27 @@ static func response(value: Variant) -> bool:
 				and ((data.flush.status == "completed" and integer(data.flush.save_version)) \
 					or (data.flush.status == "disabled" and data.flush.save_version == null))
 	return false
+
+static func failure_response(value: Dictionary) -> bool:
+	if value.data != null or not fields(value.error, ["code", "message"]):
+		return false
+	var code: Variant = value.error.code
+	var message: Variant = value.error.message
+	if not code is String or not code in PUBLIC_ERROR_CODES or not message is String \
+		or message.length() < 1 or message.length() > 256 \
+		or RegEx.create_from_string("[\\x00-\\x1f\\x7f]").search(message):
+		return false
+	if (value.status == "rejected") != (code in REJECTION_CODES):
+		return false
+	var correlated: bool = token(value.request_id) and value.op in PUBLIC_OPERATIONS
+	if not correlated and not (value.request_id == null and value.op == null):
+		return false
+	if value.status == "rejected" and (not correlated or not value.op in REJECTION_OPERATIONS[code]):
+		return false
+	if code == "FLUSH_FAILED" and (not correlated or value.op != "logout"):
+		return false
+	# This code is legal only in the stable version_error bootstrap envelope.
+	return code != "UNSUPPORTED_VERSION"
 
 static func event(value: Variant) -> bool:
 	if not fields(value, ["protocol_version", "type", "event", "epoch", "zone_id", "revision", "data"]) \
