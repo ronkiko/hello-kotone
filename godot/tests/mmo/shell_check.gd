@@ -154,6 +154,9 @@ func _audit_text(node: Node) -> void:
 func _capture(name: String) -> void:
 	if _capture_dir.is_empty():
 		return
+	# Container layout is deferred after scene replacement; capture a settled frame.
+	await process_frame
+	await process_frame
 	await RenderingServer.frame_post_draw
 	var result := root.get_texture().get_image().save_png(_capture_dir.path_join(name + ".png"))
 	_check(result == OK, "SCREENSHOT_" + name)
