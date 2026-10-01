@@ -31,8 +31,10 @@ corrupt/unknown stream. A lost receipt after moved retains the new confirmed X.
 
 PlatformWorld projects confirmed X into a target and keeps a private visual X.
 It interpolates at 160 pixels/s, clamps to projected map bounds, animates existing
-left/right textures per frame, and follows with Camera2D. It does not predict
-from local input. Sprite2D edits cannot change that target, replica or a future
+left/right textures per frame, and follows with Camera2D. Patch 5.06 supplies one
+speculative display target after an accepted local intention; see
+[prediction/reconciliation](prediction-reconciliation.md).
+Sprite2D edits cannot change that target, replica or a future
 move request; the next render tick/state refresh restores presentation. First
 entry snaps to the confirmed spawn; later confirmed facts move smoothly.
 
@@ -60,7 +62,7 @@ required regression checks.
 
 ## Later obligations
 
-Prediction/reconciliation is patch 06, remote characters 07 and recovery/heartbeat
+Prediction/reconciliation is implemented in patch 06, remote characters 07 and recovery/heartbeat
 08. Configurable movement pacing and long-session request-budget handling are
 recorded with triggers and acceptance in the shared permanent future obligations;
 the current 4096-request limit remain explicit Alpha limits.

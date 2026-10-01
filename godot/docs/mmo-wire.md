@@ -25,7 +25,10 @@ No connection or request is automatically retried. A public connection is closed
 after 4096 requests; reconnection policy belongs to a later patch.
 
 Signals: `state_changed`, `world_ready`, `response_received`, `event_received`,
-`fault`, `disconnected`. Login success does not expose its ticket via a signal.
+`move_intended`, `move_rejected`, `fault`, `disconnected`. `move_intended(direction)`
+notifies a locally accepted scheduled move before transmission; it is neither an
+ack nor a fact. Busy/paced/refused moves or synchronous pre-send cancellation
+do not emit it. Login success does not expose its ticket via a signal.
 Faults contain a bounded local code, operation and `outcome_unknown`; server
 messages/raw frames and credentials are not logged. A validated rejection has a
 known outcome; losing a login/enter/move/logout response has an unknown outcome.
@@ -51,7 +54,9 @@ Events are delivered separately from request correlation. Patch 03 adds
 and explicit `request_state()` replaces the whole baseline. During this request
 lifecycle is RESYNCING and replica is STALE/RESYNC_PENDING; preceding events
 continue to reduce without replay. Patch 04 adds verified disk cache and world/map rendering; patch 05 adds
-bounded input and smooth confirmed-target presentation. A READY connection without further requests will
+bounded input and smooth confirmed-target presentation. Patch 06 adds a separate
+one-step prediction model and bounded display reconciliation, without wire changes.
+A READY connection without further requests will
 eventually hit the server's authenticated idle timeout; heartbeat/recovery policy
 is deferred to patch 08.
 

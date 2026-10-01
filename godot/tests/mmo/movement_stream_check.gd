@@ -129,7 +129,7 @@ func fixture_case() -> void:
 	check(not client.move("left") and not client.request_state() and not client.logout(), "ONE_IN_FLIGHT")
 	if mode == "delayed_hold":
 		await create_timer(0.07).timeout
-		check(client.world_replica.local_player().x == 50 and world.platform.sprite.position.x == 432, "NO_PREDICTED_X")
+		check(client.world_replica.local_player().x == 50 and world.prediction.view().predicted_x == 51 and world.platform.sprite.position.x > 432, "DISPLAY_PREDICTION_NO_CONFIRMED_WRITE")
 		key(KEY_D,false)
 	if rejected:
 		await wait_state("READY")

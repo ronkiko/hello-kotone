@@ -1,5 +1,5 @@
 extends Node2D
-## Read-only projection. Receives verified map + replica view; no network/input.
+## Read-only projection. Replica facts plus an optional bounded display target.
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
 const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
@@ -17,6 +17,7 @@ var sprite: Sprite2D
 var world_length := 0.0
 var _map: Dictionary = {}
 var _view: Dictionary = {}
+var _display_x: Variant = null
 var _elapsed := 0.0
 var _position_installed := false
 var _target_x := 0.0
@@ -52,12 +53,12 @@ func _ready() -> void:
 	add_child(camera)
 	camera.make_current()
 	get_viewport().size_changed.connect(_resize_projection)
-	project(_map, _view)
+	project(_map, _view, _display_x)
 
 func server_to_pixel(x: int) -> float:
 	return ORIGIN_X + float(x - int(_map.min_x)) / float(_map.units_per_meter) * PIXELS_PER_METER
 
-func project(document: Dictionary, view: Dictionary) -> bool:
+func project(document: Dictionary, view: Dictionary, display_x: Variant = null) -> bool:
 	if not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")):
 		return false
 	for key in ["map_id", "content_version", "content_hash"]:
@@ -66,13 +67,16 @@ func project(document: Dictionary, view: Dictionary) -> bool:
 	var x: Variant = view.get("confirmed_local_x")
 	if not Protocol.integer(x, document.min_x, document.max_x):
 		return false
+	if display_x != null and not Protocol.integer(display_x, document.min_x, document.max_x):
+		return false
 	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
+	_display_x = display_x
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
 	if not is_node_ready():
 		return true
-	var target := server_to_pixel(x)
+	var target := server_to_pixel(x if display_x == null else display_x)
 	if initial:
 		_first_cell = -1000000
 		_visual_x = target
@@ -95,7 +99,7 @@ func _reframe() -> void:
 func _resize_projection() -> void:
 	_first_cell = -1000000
 	if not _map.is_empty():
-		project(_map, _view)
+		project(_map, _view, _display_x)
 
 func _process(delta: float) -> void:
 	if _map.is_empty() or sprite == null:

@@ -37,7 +37,8 @@ projection, preserves the scene/session and does not replay events.
 
 This is deliberately a simple repeated platform/background. Patch 05 adds human
 input outside the renderer and smooth movement toward confirmed targets. Remote
-characters, prediction and reconnect remain later patches.
+characters and reconnect remain later patches. Prediction is now a separate
+bounded display target in [patch 06](prediction-reconciliation.md).
 
 ## Run
 

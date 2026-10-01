@@ -6,6 +6,7 @@ signal fault(info: Dictionary)
 signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
 signal move_rejected(code: String)
+signal move_intended(direction: String)
 signal world_ready
 signal disconnected
 
@@ -63,7 +64,11 @@ func move(direction: String) -> bool:
 	_move_fact = {}
 	_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
 	_set_state("MOVING")
-	return true
+	# A local observer may cancel synchronously. Unsent intentions are not facts.
+	if state != "MOVING":
+		return false
+	move_intended.emit(direction)
+	return state == "MOVING"
 
 func request_state() -> bool:
 	if not _public_request("state"):

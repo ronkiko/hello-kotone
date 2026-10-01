@@ -9,6 +9,9 @@ local player ID, confirmed local X, stale_reason, resync_required and
 reconnect_required. `snapshot()` and `local_player()` also return deep copies;
 changing these copies never changes confirmed data. There is no prediction or
 client-selected X in the reducer.
+Patch 06 adds `local_moved`, emitted after reducing an own moved fact (including
+unchanged X). It carries no raw frame; prediction reads confirmed state from
+the reducer. Remote events do not emit this notification.
 
 `start(snapshot, player_id, nickname)` establishes enter baseline N. Events can
 arrive before map; `install_map()` then checks map identity/hash and all current

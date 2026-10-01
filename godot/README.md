@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## MMO integration — v3.main.5.05
+## MMO integration — v3.main.5.06
 
 `MmoClient` is a persistent Autoload with direct protocol-v4 TCP/JSONL Login/Game
 connections. The project now starts at Login: choose a nickname (default player1),
@@ -39,13 +39,17 @@ positions. World projects confirmed local X into pixels, follows with Camera2D,
 and offers explicit Refresh world through state. Verified maps persist in user://;
 corrupt or mismatched cache files trigger a public map request. A/D and arrows now send bounded left/right intentions to Game. Own moved facts
 set confirmed X; matching receipts do not apply another step. Kotone smoothly
-follows confirmed targets; prediction remains patch 06. The standalone local
+follows one bounded speculative display step after an accepted intention.
+Prediction stays separate from WorldReplica; own facts/rejections reconcile it,
+and unknown outcomes clear speculation and fence the connection without replay.
+The standalone local
 controller stays detached in MMO World.
 The shared roadmap lives in the neighboring `ai_research` repository, under
 `v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
 See [MMO wire core and checks](docs/mmo-wire.md) for the API and validation commands.
 See [Login/Loading shell](docs/login-shell.md) for startup and UI acceptance.
 See [Human movement](docs/human-movement.md) for controls, outcomes and tests.
+See [Prediction/reconciliation](docs/prediction-reconciliation.md) for latency and failure behavior.
 See [Map cache and presentation](docs/map-presentation.md) for projection/cache rules.
 See [World replica](docs/world-replica.md) for reduction/resync rules and checks.
 The build order above describes the earlier standalone prototype; the active MMO

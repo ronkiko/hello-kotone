@@ -2,6 +2,7 @@ extends RefCounted
 ## Pure public-data reducer. Never holds sockets, scene nodes or renderer objects.
 
 signal changed
+signal local_moved
 
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
 var _snapshot: Dictionary = {}
@@ -132,6 +133,8 @@ func apply_event(value: Dictionary) -> bool:
 	# until the correlated snapshot arrives. Nothing is buffered/replayed.
 	var resync_pending := _status == "STALE"
 	_commit(next, resync_pending)
+	if value.event == "moved" and id == _local_id:
+		local_moved.emit()
 	return true
 
 func invalidate(reason: String) -> void:

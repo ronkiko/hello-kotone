@@ -3,6 +3,8 @@ extends Control
 
 const Platform = preload("res://scripts/presentation/platform_world.gd")
 const InputAdapter = preload("res://scripts/ui/move_input.gd")
+const Prediction = preload("res://scripts/presentation/local_prediction.gd")
+var prediction := Prediction.new()
 var input_adapter: Node
 var platform: Node2D
 const LOGIN_SCENE := "res://scenes/mmo/login.tscn"
@@ -19,7 +21,9 @@ func _ready() -> void:
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
 	MmoClient.move_rejected.connect(_on_move_rejected)
+	MmoClient.move_intended.connect(_on_move_intended)
 	MmoClient.world_replica.changed.connect(_show_world)
+	MmoClient.world_replica.local_moved.connect(_on_local_moved)
 	if MmoClient.state != "READY":
 		_return_to_login()
 		return
@@ -34,19 +38,38 @@ func _ready() -> void:
 func _show_world() -> void:
 	var player: Dictionary = MmoClient.world_replica.local_player()
 	if player.is_empty():
+		prediction.clear()
 		identity.text = ""
 		position_label.text = ""
 		return
 	identity.text = "%s · %s" % [player.nickname, player.zone_id]
 	position_label.text = "Position: %d" % player.x
 	if platform != null:
-		platform.project(MmoClient.map_document, MmoClient.world_replica.view())
+		var rules: Dictionary = MmoClient.world_rules
+		prediction.observe(MmoClient.map_document, MmoClient.world_replica.view(), rules.get("movement", {}).get("step_units", 0))
+		_project_display()
+
+func _project_display() -> void:
+	if platform != null:
+		platform.project(MmoClient.map_document, MmoClient.world_replica.view(), prediction.view().target_x)
+
+func _on_move_intended(direction: String) -> void:
+	if prediction.begin(direction):
+		_project_display()
+
+func _on_local_moved() -> void:
+	# Even a fact with unchanged X resolves speculation. Remote facts do not.
+	prediction.reconcile()
+	_project_display()
 
 func _leave_world() -> void:
 	if not MmoClient.logout():
 		status_label.text = "The client is busy. Try leaving again in a moment."
 
 func _on_state_changed(value: String) -> void:
+	if value != "MOVING":
+		prediction.reconcile()
+		_project_display()
 	leave_button.disabled = value != "READY"
 	refresh_button.disabled = value != "READY"
 	if value == "LOGGING_OUT":
@@ -61,6 +84,8 @@ func _on_state_changed(value: String) -> void:
 		_return_to_login()
 
 func _on_move_rejected(code: String) -> void:
+	prediction.reconcile()
+	_project_display()
 	match code:
 		"OUT_OF_BOUNDS": status_label.text = "World boundary reached."
 		"RATE_LIMITED": status_label.text = "Moving too quickly. Release the key and try again."
