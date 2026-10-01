@@ -90,6 +90,13 @@ func _start() -> void:
 	_check(_states.has("LOADING_MAP") and _states.has("LOADING_STATE") and _states.has("READY"), "ALL_LOADING_STAGES")
 	var world: Control = current_scene
 	_check(world.identity.text.contains("player1") and world.identity.text.contains(_client.map_document.map_id), "WORLD_IDENTITY")
+	_check(world.position_label.text == "Position: 50", "CONFIRMED_POSITION")
+	world.refresh_button.pressed.emit()
+	_check(_client.state == "RESYNCING" and world.refresh_button.disabled and world.leave_button.disabled, "REFRESH_BUSY")
+	await _wait_state("READY")
+	if _finished:
+		return
+	_check(current_scene == world and _client.get_instance_id() == instance_id and _client.world_replica.view().status == "SYNCED", "REFRESH_PRESERVES_SCENE_AND_SESSION")
 	_audit_text(world)
 	await _capture("world")
 	world.leave_button.pressed.emit()

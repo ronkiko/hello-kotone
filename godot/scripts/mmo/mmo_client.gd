@@ -10,6 +10,7 @@ signal disconnected
 
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
+const Replica = preload("res://scripts/mmo/world_replica.gd")
 const REQUEST_LIMIT := 4096
 const REQUEST_INTERVAL_MS := 75 # Server public minimum is 50 ms.
 var state := "IDLE"
@@ -19,6 +20,7 @@ var session_id := ""
 var initial_snapshot: Dictionary = {}
 var last_snapshot: Dictionary = {}
 var map_document: Dictionary = {}
+var world_replica := Replica.new()
 var connect_timeout_ms := 5000
 var request_timeout_ms := 20000
 var write_timeout_ms := 5000
@@ -45,7 +47,11 @@ func connect_world(host: String, port: int, nickname: String) -> bool:
 	return state != "FAILED"
 
 func request_state() -> bool:
-	return _public_request("state")
+	if not _public_request("state"):
+		return false
+	world_replica.begin_resync()
+	_set_state("RESYNCING")
+	return true
 
 func request_map() -> bool:
 	return _public_request("map")
@@ -134,7 +140,14 @@ func _on_frame(frame: PackedByteArray) -> void:
 		if session_id.is_empty() or not Protocol.event(message):
 			_fail("INVALID_EVENT")
 			return
-		# Patch 03 owns epoch/revision reduction. Events never consume a request slot.
+		if not world_replica.apply_event(message):
+			_fail("STREAM_DESYNC")
+			return
+		# A synchronous replica observer may explicitly cancel the session.
+		if session_id.is_empty():
+			return
+		last_snapshot = world_replica.snapshot()
+		# Events never consume a request slot and do not replay after state resync.
 		event_received.emit(message.duplicate(true))
 		return
 	if not Protocol.response(message):
@@ -164,6 +177,11 @@ func _on_frame(frame: PackedByteArray) -> void:
 			session_id = data.session_id
 			initial_snapshot = data.snapshot.duplicate(true)
 			last_snapshot = data.snapshot.duplicate(true)
+			if not world_replica.start(data.snapshot, player_id, _nickname):
+				_fail("SNAPSHOT_MISMATCH")
+				return
+			if session_id.is_empty():
+				return
 			_set_state("LOADING_MAP")
 			_schedule("map", {})
 			response_received.emit(op, data.duplicate(true))
@@ -172,6 +190,9 @@ func _on_frame(frame: PackedByteArray) -> void:
 				_fail("MAP_MISMATCH")
 				return
 			map_document = data.map.duplicate(true)
+			if not world_replica.install_map(data.map):
+				_fail("SNAPSHOT_MISMATCH")
+				return
 			if state == "LOADING_MAP":
 				_set_state("LOADING_STATE")
 				_schedule("state", {})
@@ -180,9 +201,11 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if not _snapshot_matches(data.snapshot):
 				_fail("SNAPSHOT_MISMATCH")
 				return
+			if session_id.is_empty():
+				return
 			last_snapshot = data.snapshot.duplicate(true)
 			var loading := state == "LOADING_STATE"
-			if loading:
+			if loading or state == "RESYNCING":
 				_set_state("READY")
 			response_received.emit(op, data.duplicate(true))
 			if loading and state == "READY":
@@ -192,23 +215,18 @@ func _on_frame(frame: PackedByteArray) -> void:
 			response_received.emit(op, data.duplicate(true))
 
 func _map_matches(value: Dictionary) -> bool:
-	var reference: Dictionary = initial_snapshot.map
+	var reference: Dictionary = world_replica.view().map
 	return value.map_id == reference.map_id and value.content_version == reference.content_version \
 		and value.content_hash == reference.content_hash
 
 func _snapshot_matches(value: Dictionary) -> bool:
-	if value.epoch != initial_snapshot.epoch or value.map != initial_snapshot.map or value.revision < last_snapshot.revision:
-		return false
-	for item in value.players:
-		if item.player_id == player_id:
-			return item.nickname == _nickname and item.x >= map_document.min_x and item.x <= map_document.max_x
-	return false
+	return world_replica.replace_snapshot(value)
 
 func _set_state(value: String) -> void:
 	state = value
 	state_changed.emit(state)
 
-func _clear_session() -> void:
+func _clear_session(preserve_replica: bool = false) -> void:
 	if _channel != null:
 		_channel.close()
 	_ticket = ""
@@ -219,11 +237,14 @@ func _clear_session() -> void:
 	initial_snapshot = {}
 	last_snapshot = {}
 	map_document = {}
+	if not preserve_replica:
+		world_replica.clear()
 
 func _fail(code: String, known_outcome: bool = false) -> void:
 	var op: String = _pending.get("op", "")
 	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "logout"]}
-	_clear_session()
+	world_replica.invalidate(code)
+	_clear_session(true)
 	_set_state("FAILED")
 	fault.emit(last_error.duplicate())
 

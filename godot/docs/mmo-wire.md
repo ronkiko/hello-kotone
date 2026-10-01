@@ -44,8 +44,11 @@ public operation for that rejection. FLUSH_FAILED requires correlated logout;
 UNSUPPORTED_VERSION is accepted only via the bootstrap envelope. Invalid replies
 leave a pending mutation's outcome unknown.
 
-Events are delivered separately from request correlation. Patch 03 will implement
-the world replica and epoch/revision event reduction. Disk cache and world/map
+Events are delivered separately from request correlation. Patch 03 adds
+`world_replica`: enter establishes a baseline, events reduce N+1 before dispatch,
+and explicit `request_state()` replaces the whole baseline. During this request
+lifecycle is RESYNCING and replica is STALE/RESYNC_PENDING; preceding events
+continue to reduce without replay. Disk cache and world/map
 rendering belong to patch 04. A READY connection without further requests will
 eventually hit the server's authenticated idle timeout; heartbeat/recovery policy
 is deferred to patch 08.

@@ -10,6 +10,7 @@ const STAGES := {
 	"LOADING_MAP": "Loading map...",
 	"LOADING_STATE": "Loading world state...",
 	"READY": "Ready",
+	"RESYNCING": "Refreshing world...",
 }
 const ERRORS := {
 	"CONNECT_FAILED": "Cannot reach the server. Check the address and start the server.",
@@ -23,6 +24,7 @@ const ERRORS := {
 	"REQUEST_TIMEOUT": "The server took too long to respond.",
 	"UNSUPPORTED_VERSION": "Client and server protocol versions do not match.",
 	"FLUSH_FAILED": "Logout was rejected: the server could not save the checkpoint.",
+	"STREAM_DESYNC": "World updates lost synchronization. Connect again for a fresh world state.",
 }
 @onready var nickname: LineEdit = $Layout/Column/Fields/Nickname
 @onready var host: LineEdit = $Layout/Column/Fields/Host

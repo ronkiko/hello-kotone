@@ -55,6 +55,15 @@ size_flags_vertical = 3
 text = "Connected to world."
 autowrap_mode = 2
 
+[node name="Position" type="Label" parent="Layout/Column"]
+layout_mode = 2
+text = ""
+
+[node name="Refresh" type="Button" parent="Layout/Column"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+text = "Refresh world"
+
 [node name="Leave" type="Button" parent="Layout/Column"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2

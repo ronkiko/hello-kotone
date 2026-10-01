@@ -15,8 +15,9 @@ that the server outcome is unknown; the UI never retries automatically.
 Only `world_ready`, after validated map and state, schedules the World scene.
 The transition checks READY again before replacing the scene so that a late fault
 cannot open World. MmoClient remains the same Autoload instance throughout.
-World currently shows the confirmed nickname/zone and a Leave world button;
-world replica and platform/character rendering are patches 03 and 04.
+Patch 03 adds confirmed local position from WorldReplica and Refresh world
+(explicit state resync). Leave world remains the logout action.
+Platform/character rendering is patch 04.
 
 Leave world requests public logout, waits for its response and returns to Login.
 A lost logout reply returns with an unknown-outcome message; FLUSH_FAILED remains
