@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/world_shell.gd" id="1"]
+[ext_resource type="Theme" path="res://scenes/mmo/shell_theme.tres" id="2"]
+
+[node name="World" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.067, 0.09, 0.125, 1)
+
+[node name="Layout" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Column" type="VBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Layout/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.82, 0.46, 1)
+theme_override_font_sizes/font_size = 22
+text = "HELLO, KOTONE · WORLD"
+
+[node name="Identity" type="Label" parent="Layout/Column"]
+layout_mode = 2
+text = ""
+
+[node name="Status" type="Label" parent="Layout/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Connected to world."
+autowrap_mode = 2
+
+[node name="Leave" type="Button" parent="Layout/Column"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+text = "Leave world"

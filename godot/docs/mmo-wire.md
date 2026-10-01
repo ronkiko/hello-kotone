@@ -4,8 +4,9 @@ This Godot client connects directly to the public Login/Game protocol v4. Storag
 is owned by the server. The shared roadmap and acceptance live in `ai_research`;
 this checkout lives at `~/work2/hello-kotone`.
 
-`MmoClient` is an idle persistent Autoload. This patch does not connect the
-renderer, local controller, or scenes to network state. From a consumer:
+`MmoClient` is an idle persistent Autoload. Patch 5.02 connects the Login/Loading
+shell to its lifecycle signals; the renderer and local controller remain separate.
+The startup Connect button calls this API; other consumers can also use it:
 
 ```gdscript
 MmoClient.world_ready.connect(on_world_ready)
@@ -82,3 +83,7 @@ For final acceptance, use `--require-committed` on clean checkouts of both repos
 The report records the exact tested commit pair and rejects changes during the run.
 
 API reference: [StreamPeer partial IO](https://docs.godotengine.org/en/stable/classes/class_streampeer.html).
+
+The shipped startup and World landing scenes are described in
+[Login/Loading shell](login-shell.md). Scene transitions preserve the Autoload,
+validated map and session; no UI node opens a socket.
