@@ -37,7 +37,7 @@ func execute(command: Dictionary) -> void:
 	check(client.world_replica.snapshot() == before and replica_changes == changes_before, "PING_NEVER_CHANGES_REPLICA_EPOCH_REVISION_X_MEMBERSHIP")
 	check(ready_count == ready_before and states.size() == states_before, "PING_NEVER_REENTERS_READY_OR_RESYNCS")
 	check(replies.get("ping",0) > requests_before.get("ping",0) + 1,"MULTIPLE_IDLE_PONGS")
-	for op in ["move","state","map","world_rules","enter","logout"]:
+	for op in ["input","state","map","world_rules","enter","logout"]:
 		check(replies.get(op,0) == requests_before.get(op,0), "NO_IDLE_" + op.to_upper())
 	var value := {"duration_ms":Time.get_ticks_msec()-elapsed,"snapshot":before,"session_unchanged":client.session_id == session,"responses":replies.duplicate(),"policy":client.session_rules,"failures":failures.duplicate()}
 	evidence.append({"sequence":sequence,"action":command.action,"value":value})
@@ -56,7 +56,7 @@ func watch(command: Dictionary) -> void:
 	check(client.state == "READY" and client.session_id == session and ready_count == ready_before, "SPECTATOR_KEEPS_SESSION")
 	check(view.confirmed_local_x == x and view.epoch == command.epoch and view.players.size() == 2, "SPECTATOR_IDENTITY_MEMBERSHIP_X")
 	check(view.revision == command.revision and view.players.p2.x == command.remote_x, "SPECTATOR_APPLIES_REMOTE_MOVES")
-	check(replies.get("ping",0) >= changes_before + 2 and replies.get("state",0) == state_count and replies.get("move",0) == 0, "INCOMING_EVENTS_DO_NOT_SUPPRESS_PING_OR_TRIGGER_RESYNC")
+	check(replies.get("ping",0) >= changes_before + 2 and replies.get("state",0) == state_count and replies.get("input",0) == 0, "INCOMING_EVENTS_DO_NOT_SUPPRESS_PING_OR_TRIGGER_RESYNC")
 	var value := {"revision":view.revision,"local_x":x,"remote_x":view.players.p2.x,"session_unchanged":client.session_id == session,"responses":replies.duplicate(),"failures":failures.duplicate()}
 	evidence.append({"sequence":sequence,"action":command.action,"value":value})
 	write_reply(sequence,value)
