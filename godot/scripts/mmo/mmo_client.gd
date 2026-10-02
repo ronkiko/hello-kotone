@@ -92,16 +92,19 @@ func move(direction: String) -> bool:
 	return state == "MOVING"
 
 func set_input(direction: String) -> bool:
-	if direction not in ["left", "right", "stop"] or state != "READY" or _world_rules.is_empty():
+	if direction not in ["left", "right", "stop"] or state not in ["READY", "MOVING"] or _world_rules.is_empty():
 		return false
+	# Latest desired state is bounded/coalesced while one input request is in flight.
 	_desired_input = direction
-	_schedule_desired_input()
+	if state == "READY":
+		_schedule_desired_input()
 	return true
 
 func _schedule_desired_input() -> void:
 	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty():
 		return
 	_schedule("input", {"input_seq": _server_input_seq + 1, "direction": _desired_input})
+	_set_state("MOVING")
 
 func request_state() -> bool:
 	# A resync must not silently leave a held server input running while presentation freezes.
@@ -257,6 +260,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 			_pending = {}
 			_desired_input = "stop"
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
+			_set_state("READY")
 			input_rejected.emit(input_code)
 			_schedule_desired_input()
 			return
@@ -359,6 +363,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 				return
 			_server_input_seq = data.input_seq
 			_server_input = sent_direction
+			_set_state("READY")
 			input_accepted.emit(_server_input_seq, _server_input, data.x)
 			response_received.emit(op, data.duplicate(true))
 			_schedule_desired_input()

@@ -78,4 +78,5 @@ func clear() -> void:
 
 func view() -> Dictionary:
 	return {"confirmed_x": _confirmed_x, "active_input_seq": _active_seq,
-		"healthy": _healthy, "records": _records.duplicate(true)}
+		"healthy": _healthy, "active": _active_seq != 0, "predicted_x": null,
+		"target_x": _confirmed_x, "records": _records.duplicate(true)}

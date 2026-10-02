@@ -18,7 +18,7 @@ func _set_locomotion_intent(value: int, send: bool = true) -> void:
 		return
 	locomotion_intent = value
 	locomotion_intent_changed.emit(value)
-	if send and client.state == "READY":
+	if send and client.state in ["READY", "MOVING"]:
 		client.set_input(_direction_name(value))
 
 func _process(_delta: float) -> void:
