@@ -36,6 +36,8 @@ func _ready() -> void:
 	_on_state_changed(MmoClient.state)
 
 func _show_world() -> void:
+	if platform != null:
+		platform.set_suspended(MmoClient.world_replica.view().status != "SYNCED")
 	var player: Dictionary = MmoClient.world_replica.local_player()
 	if player.is_empty():
 		prediction.clear()

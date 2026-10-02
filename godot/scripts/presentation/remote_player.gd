@@ -7,6 +7,7 @@ const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
 const VISUAL_SPEED := 160.0
 var sprite: Sprite2D
 var identity := Label.new()
+var suspended := false
 var player_id := ""
 var target_x := 0.0
 var visual_x := 0.0
@@ -42,7 +43,7 @@ func project(nickname: String, x: float, low: float, high: float) -> void:
 	position.x = visual_x
 
 func _process(delta: float) -> void:
-	if not _installed or sprite == null:
+	if suspended or not _installed or sprite == null:
 		return
 	var animation := 0 if is_equal_approx(visual_x, target_x) else (-1 if target_x < visual_x else 1)
 	visual_x = clampf(move_toward(visual_x, target_x, VISUAL_SPEED * delta), _min_x, _max_x)

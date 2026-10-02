@@ -16,6 +16,7 @@ var terrain := TileMapLayer.new()
 var camera := Camera2D.new()
 var sprite: Sprite2D
 var local_label := Label.new()
+var _suspended := false
 var remote_players: Dictionary = {}
 var world_length := 0.0
 var _map: Dictionary = {}
@@ -112,6 +113,12 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 	_reframe()
 	return true
 
+func set_suspended(value: bool) -> void:
+	# Stale projection is a frozen picture, never an ongoing simulation.
+	_suspended = value
+	for node in remote_players.values():
+		node.suspended = value
+
 func _remove_remote(id: String) -> void:
 	var node: Node = remote_players[id]
 	remote_players.erase(id)
@@ -134,6 +141,7 @@ func _sync_players() -> void:
 			node.position.y = FLOOR_Y - 42.25
 			add_child(node)
 			remote_players[id] = node
+		remote_players[id].suspended = _suspended
 		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
 func _reframe() -> void:
@@ -149,7 +157,7 @@ func _resize_projection() -> void:
 		project(_map, _view, _display_x)
 
 func _process(delta: float) -> void:
-	if _map.is_empty() or sprite == null:
+	if _suspended or _map.is_empty() or sprite == null:
 		return
 	_visual_x = clampf(move_toward(_visual_x, _target_x, VISUAL_SPEED * delta), ORIGIN_X, ORIGIN_X + world_length)
 	# External Sprite2D edits cannot become a new target or a movement request.

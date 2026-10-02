@@ -30,6 +30,10 @@ var connect_timeout_ms := 5000
 var request_timeout_ms := 20000
 var write_timeout_ms := 5000
 var frame_timeout_ms := 10000
+var _connection_generation := 0
+var _login_endpoint: Dictionary = {}
+var login_endpoint: Dictionary:
+	get: return _login_endpoint.duplicate(true)
 var _channel: RefCounted
 var _ticket := ""
 var _nickname := ""
@@ -52,9 +56,16 @@ func connect_world(host: String, port: int, nickname: String) -> bool:
 	if not Protocol.matches(host, "^[A-Za-z0-9.:-]{1,253}$") or not Protocol.integer(port, 1, 65535) or not Protocol.token(nickname):
 		_fail("INVALID_CONFIG")
 		return false
+	_login_endpoint = {"host": host, "port": port, "nickname": nickname}
 	_nickname = nickname
 	_open(host, port, "CONNECTING_LOGIN")
 	return state != "FAILED"
+
+func reconnect_world() -> bool:
+	# Explicit human action only: new Login/ticket/enter, never a saved mutation.
+	if _login_endpoint.is_empty():
+		return false
+	return connect_world(_login_endpoint.host, _login_endpoint.port, _login_endpoint.nickname)
 
 func move(direction: String) -> bool:
 	if direction not in ["left", "right"] or Time.get_ticks_msec() < _next_move_at:
@@ -102,26 +113,43 @@ func _public_request(op: String, payload: Dictionary = {}) -> bool:
 func _open(host: String, port: int, next_state: String) -> void:
 	if _channel != null:
 		_channel.close()
+	_connection_generation += 1
 	_request_count = 0
 	_next_request_at = 0
 	_channel = Channel.new()
 	_channel.connect_timeout_ms = connect_timeout_ms
 	_channel.write_timeout_ms = write_timeout_ms
 	_channel.frame_timeout_ms = frame_timeout_ms
-	_channel.connected.connect(_on_connected)
-	_channel.frame_received.connect(_on_frame)
-	_channel.failed.connect(_fail)
+	_channel.connected.connect(_channel_connected.bind(_connection_generation))
+	_channel.frame_received.connect(_channel_frame.bind(_connection_generation))
+	_channel.failed.connect(_channel_failed.bind(_connection_generation))
+	var generation := _connection_generation
 	_set_state(next_state)
-	_channel.open(host, port)
+	if generation == _connection_generation:
+		_channel.open(host, port)
+
+func _channel_connected(generation: int) -> void:
+	if generation == _connection_generation:
+		_on_connected()
+
+func _channel_frame(frame: PackedByteArray, generation: int) -> void:
+	if generation == _connection_generation:
+		_on_frame(frame)
+
+func _channel_failed(code: String, generation: int) -> void:
+	if generation == _connection_generation:
+		_fail(code)
 
 func _on_connected() -> void:
 	if state == "CONNECTING_LOGIN":
 		_set_state("AUTHORIZING")
-		_schedule("login", {"nickname": _nickname})
+		if state == "AUTHORIZING":
+			_schedule("login", {"nickname": _nickname})
 	elif state == "CONNECTING_GAME":
 		_set_state("ENTERING_WORLD")
-		_schedule("enter", {"ticket": _ticket})
-		_ticket = ""
+		if state == "ENTERING_WORLD":
+			_schedule("enter", {"ticket": _ticket})
+			_ticket = ""
 
 func _schedule(op: String, payload: Dictionary) -> void:
 	_scheduled = {"op": op, "payload": payload}
@@ -129,7 +157,10 @@ func _schedule(op: String, payload: Dictionary) -> void:
 func _process(_delta: float) -> void:
 	if _channel == null or state in ["IDLE", "DISCONNECTED", "FAILED"]:
 		return
+	var generation := _connection_generation
 	_channel.poll()
+	if generation != _connection_generation:
+		return
 	if state in ["DISCONNECTED", "FAILED"]:
 		return
 	var now := Time.get_ticks_msec()
@@ -298,6 +329,7 @@ func _set_state(value: String) -> void:
 	state_changed.emit(state)
 
 func _clear_session(preserve_replica: bool = false) -> void:
+	_connection_generation += 1
 	if _channel != null:
 		_channel.close()
 	_ticket = ""

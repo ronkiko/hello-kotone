@@ -25,6 +25,7 @@ const ERRORS := {
 	"REQUEST_TIMEOUT": "The server took too long to respond.",
 	"UNSUPPORTED_VERSION": "Client and server protocol versions do not match.",
 	"FLUSH_FAILED": "Logout was rejected: the server could not save the checkpoint.",
+	"INVALID_MAP": "Saved world state is incompatible with the server map. Ask the operator to restore or migrate the map.",
 	"STREAM_DESYNC": "World updates lost synchronization. Connect again for a fresh world state.",
 }
 @onready var nickname: LineEdit = $Layout/Column/Fields/Nickname
@@ -43,6 +44,11 @@ func _ready() -> void:
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
 	MmoClient.world_ready.connect(_on_world_ready)
+	var endpoint: Dictionary = MmoClient.login_endpoint
+	if not endpoint.is_empty():
+		host.text = endpoint.host
+		port.value = endpoint.port
+		nickname.text = endpoint.nickname
 	_on_state_changed(MmoClient.state)
 	nickname.grab_focus()
 	if MmoClient.state == "READY":
@@ -63,6 +69,7 @@ func _on_state_changed(value: String) -> void:
 	nickname.editable = not busy
 	host.editable = not busy
 	port.editable = not busy
+	connect_button.text = "Reconnect" if value in ["FAILED", "DISCONNECTED"] and not MmoClient.login_endpoint.is_empty() else "Connect"
 	connect_button.disabled = busy
 	cancel_button.disabled = not busy or value == "READY"
 	status_label.modulate = Color("a9c9e8")
@@ -78,7 +85,7 @@ func _on_fault(info: Dictionary) -> void:
 	# Never display server error messages, wire payloads, session IDs or tickets.
 	status_label.text = ERRORS.get(info.get("code", ""), "The connection failed. Check the server and try again.")
 	if info.get("outcome_unknown", false):
-		status_label.text += " Server outcome unknown."
+		status_label.text += " Server outcome unknown. Reconnect to read server state; the action will not be repeated."
 
 func _on_world_ready() -> void:
 	if not _transition_pending:
