@@ -31,7 +31,9 @@ func _ready() -> void:
 	$Layout/Column/View/SubViewport.add_child(platform)
 	input_adapter = InputAdapter.new()
 	input_adapter.client = MmoClient
+	input_adapter.locomotion_intent_changed.connect(_on_locomotion_intent_changed)
 	add_child(input_adapter)
+	platform.set_local_intent(input_adapter.locomotion_intent)
 	_show_world()
 	_on_state_changed(MmoClient.state)
 
@@ -55,6 +57,10 @@ func _project_display() -> void:
 	if platform != null:
 		platform.set_movement_rules(MmoClient.world_rules)
 		platform.project(MmoClient.map_document, MmoClient.world_replica.view(), prediction.view().target_x)
+
+func _on_locomotion_intent_changed(direction: int) -> void:
+	if platform != null:
+		platform.set_local_intent(direction)
 
 func _on_move_intended(direction: String) -> void:
 	if prediction.begin(direction):

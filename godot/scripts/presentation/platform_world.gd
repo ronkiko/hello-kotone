@@ -6,7 +6,9 @@ const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
 const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
 const IDLE = preload("res://assets/kotone_v2_idle_front.png")
-const Motion = preload("res://scripts/presentation/player_motion.gd")
+const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
+const LocalTrajectory = preload("res://scripts/presentation/local_trajectory.gd")
+const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 const PIXELS_PER_METER := 8.0
 const ORIGIN_X := 32.0
@@ -23,11 +25,11 @@ var world_length := 0.0
 var _map: Dictionary = {}
 var _view: Dictionary = {}
 var _display_x: Variant = null
-var motion := Motion.new()
+var motion_profile := MotionProfile.new()
+var trajectory := LocalTrajectory.new()
+var gait := GaitAnimator.new()
 var _movement: Dictionary = {}
 var _position_installed := false
-var _target_x := 0.0
-var _visual_x := 0.0
 var _first_cell := -1000000
 
 func _ready() -> void:
@@ -101,7 +103,9 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 		if not Protocol.player(player) or player.player_id != id or player.zone_id != document.map_id or not Protocol.integer(player.x, document.min_x, document.max_x):
 			return false
 	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash or _view.get("epoch") != view.get("epoch") or _view.get("local_player_id") != view.get("local_player_id")
-	motion.configure(_movement.step_units, _movement.min_move_interval_ms, document.units_per_meter, PIXELS_PER_METER)
+	motion_profile.configure(_movement.step_units, _movement.min_move_interval_ms, document.units_per_meter, PIXELS_PER_METER)
+	trajectory.configure(motion_profile, ORIGIN_X, ORIGIN_X + float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER)
+	gait.configure(motion_profile.cycle_pixels)
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
 	_display_x = display_x
@@ -111,13 +115,14 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 	var target := server_to_pixel(x if display_x == null else display_x)
 	if initial:
 		_first_cell = -1000000
-		_visual_x = target
-		motion.reset()
+		trajectory.reset(target)
+		gait.reset(sprite)
 		for id in remote_players.keys():
 			_remove_remote(id)
+	else:
+		trajectory.retarget(target)
 	_position_installed = true
-	_target_x = target
-	sprite.position.x = _visual_x
+	sprite.position.x = trajectory.visual_x
 	_sync_players()
 	_reframe()
 	return true
@@ -127,6 +132,9 @@ func set_suspended(value: bool) -> void:
 	_suspended = value
 	for node in remote_players.values():
 		node.suspended = value
+
+func set_local_intent(direction: int) -> bool:
+	return trajectory.set_intent(direction)
 
 func _remove_remote(id: String) -> void:
 	var node: Node = remote_players[id]
@@ -150,7 +158,7 @@ func _sync_players() -> void:
 			node.position.y = FLOOR_Y - 42.25
 			add_child(node)
 			remote_players[id] = node
-		remote_players[id].motion.configure(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
+		remote_players[id].configure_motion(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
 		remote_players[id].suspended = _suspended
 		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
@@ -170,12 +178,11 @@ func _resize_projection() -> void:
 func _process(delta: float) -> void:
 	if _suspended or _map.is_empty() or sprite == null:
 		return
-	var before := _visual_x
-	_visual_x = clampf(move_toward(_visual_x, _target_x, motion.speed * delta), ORIGIN_X, ORIGIN_X + world_length)
+	var sample := trajectory.advance(delta)
 	# External Sprite2D edits cannot become a new target or a movement request.
-	sprite.position.x = _visual_x
-	local_label.position.x = _visual_x - 64
-	motion.animate(sprite, before, _visual_x, _target_x, delta)
+	sprite.position.x = trajectory.visual_x
+	local_label.position.x = trajectory.visual_x - 64
+	gait.update(sprite, sample.before, sample.after, sample.target, sample.intent, delta)
 	_reframe()
 
 func _update_tiles() -> void:

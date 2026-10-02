@@ -1,10 +1,8 @@
 extends Node2D
 ## Presentation only: one remote identity and its last confirmed pixel target.
 const Kotone = preload("res://scenes/kotone.tscn")
-const IDLE = preload("res://assets/kotone_v2_idle_front.png")
-const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
-const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
-const Motion = preload("res://scripts/presentation/player_motion.gd")
+const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
+const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
 var sprite: Sprite2D
 var identity := Label.new()
 var suspended := false
@@ -14,7 +12,8 @@ var visual_x := 0.0
 var _min_x := 0.0
 var _max_x := 0.0
 var _installed := false
-var motion := Motion.new()
+var motion_profile := MotionProfile.new()
+var gait := GaitAnimator.new()
 
 func _ready() -> void:
 	sprite = Kotone.instantiate()
@@ -31,6 +30,10 @@ func _ready() -> void:
 	identity.add_theme_constant_override("outline_size", 3)
 	add_child(identity)
 
+func configure_motion(step_units: int, interval_ms: int, units_per_meter: int, pixels_per_meter: float) -> void:
+	motion_profile.configure(step_units, interval_ms, units_per_meter, pixels_per_meter)
+	gait.configure(motion_profile.cycle_pixels)
+
 func project(nickname: String, x: float, low: float, high: float) -> void:
 	identity.text = nickname
 	_min_x = low
@@ -38,16 +41,19 @@ func project(nickname: String, x: float, low: float, high: float) -> void:
 	target_x = clampf(x, low, high)
 	if not _installed:
 		visual_x = target_x
-		motion.reset()
+		gait.reset(sprite)
 		_installed = true
 	position.x = visual_x
 
 func _process(delta: float) -> void:
-	if suspended or not _installed or sprite == null or motion.speed <= 0.0:
+	if suspended or not _installed or sprite == null or motion_profile.nominal_speed <= 0.0:
 		return
 	var before := visual_x
-	visual_x = clampf(move_toward(visual_x, target_x, motion.speed * delta), _min_x, _max_x)
+	var gap := absf(target_x - visual_x)
+	visual_x = clampf(move_toward(visual_x, target_x, motion_profile.speed_for_gap(gap) * maxf(delta, 0.0)), _min_x, _max_x)
 	# Sprite/node edits cannot change the confirmed target.
 	position.x = visual_x
 	sprite.position = Vector2.ZERO
-	motion.animate(sprite, before, visual_x, target_x, delta)
+	# Remote input is intentionally unknown. Actual displacement drives walk;
+	# confirmed arrival may idle until a future buffered remote timeline is added.
+	gait.update(sprite, before, visual_x, target_x, 0, delta)

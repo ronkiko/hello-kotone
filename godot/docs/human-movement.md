@@ -86,3 +86,26 @@ The floor now carries an absolute server-X ruler. Minor marks represent coordina
 steps at normal scale; numbered major marks and the gold confirmed-X cell/tag make
 position readable. Dense map scales use bounded visible multiples. The marker
 follows confirmed replica X, independently of predicted/interpolated sprite X.
+
+
+## Local trajectory / gait separation corrective
+
+Presentation no longer treats every server step as an independent walk animation.
+The motion stack is split into three responsibilities:
+
+- `PlayerMotion` is a pure World/map motion profile. One normal step uses exact
+  negotiated cadence; extra 25% speed is available only after renderer lag exceeds
+  one full step.
+- `LocalTrajectory` owns render X and the bounded display target. It never writes
+  WorldReplica or prediction and never extends the existing one-step speculative
+  envelope.
+- `GaitAnimator` owns facing/walk/front-idle sprites. Walk phase follows actual
+  rendered distance. A held local locomotion intent can keep the last side pose
+  while waiting at the speculative boundary without cycling stationary legs.
+  Release plus completed reconciliation has an exact meaning and returns to
+  front-facing idle without a timeout heuristic.
+
+`MoveInput` now exposes the current held/released locomotion intent separately
+from move admission. It still queues no steps and sends only direction requests.
+Remote players keep confirmed-target interpolation for Alpha, but use the same
+motion profile and gait animator; buffered remote timelines remain a future review.
