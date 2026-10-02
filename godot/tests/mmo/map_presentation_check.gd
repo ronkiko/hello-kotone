@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
 const Cache = preload("res://scripts/mmo/map_cache.gd")
 const Platform = preload("res://scripts/presentation/platform_world.gd")
 var failures: Array[String] = []

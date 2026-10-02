@@ -20,7 +20,6 @@ func _ready() -> void:
 	refresh_button.pressed.connect(MmoClient.request_state)
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
-	MmoClient.move_rejected.connect(_on_move_rejected)
 	MmoClient.input_accepted.connect(_on_input_accepted)
 	MmoClient.input_rejected.connect(_on_input_rejected)
 	MmoClient.world_replica.changed.connect(_show_world)
@@ -102,13 +101,6 @@ func _on_state_changed(value: String) -> void:
 		status_label.text = "Refreshing world..."
 	elif value in ["FAILED", "DISCONNECTED"]:
 		_return_to_login()
-
-func _on_move_rejected(code: String) -> void:
-	_project_display()
-	match code:
-		"OUT_OF_BOUNDS": status_label.text = "World boundary reached."
-		"RATE_LIMITED": status_label.text = "Moving too quickly. Release the key and try again."
-		"WORLD_PAUSED": status_label.text = "World paused. Release the key and try later."
 
 func _on_fault(_info: Dictionary) -> void:
 	_return_to_login()

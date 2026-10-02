@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
 var _checks := 0
 var _failures := 0
 

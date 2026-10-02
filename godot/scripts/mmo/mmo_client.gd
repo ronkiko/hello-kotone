@@ -5,14 +5,12 @@ signal state_changed(state: String)
 signal fault(info: Dictionary)
 signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
-signal move_rejected(code: String)
-signal move_intended(direction: String)
 signal input_accepted(input_seq: int, direction: String, x: int)
 signal input_rejected(code: String)
 signal world_ready
 signal disconnected
 
-const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
@@ -52,8 +50,6 @@ var _last_request_at := 0
 var _world_rules: Dictionary = {}
 var world_rules: Dictionary:
 	get: return _world_rules.duplicate(true)
-var _next_move_at := 0
-var _move_fact: Dictionary = {}
 var _desired_input := "stop"
 var _server_input := "stop"
 var _server_input_seq := 0
@@ -76,20 +72,6 @@ func reconnect_world() -> bool:
 	if _login_endpoint.is_empty():
 		return false
 	return connect_world(_login_endpoint.host, _login_endpoint.port, _login_endpoint.nickname)
-
-func move(direction: String) -> bool:
-	if direction not in ["left", "right"] or Time.get_ticks_msec() < _next_move_at:
-		return false
-	if not _public_request("move", {"direction": direction}):
-		return false
-	_move_fact = {}
-	_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
-	_set_state("MOVING")
-	# A local observer may cancel synchronously. Unsent intentions are not facts.
-	if state != "MOVING":
-		return false
-	move_intended.emit(direction)
-	return state == "MOVING"
 
 func set_input(direction: String) -> bool:
 	if direction not in ["left", "right", "stop"] or state not in ["READY", "MOVING"] or _world_rules.is_empty():
@@ -127,7 +109,7 @@ func logout() -> bool:
 
 func disconnect_world() -> void:
 	# Explicit cancellation closes the socket; it never claims a successful flush.
-	if not _pending.is_empty() and _pending.op in ["login", "enter", "move", "input", "logout"]:
+	if not _pending.is_empty() and _pending.op in ["login", "enter", "input", "logout"]:
 		_fail("CANCELLED")
 	else:
 		_close_cleanly()
@@ -230,17 +212,12 @@ func _on_frame(frame: PackedByteArray) -> void:
 		if session_id.is_empty() or not Protocol.event(message):
 			_fail("INVALID_EVENT")
 			return
-		if not _pending.is_empty() and _pending.op == "move" and message.event == "moved" and message.data.player.player_id == player_id and not _move_fact.is_empty():
-			_fail("MOVE_EVENT_MISMATCH")
-			return
 		if not world_replica.apply_event(message):
 			_fail("STREAM_DESYNC")
 			return
 		# A synchronous replica observer may explicitly cancel the session.
 		if session_id.is_empty():
 			return
-		if not _pending.is_empty() and _pending.op == "move" and message.event == "moved" and message.data.player.player_id == player_id:
-			_move_fact = {"epoch": message.epoch, "zone_id": message.zone_id, "revision": message.revision, "player_id": player_id}
 		last_snapshot = world_replica.snapshot()
 		# Events never consume a request slot and do not replay after state resync.
 		event_received.emit(message.duplicate(true))
@@ -264,25 +241,10 @@ func _on_frame(frame: PackedByteArray) -> void:
 			input_rejected.emit(input_code)
 			_schedule_desired_input()
 			return
-		if _pending.op == "move" and message.status == "rejected" and message.error.code in ["OUT_OF_BOUNDS", "RATE_LIMITED", "WORLD_PAUSED"]:
-			if not _move_fact.is_empty():
-				_fail("MOVE_REJECTION_AFTER_EVENT")
-				return
-			var code: String = message.error.code
-			_pending = {}
-			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
-			_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
-			_set_state("READY")
-			if state == "READY":
-				move_rejected.emit(code)
-			return
 		_fail(message.error.code, true)
 		return
 	var completed: Dictionary = _pending.duplicate(true)
 	var op: String = completed.op
-	if op == "move" and (state != "MOVING" or _move_fact.is_empty() or message.data != _move_fact):
-		_fail("MOVE_RECEIPT_MISMATCH")
-		return
 	_pending = {}
 	# Spacing after receipt also covers a delayed/partial socket write.
 	_next_request_at = Time.get_ticks_msec() + _request_interval_ms
@@ -344,12 +306,6 @@ func _on_frame(frame: PackedByteArray) -> void:
 			response_received.emit(op, data.duplicate(true))
 			if loading and state == "READY":
 				world_ready.emit()
-		"move":
-			_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
-			_move_fact = {}
-			_set_state("READY")
-			if state == "READY":
-				response_received.emit(op, data.duplicate(true))
 		"input":
 			var sent_direction: String = completed.get("payload", {}).get("direction", "")
 			if sent_direction.is_empty():
@@ -419,8 +375,6 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_request_interval_ms = 0
 	_last_request_at = 0
 	_world_rules = {}
-	_move_fact = {}
-	_next_move_at = 0
 	_desired_input = "stop"
 	_server_input = "stop"
 	_server_input_seq = 0
@@ -429,7 +383,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 
 func _fail(code: String, known_outcome: bool = false) -> void:
 	var op: String = _pending.get("op", "")
-	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "move", "input", "logout"]}
+	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "input", "logout"]}
 	world_replica.invalidate(code)
 	_clear_session(true)
 	_set_state("FAILED")

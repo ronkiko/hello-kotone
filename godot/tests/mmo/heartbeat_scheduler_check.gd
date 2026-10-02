@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
 var checks := 0
 var failures: Array[String] = []
 class FakeChannel extends RefCounted:

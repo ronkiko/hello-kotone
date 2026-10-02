@@ -4,7 +4,7 @@ extends RefCounted
 signal changed
 signal local_moved(event: Dictionary, previous_x: int)
 
-const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
 var _snapshot: Dictionary = {}
 var _players: Dictionary = {}
 var _map: Dictionary = {}
