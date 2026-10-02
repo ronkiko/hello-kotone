@@ -36,6 +36,9 @@ func observe(document: Dictionary, replica: Dictionary, step_units: int) -> bool
 	_max_x = document.max_x
 	_step = step_units
 	_healthy = replica.get("status") == "SYNCED" and not replica.get("reconnect_required", true)
+	if not _healthy:
+		_records = {}
+		_active_seq = 0
 	return true
 
 func accept_input(input_seq: int, direction: String, baseline_x: int) -> bool:
@@ -50,12 +53,19 @@ func accept_input(input_seq: int, direction: String, baseline_x: int) -> bool:
 			_records.erase(seq)
 	return true
 
-func authoritative_step(actual_x: int) -> float:
+func authoritative_step(actual_x: int, held: bool = false) -> float:
 	if not _healthy or _active_seq == 0 or not _records.has(_active_seq) \
 			or not Protocol.integer(actual_x, _min_x, _max_x):
 		_confirmed_x = actual_x
 		return 0.0
 	var record: Dictionary = _records[_active_seq]
+	if held:
+		# The hold replaced our nominal path; future steps resume from this fact.
+		record.baseline_x = actual_x
+		record.step_count = 0
+		record.last_error = 0
+		_confirmed_x = actual_x
+		return 0.0
 	if record.direction == "stop":
 		_confirmed_x = actual_x
 		return 0.0
@@ -63,7 +73,7 @@ func authoritative_step(actual_x: int) -> float:
 	var sign := -1 if record.direction == "left" else 1
 	var expected: int = clampi(record.baseline_x + sign * record.step_count * _step, _min_x, _max_x)
 	var error := actual_x - expected
-	var delta := error - record.last_error
+	var delta: int = error - record.last_error
 	record.last_error = error
 	_records[_active_seq] = record
 	_confirmed_x = actual_x

@@ -8,6 +8,7 @@ var walk_distance := 0.0
 var idle_elapsed := 0.0
 var facing := 0
 var walking := false
+var idle_on_settle := true
 
 func configure(value: float) -> void:
 	cycle_pixels = maxf(value, 0.001)
@@ -37,6 +38,10 @@ func update(sprite: Sprite2D, before: float, after: float, target: float, locomo
 	if locomotion_intent != 0 or not settled:
 		walking = locomotion_intent != 0
 		return
+
+	if not idle_on_settle and facing != 0:
+		walking = false
+		return # Remote release is unknown; freeze the last side pose.
 
 	# Local release + completed reconciliation has an exact semantic meaning: idle.
 	if facing != 0 or sprite.texture != IDLE:

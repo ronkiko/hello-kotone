@@ -88,7 +88,7 @@ func start() -> void:
 			check(options.mode == "hold" and client.world_replica.local_player().x == confirmed, "SERVER_HOLD_KEEPS_CONFIRMED_X")
 			check(world.platform.trajectory.authoritative_hold, "SAME_X_FACT_INSTALLS_AUTHORITATIVE_HOLD")
 			check(is_equal_approx(world.platform.trajectory.model_x, world.platform.server_to_pixel(confirmed)), "HOLD_REBASES_MODEL_TO_CONFIRMED")
-			var held_model := world.platform.trajectory.model_x
+			var held_model: float = world.platform.trajectory.model_x
 			await create_timer(.25).timeout
 			check(world.platform.trajectory.model_x == held_model, "HOLD_PREVENTS_LOCAL_RUNAWAY")
 		key(false); world.input_adapter._process(0)

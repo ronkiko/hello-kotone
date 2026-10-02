@@ -78,11 +78,20 @@ func set_input(direction: String) -> bool:
 		return false
 	# Latest desired state is bounded/coalesced while one input request is in flight.
 	_desired_input = direction
+	if _pending.is_empty() and _scheduled.get("op") == "input":
+		# A not-yet-sent intention must not outlive the current human desire.
+		if direction == _server_input:
+			_scheduled = {}
+			_set_state("READY")
+		else:
+			_scheduled.payload.direction = direction
 	if state == "READY":
 		_schedule_desired_input()
 	return true
 
 func _schedule_desired_input() -> void:
+	if state == "READY" and _pending.is_empty() and _desired_input != _server_input and _scheduled.get("op") == "ping":
+		_scheduled = {} # Unsent keepalive yields the slot to human input.
 	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty():
 		return
 	_schedule("input", {"input_seq": _server_input_seq + 1, "direction": _desired_input})
@@ -237,14 +246,23 @@ func _on_frame(frame: PackedByteArray) -> void:
 			_pending = {}
 			_desired_input = "stop"
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
+			var rejection_generation := _connection_generation
 			_set_state("READY")
+			if rejection_generation != _connection_generation:
+				return
 			input_rejected.emit(input_code)
+			if rejection_generation != _connection_generation:
+				return
 			_schedule_desired_input()
 			return
 		_fail(message.error.code, true)
 		return
 	var completed: Dictionary = _pending.duplicate(true)
 	var op: String = completed.op
+	if op == "input" and not _valid_input_ack(message.data, completed):
+		# Keep pending mutation context until validation: a malformed ACK is unknown.
+		_fail("INPUT_BASELINE_MISMATCH")
+		return
 	_pending = {}
 	# Spacing after receipt also covers a delayed/partial socket write.
 	_next_request_at = Time.get_ticks_msec() + _request_interval_ms
@@ -307,25 +325,29 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if loading and state == "READY":
 				world_ready.emit()
 		"input":
-			var sent_direction: String = completed.get("payload", {}).get("direction", "")
-			if sent_direction.is_empty():
-				_fail("INPUT_BASELINE_MISMATCH")
-				return
-			var local: Dictionary = world_replica.local_player()
-			if data.epoch != world_replica.view().epoch or data.zone_id != local.get("zone_id") \
-					or data.player_id != player_id or data.input_seq != _server_input_seq + 1 \
-					or data.x != local.get("x"):
-				_fail("INPUT_BASELINE_MISMATCH")
-				return
+			var sent_direction: String = completed.payload.direction
 			_server_input_seq = data.input_seq
 			_server_input = sent_direction
+			var generation := _connection_generation
 			_set_state("READY")
+			if generation != _connection_generation:
+				return
 			input_accepted.emit(_server_input_seq, _server_input, data.x)
+			if generation != _connection_generation:
+				return
 			response_received.emit(op, data.duplicate(true))
 			_schedule_desired_input()
 		"logout":
 			_close_cleanly()
 			response_received.emit(op, data.duplicate(true))
+
+func _valid_input_ack(data: Dictionary, completed: Dictionary) -> bool:
+	var payload: Dictionary = completed.get("payload", {})
+	var local: Dictionary = world_replica.local_player()
+	return payload.get("direction") in ["left", "right", "stop"] and data.epoch == world_replica.view().epoch \
+		and data.zone_id == local.get("zone_id") and data.player_id == player_id \
+		and data.input_seq == payload.get("input_seq") and data.input_seq == _server_input_seq + 1 \
+		and data.x == local.get("x")
 
 func _accept_map(value: Dictionary, source: String) -> bool:
 	if not _map_matches(value):

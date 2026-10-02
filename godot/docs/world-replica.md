@@ -58,7 +58,7 @@ python3 v3/game/op/check-client-shell.py --project ../hello-kotone/godot --deskt
 Reducer checks cover atomicity, defensive copies, snapshot replacement, strict
 membership/sequence/epoch, map bounds, population cap and stale disconnect state.
 Real shared Game runs two Godot public peers: observer MmoClient and an
-acceptance-only peer sending player2 enter/move/logout on protocol v4. Python
+acceptance-only peer sending player2 enter/held input/stop/logout on protocol v5. Python
 only orchestrates services/processes. Fixtures cover loading events, events
 before/after state in one TCP write, corrupt sequences, invalid snapshots and
 explicit reentry with a new epoch. Request counts prove no hidden retry/reconnect

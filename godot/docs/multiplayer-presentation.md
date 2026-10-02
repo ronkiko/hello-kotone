@@ -8,8 +8,9 @@ identity keeps its node; state refresh does not duplicate avatars. A fresh epoch
 local identity or map rebuild drops the previous remote set.
 
 Each RemotePlayer has a detached Kotone sprite, stable identity tint and nickname
-label. It moves toward confirmed targets at the same bounded 160 pixels/s used
-for local presentation. There are no remote InputAdapters, sockets, request queues,
+label. It moves toward confirmed targets using the negotiated World motion profile.
+Distance drives gait phase. Between facts it freezes the last side pose because
+remote release intent is unknown; it never cycles the legs while stationary. There are no remote InputAdapters, sockets, request queues,
 prediction or physics controllers. External node/sprite X edits are restored from
 the private render position on the next tick. Replica facts remain unchanged.
 Remote movement never changes the local camera or speculative target. Only local

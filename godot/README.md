@@ -29,28 +29,19 @@ from scratch rather than converted from the Canvas implementation.
 
 ## MMO integration — v3.main.5.08
 
-`MmoClient` is a persistent Autoload with direct protocol-v4 TCP/JSONL Login/Game
-connections. The project now starts at Login: choose a nickname (default player1),
-set the local Login endpoint and press Connect. Loading stages lead to a separate
-World scene after the map and state have been validated. Leave world waits for
-logout and returns to Login. World now renders Kotone on a TileMapLayer platform from the verified server map.
-`WorldReplica` reduces snapshot/events independently of scenes and stores confirmed
-positions. World projects confirmed local X into pixels, follows with Camera2D,
-and offers explicit Refresh world through state. Verified maps persist in user://;
-corrupt or mismatched cache files trigger a public map request. A/D and arrows now send bounded left/right intentions to Game. Own moved facts
-set confirmed X; matching receipts do not apply another step. Kotone smoothly
-follows one bounded speculative display step after an accepted intention.
-Prediction stays separate from WorldReplica; own facts/rejections reconcile it,
-and unknown outcomes clear speculation and fence the connection without replay.
-Other online players now appear from WorldReplica snapshot/joined, smoothly
-follow confirmed moved targets, and disappear on left. Nickname labels and stable
-tints distinguish remote players. Only the local player has input/prediction and
-owns the camera. The standalone local controller stays detached in MMO World.
-Faults freeze presentation and return to Login with in-memory endpoint fields
-and an explicit Reconnect control. New tickets/snapshots replace old sessions;
-unknown moves are never replayed, and held input requires release after reentry.
-Host session_rules now advertises request pacing and idle keepalive cadence;
-read-only ping keeps READY spectators online without state resync or world changes.
+`MmoClient` uses direct protocol-v5 Login/Game TCP connections. Login -> fresh
+ticket -> enter -> validated map/world rules/state leads to World. A/D and arrows
+publish held input changes (`input_seq`, left/right/stop); Game owns autonomous
+movement cadence. Moved events update WorldReplica; ACK only confirms input state.
+LocalTrajectory predicts continuously from current human intent, and server facts
+correct it magnetically. Gait follows actual display distance; held local input
+preserves side pose between facts, release and settling returns front idle.
+Remote avatars interpolate confirmed facts and freeze the last side pose at gaps.
+Floor ruler marks confirmed X independently of prediction/render X.
+Failures freeze presentation and return to explicit Reconnect: new Login/ticket/
+enter, no automatic input replay. Unknown input outcome remains explicit.
+Host session_rules advertises request pacing/idle keepalive; read-only ping keeps
+spectators online without world resync or mutations. Verified maps persist locally.
 The shared roadmap lives in the neighboring `ai_research` repository, under
 `v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
 See [Explicit recovery](docs/recovery.md) for reconnect, epoch and map failure rules.

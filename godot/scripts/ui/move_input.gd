@@ -29,7 +29,7 @@ func _process(_delta: float) -> void:
 		_set_locomotion_intent(0)
 		return
 	var direction := 0
-	if _focused and not _require_release and left != right:
+	if _focused and not _require_release and left != right and client.state in ["READY", "MOVING"]:
 		direction = -1 if left else 1
 	_set_locomotion_intent(direction)
 

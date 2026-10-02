@@ -61,6 +61,9 @@ func _project_display() -> void:
 func _on_locomotion_intent_changed(direction: int) -> void:
 	if platform != null:
 		platform.set_local_intent(direction)
+		if direction == 0:
+			# Release may cancel an unsent press: no ACK will arrive to settle it.
+			platform.reconcile_local_to_confirmed()
 	refresh_button.disabled = MmoClient.state != "READY" or direction != 0
 
 func _on_input_accepted(input_seq: int, direction: String, x: int) -> void:

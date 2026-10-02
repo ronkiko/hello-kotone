@@ -1,5 +1,7 @@
 extends Node2D
 ## Presentation only: one remote identity and its last confirmed pixel target.
+const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
+const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
 const Kotone = preload("res://scenes/kotone.tscn")
 const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
@@ -16,6 +18,7 @@ var motion_profile := MotionProfile.new()
 var gait := GaitAnimator.new()
 
 func _ready() -> void:
+	gait.idle_on_settle = false
 	sprite = Kotone.instantiate()
 	sprite.set_script(null)
 	sprite.scale = Vector2(0.65, 0.65)
@@ -55,5 +58,5 @@ func _process(delta: float) -> void:
 	position.x = visual_x
 	sprite.position = Vector2.ZERO
 	# Remote input is intentionally unknown. Actual displacement drives walk;
-	# confirmed arrival may idle until a future buffered remote timeline is added.
+	# Arrival freezes the last side pose without inventing remote input state.
 	gait.update(sprite, before, visual_x, target_x, 0, delta)

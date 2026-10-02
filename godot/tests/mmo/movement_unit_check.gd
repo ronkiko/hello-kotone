@@ -58,6 +58,14 @@ func start() -> void:
 	client.input_rejected.emit("WORLD_PAUSED")
 	check(adapter.locomotion_intent == 0 and client.inputs.back() == "stop", "REJECTION_FORCES_LOCAL_AND_SERVER_STOP")
 	key(KEY_A,false); adapter._process(0)
+	client.state = "RESYNCING"
+	client.state_changed.emit("RESYNCING")
+	adapter._process(0)
+	var inputs_before_loading := client.inputs.size()
+	key(KEY_D,true); adapter._process(0)
+	check(adapter.locomotion_intent == 0 and client.inputs.size() == inputs_before_loading, "NONINTERACTIVE_STATE_CANNOT_START_LOCAL_DRIFT")
+	key(KEY_D,false); adapter._process(0)
+	client.state = "READY"
 
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(458,116)
@@ -102,6 +110,7 @@ func start() -> void:
 	platform._process(1)
 	check(platform.trajectory.model_x == held_x, "HELD_WORLD_STOPS_LOCAL_PREDICTION_DESPITE_KEY_INTENT")
 	platform.set_authoritative_hold(false)
+	platform._process(.05) # Resume actually moves before release correction.
 
 	# Release stops local simulation immediately; final resting point converges to authoritative X.
 	platform.set_local_intent(0)
