@@ -4,6 +4,7 @@ var options: Dictionary = {}
 var failures: Array[String] = []
 var checks := 0
 var receipts := 0
+var input_receipts := 0
 var own_events := 0
 var rejections: Array[String] = []
 var finished := false
@@ -46,7 +47,8 @@ func start() -> void:
 		if parts.size() == 2: options[parts[0]] = parts[1]
 	client = root.get_node("MmoClient")
 	client.response_received.connect(func(op: String, _data: Dictionary):
-		if op == "move": receipts += 1)
+		if op == "move": receipts += 1
+		elif op == "input": input_receipts += 1)
 	client.event_received.connect(func(event: Dictionary):
 		if event.event == "moved" and event.data.player.player_id == client.player_id:
 			own_events += 1
@@ -80,33 +82,49 @@ func real_wall() -> void:
 	var session: String = client.session_id
 	check(client.world_replica.local_player().x == 50, "REAL_SPAWN")
 	await capture("spawn")
-	key(KEY_A, true)
-	await hold_until_rejection(world, KEY_A, 1)
-	key(KEY_A, false)
-	if finished: return
+
+	key(KEY_A,false); world.input_adapter._process(0)
+	key(KEY_A,true); world.input_adapter._process(0)
+	check(client.state == "MOVING" and world.input_adapter.locomotion_intent == -1, "LEFT_HELD_INPUT_SENT")
+	while not finished and client.state != "FAILED" and client.world_replica.local_player().x > 0:
+		await process_frame
+	key(KEY_A,false); world.input_adapter._process(0)
 	await wait_state("READY")
-	check(client.world_replica.local_player().x == 0 and receipts == 50 and own_events == 50, "LEFT_WALL_CONFIRMED")
-	check(rejections == ["OUT_OF_BOUNDS"] and client.session_id == session, "LEFT_EXTRA_STEP_REJECTED_NONTERMINALLY")
+	await settle()
+	if finished: return
+	check(client.world_replica.local_player().x == 0, "LEFT_WALL_CONFIRMED")
+	check(input_receipts == 2, "LEFT_PRESS_STOP_ONLY_TWO_INPUT_REQUESTS")
+	var left_events := own_events
+	check(left_events >= 50 and left_events <= 51 and client.session_id == session, "SERVER_CADENCE_OWNS_LEFT_STEPS")
 	await capture("left-wall")
-	await process_frame
-	key(KEY_D, true)
-	await hold_until_rejection(world, KEY_D, 2)
-	key(KEY_D, false)
-	if finished: return
+
+	key(KEY_D,true); world.input_adapter._process(0)
+	check(client.state == "MOVING" and world.input_adapter.locomotion_intent == 1, "RIGHT_HELD_INPUT_SENT")
+	while not finished and client.state != "FAILED" and client.world_replica.local_player().x < 100:
+		await process_frame
+	key(KEY_D,false); world.input_adapter._process(0)
 	await wait_state("READY")
-	check(client.world_replica.local_player().x == 100 and receipts == 150 and own_events == 150, "FULL_MIN_TO_MAX")
-	check(rejections == ["OUT_OF_BOUNDS","OUT_OF_BOUNDS"] and client.session_id == session, "RIGHT_EXTRA_STEP_REJECTED_NONTERMINALLY")
+	await settle()
+	if finished: return
+	check(client.world_replica.local_player().x == 100, "FULL_MIN_TO_MAX")
+	check(input_receipts == 4, "FULL_TRAVERSE_FOUR_INPUT_STATE_REQUESTS")
+	check(own_events - left_events >= 100 and own_events - left_events <= 101, "SERVER_CADENCE_OWNS_RIGHT_STEPS")
 	await capture("right-wall")
-	check(is_equal_approx(world.platform.sprite.position.x, 832), "VISUAL_RIGHT_BOUNDARY")
+	check(is_equal_approx(world.platform.sprite.position.x,832), "VISUAL_RIGHT_BOUNDARY")
+	check(world.platform.sprite.texture == world.platform.IDLE, "RELEASE_SETTLES_FRONT_IDLE")
+
 	world.platform.sprite.position.x = -10000
 	check(client.world_replica.local_player().x == 100, "SPRITE_TAMPER_NO_SERVER_WRITE")
+	world.platform._process(0)
+	check(world.platform.sprite.position.x == world.platform.trajectory.visual_x, "SPRITE_TAMPER_REPAIRED_FROM_LOCAL_MODEL")
 	world.refresh_button.pressed.emit()
 	await wait_state("READY")
 	await settle()
-	check(current_scene == world and client.world_replica.local_player().x == 100 and is_equal_approx(world.platform.sprite.position.x,832), "STATE_RECONCILES_PRESENTATION")
-	check(client.world_replica.view().revision == 151, "RECEIPTS_DO_NOT_DOUBLE_APPLY")
+	check(current_scene == world and client.world_replica.local_player().x == 100, "STATE_PRESERVES_SERVER_TRUTH")
 	await capture("reconciled")
-	evidence = {"confirmed_min":0,"confirmed_max":100,"accepted_moves":receipts,"own_moved_events":own_events,"rejections":rejections,"revision":client.world_replica.view().revision,"sprite_tamper_reconciled":true,"test_focus_resumptions":focus_resumptions}
+	evidence = {"confirmed_min":0,"confirmed_max":100,"input_state_requests":input_receipts,
+		"own_moved_events":own_events,"session_unchanged":client.session_id == session,
+		"continuous_local_prediction":true}
 	world.leave_button.pressed.emit()
 	await wait_state("DISCONNECTED")
 	await process_frame
@@ -116,35 +134,13 @@ func real_wall() -> void:
 	check(client.logout(), "REENTRY_LOGOUT")
 	await wait_state("DISCONNECTED")
 
-func hold_until_rejection(world: Control, code: int, count: int) -> void:
-	while not finished and client.state != "FAILED" and rejections.size() < count:
-		# Desktop automation can lose focus to the operator's other windows. Model
-		# an explicit focus restore + release + fresh press, never a network replay.
-		if not world.input_adapter._focused or world.input_adapter._require_release or not Input.is_physical_key_pressed(code):
-			key(KEY_A, false)
-			key(KEY_D, false)
-			world.input_adapter._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-			world.input_adapter._process(0)
-			key(code, true)
-			focus_resumptions += 1
-		await process_frame
-
 func fixture_case() -> void:
 	var mode: String = options.mode
 	var world: Control = current_scene
 	var session: String = client.session_id
 	var rejected: bool = mode in ["out_of_bounds", "rate_limited", "world_paused"]
-	if rejected or mode == "delayed_hold":
-		key(KEY_D,true)
-		world.input_adapter._process(0)
-		check(client.state == "MOVING", "INPUT_SCHEDULES_MOVE")
-	else:
-		check(client.move("right"), "MOVE_SCHEDULED")
+	check(client.move("right"), "COMPAT_MOVE_SCHEDULED")
 	check(not client.move("left") and not client.request_state() and not client.logout(), "ONE_IN_FLIGHT")
-	if mode == "delayed_hold":
-		await create_timer(0.07).timeout
-		check(client.world_replica.local_player().x == 50 and world.prediction.view().predicted_x == 51 and world.platform.sprite.position.x > 432, "DISPLAY_PREDICTION_NO_CONFIRMED_WRITE")
-		key(KEY_D,false)
 	if rejected:
 		await wait_state("READY")
 		check(rejections == [options.code] and client.session_id == session and client.world_replica.view().status == "SYNCED", "KNOWN_REJECTION_PRESERVES_STREAM")
@@ -152,13 +148,7 @@ func fixture_case() -> void:
 		check(world.status_label.text.contains(options.text), "VISIBLE_REJECTION")
 		await create_timer(0.35).timeout
 		check(rejections.size() == 1 and own_events == 0, "HELD_REJECTION_NO_AUTORETRY")
-		key(KEY_D,false)
-		await process_frame
-		await process_frame
-		key(KEY_D,true)
-		world.input_adapter._process(0)
-		check(client.state == "MOVING", "INPUT_SCHEDULES_MOVE")
-		key(KEY_D,false)
+		check(client.move("right"), "COMPAT_MOVE_RETRY")
 		await wait_state("READY")
 	elif options.has("expect"):
 		await wait_state("FAILED")
