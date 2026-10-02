@@ -7,6 +7,8 @@ signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
 signal move_rejected(code: String)
 signal move_intended(direction: String)
+signal input_accepted(input_seq: int, direction: String, x: int)
+signal input_rejected(code: String)
 signal world_ready
 signal disconnected
 
@@ -52,6 +54,9 @@ var world_rules: Dictionary:
 	get: return _world_rules.duplicate(true)
 var _next_move_at := 0
 var _move_fact: Dictionary = {}
+var _desired_input := "stop"
+var _server_input := "stop"
+var _server_input_seq := 0
 
 func connect_world(host: String, port: int, nickname: String) -> bool:
 	if state not in ["IDLE", "DISCONNECTED", "FAILED"]:
@@ -86,7 +91,22 @@ func move(direction: String) -> bool:
 	move_intended.emit(direction)
 	return state == "MOVING"
 
+func set_input(direction: String) -> bool:
+	if direction not in ["left", "right", "stop"] or state != "READY" or _world_rules.is_empty():
+		return false
+	_desired_input = direction
+	_schedule_desired_input()
+	return true
+
+func _schedule_desired_input() -> void:
+	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty():
+		return
+	_schedule("input", {"input_seq": _server_input_seq + 1, "direction": _desired_input})
+
 func request_state() -> bool:
+	# A resync must not silently leave a held server input running while presentation freezes.
+	if _desired_input != "stop" or _server_input != "stop":
+		return false
 	if not _public_request("state"):
 		return false
 	world_replica.begin_resync()
@@ -104,7 +124,7 @@ func logout() -> bool:
 
 func disconnect_world() -> void:
 	# Explicit cancellation closes the socket; it never claims a successful flush.
-	if not _pending.is_empty() and _pending.op in ["login", "enter", "move", "logout"]:
+	if not _pending.is_empty() and _pending.op in ["login", "enter", "move", "input", "logout"]:
 		_fail("CANCELLED")
 	else:
 		_close_cleanly()
@@ -174,13 +194,16 @@ func _process(_delta: float) -> void:
 	# Keepalive shares the request slot, never overwrites user intent or a pending op.
 	if state == "READY" and _scheduled.is_empty() and _pending.is_empty() and not _session_rules.is_empty() and now - _last_request_at >= _session_rules.keepalive_interval_ms:
 		_schedule("ping", {})
+	if state == "READY" and _scheduled.is_empty() and _pending.is_empty():
+		_schedule_desired_input()
 	if _scheduled.is_empty() or not _pending.is_empty() or now < _next_request_at:
 		return
 	if _request_count >= REQUEST_LIMIT:
 		_fail("REQUEST_LIMIT")
 		return
 	_request_count += 1
-	_pending = {"op": _scheduled.op, "request_id": "r%d" % _request_count}
+	_pending = {"op": _scheduled.op, "request_id": "r%d" % _request_count,
+		"payload": _scheduled.payload.duplicate(true)}
 	var message := {"protocol_version": Protocol.VERSION, "type": "request", "request_id": _pending.request_id,
 		"op": _scheduled.op, "payload": _scheduled.payload}
 	var frame := (JSON.stringify(message) + "\n").to_utf8_buffer()
@@ -229,6 +252,13 @@ func _on_frame(frame: PackedByteArray) -> void:
 		_fail("CORRELATION_ERROR")
 		return
 	if message.status != "ok":
+		if _pending.op == "input" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
+			var input_code: String = message.error.code
+			_pending = {}
+			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
+			input_rejected.emit(input_code)
+			_schedule_desired_input()
+			return
 		if _pending.op == "move" and message.status == "rejected" and message.error.code in ["OUT_OF_BOUNDS", "RATE_LIMITED", "WORLD_PAUSED"]:
 			if not _move_fact.is_empty():
 				_fail("MOVE_REJECTION_AFTER_EVENT")
@@ -314,6 +344,22 @@ func _on_frame(frame: PackedByteArray) -> void:
 			_set_state("READY")
 			if state == "READY":
 				response_received.emit(op, data.duplicate(true))
+		"input":
+			var sent_direction: String = _pending.get("payload", {}).get("direction", "")
+			if sent_direction.is_empty():
+				_fail("INPUT_BASELINE_MISMATCH")
+				return
+			var local: Dictionary = world_replica.local_player()
+			if data.epoch != world_replica.view().epoch or data.zone_id != local.get("zone_id") \
+					or data.player_id != player_id or data.input_seq != _server_input_seq + 1 \
+					or data.x != local.get("x"):
+				_fail("INPUT_BASELINE_MISMATCH")
+				return
+			_server_input_seq = data.input_seq
+			_server_input = sent_direction
+			input_accepted.emit(_server_input_seq, _server_input, data.x)
+			response_received.emit(op, data.duplicate(true))
+			_schedule_desired_input()
 		"logout":
 			_close_cleanly()
 			response_received.emit(op, data.duplicate(true))
@@ -368,12 +414,15 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_world_rules = {}
 	_move_fact = {}
 	_next_move_at = 0
+	_desired_input = "stop"
+	_server_input = "stop"
+	_server_input_seq = 0
 	if not preserve_replica:
 		world_replica.clear()
 
 func _fail(code: String, known_outcome: bool = false) -> void:
 	var op: String = _pending.get("op", "")
-	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "move", "logout"]}
+	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "move", "input", "logout"]}
 	world_replica.invalidate(code)
 	_clear_session(true)
 	_set_state("FAILED")

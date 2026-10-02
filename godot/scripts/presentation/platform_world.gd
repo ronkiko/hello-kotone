@@ -83,7 +83,7 @@ func set_movement_rules(rules: Dictionary) -> bool:
 func server_to_pixel(x: int) -> float:
 	return ORIGIN_X + float(x - int(_map.min_x)) / float(_map.units_per_meter) * PIXELS_PER_METER
 
-func project(document: Dictionary, view: Dictionary, display_x: Variant = null) -> bool:
+func project(document: Dictionary, view: Dictionary, _display_x_unused: Variant = null) -> bool:
 	if _movement.is_empty() or not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")):
 		return false
 	for key in ["map_id", "content_version", "content_hash"]:
@@ -91,8 +91,6 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 			return false
 	var x: Variant = view.get("confirmed_local_x")
 	if not Protocol.integer(x, document.min_x, document.max_x):
-		return false
-	if display_x != null and not Protocol.integer(display_x, document.min_x, document.max_x):
 		return false
 	# Membership arrives as a defensive WorldReplica projection, never raw frames.
 	var players: Variant = view.get("players", {})
@@ -108,19 +106,17 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 	gait.configure(motion_profile.cycle_pixels)
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
-	_display_x = display_x
+	_display_x = null
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
 	if not is_node_ready():
 		return true
-	var target := server_to_pixel(x if display_x == null else display_x)
+	var confirmed_pixel := server_to_pixel(x)
 	if initial:
 		_first_cell = -1000000
-		trajectory.reset(target)
+		trajectory.reset(confirmed_pixel)
 		gait.reset(sprite)
 		for id in remote_players.keys():
 			_remove_remote(id)
-	else:
-		trajectory.retarget(target)
 	_position_installed = true
 	sprite.position.x = trajectory.visual_x
 	_sync_players()
@@ -135,6 +131,16 @@ func set_suspended(value: bool) -> void:
 
 func set_local_intent(direction: int) -> bool:
 	return trajectory.set_intent(direction)
+
+func apply_local_correction(delta_units: float) -> void:
+	if _map.is_empty():
+		return
+	trajectory.correct_by(delta_units / float(_map.units_per_meter) * PIXELS_PER_METER)
+
+func reconcile_local_to_confirmed() -> void:
+	if _map.is_empty() or _view.is_empty():
+		return
+	trajectory.correct_to(server_to_pixel(_view.confirmed_local_x))
 
 func _remove_remote(id: String) -> void:
 	var node: Node = remote_players[id]

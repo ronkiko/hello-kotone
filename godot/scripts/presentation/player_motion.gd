@@ -1,6 +1,7 @@
 extends RefCounted
 ## Pure presentation motion profile derived from public World cadence and map scale.
 const MAX_CATCH_UP_RATIO := 1.25
+const RECONCILE_RATIO := 4.0
 const WALK_CYCLE_METERS := 4.0
 var nominal_speed := 0.0
 var max_speed := 0.0
@@ -22,3 +23,7 @@ func speed_for_gap(gap_pixels: float) -> float:
 		return nominal_speed
 	var excess_steps := clampf((gap_pixels - step_pixels) / step_pixels, 0.0, 1.0)
 	return lerpf(nominal_speed, max_speed, excess_steps)
+
+
+func reconcile_speed() -> float:
+	return nominal_speed * RECONCILE_RATIO

@@ -1,5 +1,5 @@
 extends Node
-## Samples current human locomotion intent only. No position, accumulated steps or replay queue.
+## Samples current human locomotion intent. Server receives state changes, never render X.
 signal locomotion_intent_changed(direction: int)
 var client: Node
 var locomotion_intent := 0
@@ -7,14 +7,19 @@ var _require_release := true
 var _focused := true
 
 func _ready() -> void:
-	client.move_rejected.connect(_on_rejected)
+	client.input_rejected.connect(_on_rejected)
 	client.state_changed.connect(_on_state)
 
-func _set_locomotion_intent(value: int) -> void:
+func _direction_name(value: int) -> String:
+	return "left" if value < 0 else ("right" if value > 0 else "stop")
+
+func _set_locomotion_intent(value: int, send: bool = true) -> void:
 	if value == locomotion_intent:
 		return
 	locomotion_intent = value
 	locomotion_intent_changed.emit(value)
+	if send and client.state == "READY":
+		client.set_input(_direction_name(value))
 
 func _process(_delta: float) -> void:
 	var left := Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
@@ -27,9 +32,6 @@ func _process(_delta: float) -> void:
 	if _focused and not _require_release and left != right:
 		direction = -1 if left else 1
 	_set_locomotion_intent(direction)
-	if direction == 0 or client.state != "READY":
-		return
-	client.move("left" if direction < 0 else "right")
 
 func _on_rejected(_code: String) -> void:
 	_require_release = true
@@ -38,7 +40,7 @@ func _on_rejected(_code: String) -> void:
 func _on_state(value: String) -> void:
 	if value not in ["READY", "MOVING"]:
 		_require_release = true
-		_set_locomotion_intent(0)
+		_set_locomotion_intent(0, false)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:

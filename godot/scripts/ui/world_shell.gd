@@ -21,7 +21,8 @@ func _ready() -> void:
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
 	MmoClient.move_rejected.connect(_on_move_rejected)
-	MmoClient.move_intended.connect(_on_move_intended)
+	MmoClient.input_accepted.connect(_on_input_accepted)
+	MmoClient.input_rejected.connect(_on_input_rejected)
 	MmoClient.world_replica.changed.connect(_show_world)
 	MmoClient.world_replica.local_moved.connect(_on_local_moved)
 	if MmoClient.state != "READY":
@@ -56,19 +57,31 @@ func _show_world() -> void:
 func _project_display() -> void:
 	if platform != null:
 		platform.set_movement_rules(MmoClient.world_rules)
-		platform.project(MmoClient.map_document, MmoClient.world_replica.view(), prediction.view().target_x)
+		platform.project(MmoClient.map_document, MmoClient.world_replica.view())
 
 func _on_locomotion_intent_changed(direction: int) -> void:
 	if platform != null:
 		platform.set_local_intent(direction)
+	refresh_button.disabled = MmoClient.state != "READY" or direction != 0
 
-func _on_move_intended(direction: String) -> void:
-	if prediction.begin(direction):
-		_project_display()
+func _on_input_accepted(input_seq: int, direction: String, x: int) -> void:
+	if not prediction.accept_input(input_seq, direction, x):
+		return
+	if direction == "stop" and platform != null:
+		# Release is immediate locally; final resting X still converges to the server.
+		platform.reconcile_local_to_confirmed()
 
-func _on_local_moved() -> void:
-	# Even a fact with unchanged X resolves speculation. Remote facts do not.
-	prediction.reconcile()
+func _on_input_rejected(code: String) -> void:
+	if platform != null:
+		platform.reconcile_local_to_confirmed()
+	match code:
+		"RATE_LIMITED": status_label.text = "Input pacing rejected. Release and try again."
+		"WORLD_PAUSED": status_label.text = "World paused. Input stopped."
+
+func _on_local_moved(event: Dictionary, _previous_x: int) -> void:
+	var correction_units := prediction.authoritative_step(event.data.player.x)
+	if platform != null and correction_units != 0.0:
+		platform.apply_local_correction(correction_units)
 	_project_display()
 
 func _leave_world() -> void:
@@ -76,11 +89,9 @@ func _leave_world() -> void:
 		status_label.text = "The client is busy. Try leaving again in a moment."
 
 func _on_state_changed(value: String) -> void:
-	if value != "MOVING":
-		prediction.reconcile()
-		_project_display()
+	_project_display()
 	leave_button.disabled = value != "READY"
-	refresh_button.disabled = value != "READY"
+	refresh_button.disabled = value != "READY" or (input_adapter != null and input_adapter.locomotion_intent != 0)
 	if value == "LOGGING_OUT":
 		status_label.text = "Leaving world..."
 	elif value == "READY":
@@ -93,7 +104,6 @@ func _on_state_changed(value: String) -> void:
 		_return_to_login()
 
 func _on_move_rejected(code: String) -> void:
-	prediction.reconcile()
 	_project_display()
 	match code:
 		"OUT_OF_BOUNDS": status_label.text = "World boundary reached."

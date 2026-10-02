@@ -4,7 +4,7 @@ extends RefCounted
 const VERSION := 4
 const MAX_FRAME_BYTES := 65536
 const WireJson = preload("res://scripts/mmo/wire_json.gd")
-const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "move", "logout", "world_rules", "session_rules", "ping"]
+const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "move", "input", "logout", "world_rules", "session_rules", "ping"]
 # Wire codes/status semantics from protocol v4, independently implemented here.
 # Internal-only WRITER_BUSY has no legal public rejection operation.
 const PUBLIC_ERROR_CODES := [
@@ -19,8 +19,8 @@ const REJECTION_CODES := [
 	"OUT_OF_BOUNDS", "RATE_LIMITED", "INVALID_TICKET", "WRITER_BUSY", "WORLD_PAUSED",
 ]
 const REJECTION_OPERATIONS := {
-	"WORLD_PAUSED": ["move"],
-	"NOT_AUTHENTICATED": ["map", "state", "move", "logout", "world_rules", "ping"],
+	"WORLD_PAUSED": ["move", "input"],
+	"NOT_AUTHENTICATED": ["map", "state", "move", "input", "logout", "world_rules", "ping"],
 	"ALREADY_AUTHENTICATED": ["enter"],
 	"NICKNAME_NOT_ALLOWED": ["login"],
 	"ALREADY_ONLINE": ["enter"],
@@ -136,6 +136,10 @@ static func response(value: Variant) -> bool:
 		"move":
 			return fields(data, ["epoch", "zone_id", "revision", "player_id"]) \
 				and token(data.epoch) and zone(data.zone_id) and integer(data.revision, 1) and token(data.player_id)
+		"input":
+			return fields(data, ["epoch", "zone_id", "player_id", "input_seq", "x"]) \
+				and token(data.epoch) and zone(data.zone_id) and token(data.player_id) \
+				and integer(data.input_seq, 1) and integer(data.x)
 		"logout":
 			return fields(data, ["flush"]) and fields(data.flush, ["status", "save_version"]) \
 				and ((data.flush.status == "completed" and integer(data.flush.save_version)) \

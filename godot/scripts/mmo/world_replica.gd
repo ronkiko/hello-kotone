@@ -2,7 +2,7 @@ extends RefCounted
 ## Pure public-data reducer. Never holds sockets, scene nodes or renderer objects.
 
 signal changed
-signal local_moved
+signal local_moved(event: Dictionary, previous_x: int)
 
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
 var _snapshot: Dictionary = {}
@@ -105,6 +105,7 @@ func apply_event(value: Dictionary) -> bool:
 	if value.revision != _snapshot.revision + 1:
 		return _reject("REVISION_GAP")
 	var players: Dictionary = _players.duplicate(true)
+	var previous_local_x: int = _players.get(_local_id, {}).get("x", 0)
 	var id: String = value.data.player_id if value.event == "left" else value.data.player.player_id
 	if value.event == "joined":
 		if players.has(id):
@@ -134,7 +135,7 @@ func apply_event(value: Dictionary) -> bool:
 	var resync_pending := _status == "STALE"
 	_commit(next, resync_pending)
 	if value.event == "moved" and id == _local_id:
-		local_moved.emit()
+		local_moved.emit(value.duplicate(true), previous_local_x)
 	return true
 
 func invalidate(reason: String) -> void:
