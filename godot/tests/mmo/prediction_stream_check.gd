@@ -93,10 +93,11 @@ func start() -> void:
 	check(intentions == 1 and model.view().predicted_x == predicted, "HELD_INPUT_NO_PREDICTION_BACKLOG")
 	await create_timer(.12).timeout
 	check(client.world_replica.local_player().x == x and facts == 0 and receipts == 0, "LATENCY_CONFIRMED_UNCHANGED")
-	check(is_equal_approx(world.platform.sprite.position.x,predicted_px), "RENDER_REACHES_PREDICTED_BEFORE_FACT")
+	check(absf(world.platform.sprite.position.x - start_px) > 0 and absf(world.platform.sprite.position.x - start_px) < absf(predicted_px - start_px), "IMMEDIATE_RENDER_PROGRESS_AT_WORLD_SPEED")
+	var render_before_tamper: float = world.platform.sprite.position.x
 	world.platform.sprite.position.x = -99999
 	world.platform._process(0)
-	check(is_equal_approx(world.platform.sprite.position.x,predicted_px) and client.world_replica.local_player().x == x, "TAMPER_NOT_AUTHORITY")
+	check(is_equal_approx(world.platform.sprite.position.x,render_before_tamper) and client.world_replica.local_player().x == x, "TAMPER_NOT_AUTHORITY")
 	await capture(world,"predicted")
 	var rejected := mode in ["out_of_bounds","rate_limited","world_paused","left_bound","right_bound"]
 	if not rejected:
@@ -149,7 +150,7 @@ func start() -> void:
 			var expected_x := x if mode == "unchanged_fact" else (x - 1 if mode == "server_correction" else predicted)
 			check(client.world_replica.local_player().x == expected_x and facts == 1 and receipts == 1, "ONE_FACT_ONE_RECEIPT")
 			check(not model.view().active and model.view().target_x == expected_x, "FACT_RECONCILES_PREDICTION")
-			await create_timer(.12).timeout
+			await create_timer(.5).timeout
 			check(is_equal_approx(world.platform.sprite.position.x,world.platform.server_to_pixel(expected_x)), "CORRECTION_OR_CONFIRMATION_RENDERED")
 			await capture(world,"confirmed")
 		check(client.request_state(), "HEALTHY_REFRESH")

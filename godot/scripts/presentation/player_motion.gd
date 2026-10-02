@@ -30,9 +30,9 @@ func animate(sprite: Sprite2D, before: float, after: float, target: float, delta
 		animation = direction
 		idle_elapsed = 0.0
 		sprite.texture = IDLE if direction == 0 else (WALK_LEFT if direction < 0 else WALK_RIGHT)
+	walk_distance = fmod(walk_distance + distance, cycle_pixels)
 	if direction == 0:
 		idle_elapsed += delta
 		sprite.frame = int(idle_elapsed / 0.3) % sprite.hframes
 	else:
-		walk_distance = fmod(walk_distance + distance, cycle_pixels)
 		sprite.frame = int(walk_distance / cycle_pixels * sprite.hframes) % sprite.hframes

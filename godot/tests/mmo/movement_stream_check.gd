@@ -32,7 +32,7 @@ func wait_state(value: String) -> void:
 	check(not finished and client.state == value, "STATE_" + value)
 
 func settle() -> void:
-	await create_timer(0.12).timeout
+	await create_timer(float(client.world_rules.movement.min_move_interval_ms) / 1000.0 + 0.08).timeout
 
 func capture(name: String) -> void:
 	if not options.has("capture"): return
