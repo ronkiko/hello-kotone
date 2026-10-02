@@ -82,12 +82,16 @@ func start() -> void:
 	var view := replica.view()
 	view.confirmed_local_x = 50
 	check(platform.project(document,view), "PRESENTER_BASELINE")
+	check(platform.set_local_intent(1), "PRESENTATION_HELD_INTENT")
 	check(platform.project(document,view,51) and platform.sprite.position.x == 432 and view.confirmed_local_x == 50, "SPECULATIVE_TARGET_NO_SNAP_NO_MUTATION")
 	platform._process(.02)
 	check(platform.sprite.position.x > 432 and platform.sprite.position.x < 440, "RENDER_BETWEEN_CONFIRMED_AND_PREDICTED")
 	platform._resize_projection()
 	platform._process(.2)
-	check(platform.sprite.position.x == 440, "RESIZE_RETAINS_DISPLAY_TARGET")
+	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "RESIZE_RETAINS_DISPLAY_TARGET_AND_HELD_GAIT")
+	check(platform.set_local_intent(0), "PRESENTATION_RELEASE")
+	platform._process(0)
+	check(platform.sprite.texture == platform.IDLE, "RELEASE_AT_SETTLED_TARGET_RETURNS_FRONT_IDLE")
 	platform.sprite.position.x = -99999
 	platform._process(0)
 	check(platform.sprite.position.x == 440, "TAMPER_CANNOT_REWRITE_RENDER_MODEL")

@@ -54,6 +54,8 @@ func start() -> void:
 	root.add_child(client)
 	var adapter := Adapter.new()
 	adapter.client = client
+	var locomotion_changes: Array[int] = []
+	adapter.locomotion_intent_changed.connect(func(direction: int): locomotion_changes.append(direction))
 	root.add_child(adapter)
 	adapter.set_process(false)
 	key(KEY_D, true)
@@ -63,11 +65,12 @@ func start() -> void:
 	adapter._process(0.01)
 	key(KEY_D, true)
 	adapter._process(0.01)
-	check(client.intents == ["right"], "PHYSICAL_D")
+	check(client.intents == ["right"] and adapter.locomotion_intent == 1 and locomotion_changes == [1], "PHYSICAL_D_AND_HELD_INTENT")
 	for i in range(1000): adapter._process(1.0)
-	check(client.intents.size() == 1, "HOLD_NO_BACKLOG")
+	check(client.intents.size() == 1 and adapter.locomotion_intent == 1, "HOLD_NO_BACKLOG_BUT_INTENT_REMAINS")
 	key(KEY_D, false)
 	adapter._process(0.01)
+	check(adapter.locomotion_intent == 0 and locomotion_changes.back() == 0, "RELEASE_IS_PRESENTATION_INTENT_NOT_MUTATION")
 	client.stage("READY")
 	adapter._process(0.01)
 	check(client.intents.size() == 1, "RELEASE_BEFORE_REPLY_NO_REPLAY")
@@ -113,6 +116,7 @@ func start() -> void:
 	var map := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
 	var view := {"map":{"map_id":map.map_id,"content_version":1,"content_hash":map.content_hash},"confirmed_local_x":50}
 	check(platform.project(map,view) and platform.sprite.position.x == 432, "INITIAL_CONFIRMED_SPAWN")
+	check(platform.set_local_intent(1), "LOCAL_INTENT_RIGHT")
 	view.confirmed_local_x = 51
 	platform.project(map,view)
 	check(platform.sprite.position.x == 432, "NO_SNAP_OR_PREDICTION")
@@ -121,37 +125,48 @@ func start() -> void:
 	platform._process(0.1)
 	check(platform.sprite.position.x < 440 and platform.sprite.texture == platform.WALK_RIGHT, "WALK_DURING_ACTUAL_TRAVEL")
 	platform._process(0.1)
-	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "RIGHT_ARRIVAL_SIDE_POSE")
+	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "HELD_INTENT_KEEPS_SIDE_POSE_AT_BOUNDARY")
+	check(platform.set_local_intent(0), "LOCAL_RELEASE")
+	platform._process(0)
+	check(platform.sprite.texture == platform.IDLE, "RELEASE_PLUS_SETTLED_RETURNS_FRONT_IDLE")
 	platform.sprite.position.x = -99999
 	platform._process(0)
 	check(platform.sprite.position.x == 440 and view.confirmed_local_x == 51, "SPRITE_TAMPER_NOT_AUTHORITY")
 	view.confirmed_local_x = 0
 	platform.project(map,view)
 	platform._process(100)
-	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.WALK_LEFT, "LEFT_BOUND_SIDE_POSE")
+	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.WALK_LEFT, "LEFT_BOUND_TRAVEL")
+	platform._process(0)
+	check(platform.sprite.texture == platform.IDLE, "LEFT_BOUND_SETTLED_IDLE")
 	view.confirmed_local_x = 100
 	platform.project(map,view)
 	platform._process(100)
 	check(platform.sprite.position.x == 832, "RIGHT_BOUND_NO_OVERSHOOT")
-	# Timing is derived, shared and distance driven, never a 160px/s timer.
-	check(is_equal_approx(platform.motion.speed, 44.0), "WORLD_200MS_SPEED")
+	platform._process(0)
+	check(platform.sprite.texture == platform.IDLE, "RIGHT_BOUND_SETTLED_IDLE")
+	# Timing is derived from World cadence. A normal one-step gap has no permanent speed-up.
+	check(is_equal_approx(platform.motion_profile.nominal_speed, 40.0), "WORLD_200MS_NOMINAL_SPEED")
+	check(is_equal_approx(platform.motion_profile.speed_for_gap(8.0), 40.0), "ONE_STEP_EXACT_WORLD_CADENCE")
+	check(platform.motion_profile.speed_for_gap(16.0) > 40.0 and platform.motion_profile.speed_for_gap(16.0) <= 50.0, "CATCH_UP_ONLY_WHEN_MORE_THAN_ONE_STEP_BEHIND")
 	check(platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":350}}), "WORLD_350MS_RULES")
 	view.confirmed_local_x = 99
 	platform.project(map,view)
-	check(is_equal_approx(platform.motion.speed, 8.0 / .35 * 1.1), "NEGOTIATED_350MS_SPEED")
+	check(is_equal_approx(platform.motion_profile.nominal_speed, 8.0 / .35), "NEGOTIATED_350MS_SPEED")
 	platform._process(.05)
 	check(platform.sprite.texture == platform.WALK_LEFT and platform.sprite.position.x > 824, "350MS_NO_FAST_SNAP")
-	var distance: float = platform.motion.walk_distance
+	var distance: float = platform.gait.walk_distance
 	var frame: int = platform.sprite.frame
 	platform._process(0)
-	check(platform.motion.walk_distance == distance and platform.sprite.frame == frame, "NO_DISTANCE_NO_WALK_PHASE")
+	check(platform.gait.walk_distance == distance and platform.sprite.frame == frame, "NO_DISTANCE_NO_WALK_PHASE")
 	platform.set_suspended(true)
 	var frozen_x: float = platform.sprite.position.x
 	platform._process(10)
-	check(platform.sprite.position.x == frozen_x and platform.motion.walk_distance == distance and platform.sprite.frame == frame, "SUSPENDED_MOTION_AND_PHASE_FROZEN")
+	check(platform.sprite.position.x == frozen_x and platform.gait.walk_distance == distance and platform.sprite.frame == frame, "SUSPENDED_MOTION_AND_PHASE_FROZEN")
 	platform.set_suspended(false)
 	platform._process(1)
-	check(platform.sprite.position.x == 824 and platform.sprite.texture == platform.WALK_LEFT, "ARRIVAL_LAST_SIDE_POSE")
+	check(platform.sprite.position.x == 824, "ARRIVAL_AT_TARGET")
+	platform._process(0)
+	check(platform.sprite.texture == platform.IDLE, "ARRIVAL_WITHOUT_INTENT_IDLES")
 	var scaled := map.duplicate(true)
 	scaled.units_per_meter = 2
 	var canonical := scaled.duplicate()
@@ -159,55 +174,68 @@ func start() -> void:
 	scaled.content_hash = JSON.stringify(canonical, "", true).sha256_text()
 	view.map.content_hash = scaled.content_hash
 	check(platform.project(scaled,view), "VALID_SCALED_PROFILE")
-	check(is_equal_approx(platform.motion.speed, 4.0 / .35 * 1.1), "MAP_SCALE_DERIVES_SPEED")
+	check(is_equal_approx(platform.motion_profile.nominal_speed, 4.0 / .35), "MAP_SCALE_DERIVES_SPEED")
 	var remote := preload("res://scripts/presentation/remote_player.gd").new()
 	viewport.add_child(remote)
 	remote.set_process(false)
-	remote.motion.configure(1, 350, 2, 8.0)
+	remote.configure_motion(1, 350, 2, 8.0)
 	remote.project("player2", 100, 0, 200)
 	remote.project("player2", 104, 0, 200)
 	remote._process(.05)
-	check(is_equal_approx(remote.position.x, 100 + platform.motion.speed * .05) and remote.sprite.texture == remote.WALK_RIGHT, "REMOTE_USES_SAME_PROFILE")
+	check(is_equal_approx(remote.position.x, 100 + platform.motion_profile.nominal_speed * .05) and remote.sprite.texture == remote.gait.WALK_RIGHT, "REMOTE_USES_SAME_PROFILE")
 	remote._process(1)
-	check(remote.position.x == 104 and remote.sprite.texture == remote.WALK_RIGHT, "REMOTE_ARRIVAL_SIDE_POSE")
+	check(remote.position.x == 104 and remote.sprite.texture == remote.gait.WALK_RIGHT, "REMOTE_ARRIVAL_TRAVEL_FRAME")
+	remote._process(0)
+	check(remote.sprite.texture == remote.gait.IDLE, "REMOTE_CONFIRMED_ARRIVAL_CAN_IDLE")
 	# Equal visual distances give equal walk frames despite different elapsed time.
-	var motion_a := preload("res://scripts/presentation/player_motion.gd").new()
-	var motion_b := preload("res://scripts/presentation/player_motion.gd").new()
-	motion_a.configure(1,200,1,8.0)
-	motion_b.configure(1,350,2,8.0)
-	motion_a.animate(platform.sprite,0,6,100,.01)
+	var gait_a := preload("res://scripts/presentation/gait_animator.gd").new()
+	var gait_b := preload("res://scripts/presentation/gait_animator.gd").new()
+	gait_a.configure(32.0)
+	gait_b.configure(32.0)
+	gait_a.reset(platform.sprite)
+	gait_a.update(platform.sprite,0,6,100,1,.01)
 	var phase_frame: int = platform.sprite.frame
-	motion_b.animate(platform.sprite,0,6,100,2.0)
+	gait_b.reset(platform.sprite)
+	gait_b.update(platform.sprite,0,6,100,1,2.0)
 	check(platform.sprite.frame == phase_frame and phase_frame == 1, "WALK_PHASE_DISTANCE_NOT_TIME")
 	check(not platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":0}}), "INVALID_MOTION_RULES_REJECTED")
-	# A sequence of one-step targets must never flash a front-facing idle strip.
+	# Local trajectory separates held locomotion from the bounded one-step display target.
+	var Profile := preload("res://scripts/presentation/player_motion.gd")
+	var Trajectory := preload("res://scripts/presentation/local_trajectory.gd")
+	var Gait := preload("res://scripts/presentation/gait_animator.gd")
 	for interval in [200,350]:
 		for hz in [60,144]:
-			var gait := preload("res://scripts/presentation/player_motion.gd").new()
-			gait.configure(1, interval, 1, 8.0)
-			gait.reset()
-			var visual := 0.0
+			var profile := Profile.new()
+			profile.configure(1, interval, 1, 8.0)
+			var trajectory := Trajectory.new()
+			trajectory.configure(profile, 0.0, 1000.0)
+			trajectory.reset(0.0)
+			trajectory.set_intent(1)
+			var gait := Gait.new()
+			gait.configure(profile.cycle_pixels)
+			gait.reset(remote.sprite)
 			var dt := 1.0 / float(hz)
-			var no_front_flash := true
-			var stopped_phase := true
+			var stayed_side := true
 			for step in range(1, 21):
-				var target := float(step * 8)
+				trajectory.retarget(float(step * 8))
 				for tick in range(int(ceil(float(interval) / 1000.0 / dt))):
-					var before := visual
-					var old_frame: int = remote.sprite.frame
-					visual = move_toward(visual, target, gait.speed * dt)
-					gait.animate(remote.sprite, before, visual, target, dt)
-					no_front_flash = no_front_flash and remote.sprite.texture == remote.WALK_RIGHT
-					if before == visual: stopped_phase = stopped_phase and remote.sprite.frame == old_frame
-			check(no_front_flash and stopped_phase, "CONTINUOUS_GAIT_%dMS_%dHZ" % [interval,hz])
+					var sample := trajectory.advance(dt)
+					gait.update(remote.sprite,sample.before,sample.after,sample.target,sample.intent,dt)
+					stayed_side = stayed_side and remote.sprite.texture == remote.gait.WALK_RIGHT
+			check(stayed_side, "HELD_INTENT_CONTINUOUS_GAIT_%dMS_%dHZ" % [interval,hz])
 			var stopped_frame: int = remote.sprite.frame
-			gait.animate(remote.sprite,visual,visual,visual,20)
-			check(remote.sprite.texture == remote.WALK_RIGHT and remote.sprite.frame == stopped_frame, "STOP_FACING_AND_LEGS_FROZEN")
-			gait.animate(remote.sprite,visual,visual-1,visual-8,dt)
-			check(remote.sprite.texture == remote.WALK_LEFT, "REVERSE_FOLLOWS_ACTUAL_DISTANCE")
-			gait.reset()
-			gait.animate(remote.sprite,0,0,0,dt)
-			check(remote.sprite.texture == remote.IDLE, "FRESH_BASELINE_FRONT_IDLE")
+			var settled := trajectory.advance(0)
+			gait.update(remote.sprite,settled.before,settled.after,settled.target,settled.intent,0)
+			check(remote.sprite.texture == remote.gait.WALK_RIGHT and remote.sprite.frame == stopped_frame, "HELD_BOUNDARY_FREEZES_LEGS_NOT_FRONT_IDLE")
+			trajectory.set_intent(0)
+			settled = trajectory.advance(0)
+			gait.update(remote.sprite,settled.before,settled.after,settled.target,settled.intent,0)
+			check(remote.sprite.texture == remote.gait.IDLE, "RELEASE_AND_SETTLED_EXACT_FRONT_IDLE")
+			trajectory.set_intent(-1)
+			trajectory.retarget(trajectory.visual_x - 8.0)
+			var reverse := trajectory.advance(dt)
+			gait.update(remote.sprite,reverse.before,reverse.after,reverse.target,reverse.intent,dt)
+			check(remote.sprite.texture == remote.gait.WALK_LEFT, "REVERSAL_FOLLOWS_ACTUAL_RENDER_DISTANCE")
 	viewport.queue_free()
 	print(JSON.stringify({"suite":"movement","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)
