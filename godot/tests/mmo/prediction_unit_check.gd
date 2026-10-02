@@ -1,14 +1,11 @@
 extends SceneTree
 const Prediction = preload("res://scripts/presentation/local_prediction.gd")
-const Replica = preload("res://scripts/mmo/world_replica.gd")
-const Platform = preload("res://scripts/presentation/platform_world.gd")
+const Trajectory = preload("res://scripts/presentation/local_trajectory.gd")
+const Profile = preload("res://scripts/presentation/player_motion.gd")
 var checks := 0
 var failures: Array[String] = []
-var document := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
-var player := {"player_id":"p1","nickname":"player1","zone_id":"city/apartment","x":50}
-var replica := Replica.new()
-var prediction := Prediction.new()
-var local_facts := 0
+var document := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,
+	"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
 
 func _initialize() -> void:
 	start.call_deferred()
@@ -17,94 +14,48 @@ func check(ok: bool, reason: String) -> void:
 	checks += 1
 	if not ok: failures.append(reason)
 
-func event(revision: int, who: Dictionary, kind: String = "moved") -> Dictionary:
-	return {"protocol_version":4,"type":"event","event":kind,"epoch":"e1","zone_id":"city/apartment","revision":revision,"data":{"player":who}}
+func replica(x: int, status: String = "SYNCED") -> Dictionary:
+	return {"status":status,"reconnect_required":status != "SYNCED","epoch":"e1",
+		"map":{"map_id":document.map_id,"content_version":1,"content_hash":document.content_hash},
+		"local_player_id":"p1","confirmed_local_x":x}
 
 func start() -> void:
-	check(not prediction.begin("right"), "EMPTY_CANNOT_PREDICT")
-	var baseline := {"epoch":"e1","revision":1,"map":{"map_id":document.map_id,"content_version":1,"content_hash":document.content_hash},"players":[player]}
-	check(replica.start(baseline,"p1","player1") and replica.install_map(document), "BASELINE")
-	replica.changed.connect(func(): prediction.observe(document,replica.view(),1))
-	replica.local_moved.connect(func():
-		local_facts += 1
-		prediction.reconcile())
-	check(prediction.observe(document,replica.view(),1), "OBSERVE_VALIDATED_PAIR")
-	var before := replica.snapshot()
-	check(not prediction.begin("up") and prediction.begin("right"), "DIRECTION_ONLY")
-	check(prediction.view().confirmed_x == 50 and prediction.view().predicted_x == 51 and prediction.view().target_x == 51, "THREE_POSITIONS_SEPARATE")
-	var all_refused := true
-	for i in range(1000): all_refused = not prediction.begin("left") and all_refused
-	check(all_refused and prediction.view().predicted_x == 51 and replica.snapshot() == before, "ONE_STEP_NO_QUEUE_NO_FACT_WRITE")
-	var copy := prediction.view()
-	copy.target_x = -99999
-	check(prediction.view().target_x == 51, "DEFENSIVE_VIEW")
-	var remote := {"player_id":"p2","nickname":"player2","zone_id":"city/apartment","x":52}
-	check(replica.apply_event(event(2,remote,"joined")), "REMOTE_JOIN")
-	remote.x = 53
-	check(replica.apply_event(event(3,remote)) and prediction.view().active and prediction.view().target_x == 51 and local_facts == 0, "REMOTE_FACT_PRESERVES_SPECULATION")
-	player.x = 51
-	check(replica.apply_event(event(4,player)) and not prediction.view().active and prediction.view().predicted_x == null and prediction.view().target_x == 51 and local_facts == 1, "OWN_FACT_RECONCILES_ONCE")
-	check(prediction.begin("right"), "NEXT_SINGLE_STEP")
-	player.x = 49
-	check(replica.apply_event(event(5,player)) and prediction.view().target_x == 49 and not prediction.view().active, "SERVER_CORRECTION_OVERRIDES_PREDICTION")
-	check(prediction.begin("right"), "BEGIN_BEFORE_UNCHANGED_FACT")
-	check(replica.apply_event(event(6,player)) and not prediction.view().active and local_facts == 3, "UNCHANGED_OWN_FACT_RESOLVES_SPECULATION")
-	check(prediction.begin("left"), "BEGIN_BEFORE_REJECTION")
-	prediction.reconcile()
-	check(prediction.view().target_x == 49 and prediction.view().healthy and replica.local_player().x == 49, "REJECTION_ROLLBACK_NO_AUTHORITY_WRITE")
-	check(prediction.begin("right"), "BEGIN_BEFORE_RESYNC")
-	replica.begin_resync()
-	check(not prediction.view().active and not prediction.begin("right") and prediction.view().target_x == 49, "RESYNC_CLEARS_AND_BLOCKS_PREDICTION")
-	check(replica.replace_snapshot(replica.snapshot()) and prediction.begin("right"), "HEALTHY_STATE_REOPENS")
-	replica.invalidate("DISCONNECTED")
-	check(not prediction.view().active and not prediction.begin("left") and prediction.view().target_x == 49, "FENCING_RETAINS_ONLY_LAST_FACT")
-	replica.clear()
-	baseline.epoch = "e2"
-	baseline.players = [{"player_id":"p1","nickname":"player1","zone_id":"city/apartment","x":0}]
-	check(replica.start(baseline,"p1","player1") and replica.install_map(document), "FRESH_EPOCH_BASELINE")
-	check(prediction.begin("left") and prediction.view().target_x == 0, "LEFT_PREDICTION_CLAMP")
-	prediction.reconcile()
-	var max_view := replica.view()
-	max_view.confirmed_local_x = 100
-	check(prediction.observe(document,max_view,1) and prediction.begin("right") and prediction.view().target_x == 100, "RIGHT_PREDICTION_CLAMP")
-	check(not prediction.observe(document,max_view,2) and prediction.view().target_x == null and not prediction.begin("right"), "INVALID_RULES_CLEAR")
-	check(prediction.observe(document,replica.view(),1), "RESTORE_VALID_FACTS")
-	var wrong := document.duplicate(true)
-	wrong.content_hash = "0".repeat(64)
-	check(not prediction.observe(wrong,replica.view(),1) and not prediction.begin("right"), "MISMATCHED_MAP_BLOCKS")
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(458,116)
-	root.add_child(viewport)
-	var platform := Platform.new()
-	platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":200}})
-	viewport.add_child(platform)
-	platform.set_process(false)
-	var view := replica.view()
-	view.confirmed_local_x = 50
-	check(platform.project(document,view), "PRESENTER_BASELINE")
-	check(platform.set_local_intent(1), "PRESENTATION_HELD_INTENT")
-	check(platform.project(document,view,51) and platform.sprite.position.x == 432 and view.confirmed_local_x == 50, "SPECULATIVE_TARGET_NO_SNAP_NO_MUTATION")
-	platform._process(.02)
-	check(platform.sprite.position.x > 432 and platform.sprite.position.x < 440, "RENDER_BETWEEN_CONFIRMED_AND_PREDICTED")
-	platform._resize_projection()
-	platform._process(.2)
-	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "RESIZE_RETAINS_DISPLAY_TARGET_AND_HELD_GAIT")
-	check(platform.set_local_intent(0), "PRESENTATION_RELEASE")
-	platform._process(0)
-	check(platform.sprite.texture == platform.IDLE, "RELEASE_AT_SETTLED_TARGET_RETURNS_FRONT_IDLE")
-	platform.sprite.position.x = -99999
-	platform._process(0)
-	check(platform.sprite.position.x == 440, "TAMPER_CANNOT_REWRITE_RENDER_MODEL")
-	check(platform.project(document,view), "RECONCILE_CONFIRMED_TARGET")
-	platform._process(.02)
-	check(platform.sprite.position.x > 432 and platform.sprite.position.x < 440 and platform.sprite.texture == platform.WALK_LEFT, "BOUNDED_SMOOTH_ROLLBACK")
-	platform._process(1)
-	check(platform.sprite.position.x == 432 and view.confirmed_local_x == 50, "ROLLBACK_COMPLETES_NO_FACT_WRITE")
-	check(not platform.project(document,view,-1) and not platform.project(document,view,101) and not platform.project(document,view,51.0), "INVALID_DISPLAY_TARGETS_REJECTED")
-	view.confirmed_local_x = 100
-	platform.project(document,view,100)
-	platform._process(1000)
-	check(platform.sprite.position.x == 832, "LARGE_DELTA_STAYS_IN_BOUNDS")
-	viewport.queue_free()
+	var model := Prediction.new()
+	check(model.observe(document,replica(50),1), "OBSERVE_BASELINE")
+	check(model.accept_input(1,"right",50), "ACCEPT_RIGHT_INPUT_SEQUENCE")
+	check(model.authoritative_step(51) == 0.0, "MATCHED_STEP_NEEDS_NO_CORRECTION")
+	check(model.authoritative_step(51) == -1.0, "SERVER_HOLD_RETURNS_ONE_STEP_CORRECTION")
+	check(model.authoritative_step(51) == -1.0, "REPEATED_HOLD_CORRECTS_INCREMENTALLY_NOT_CUMULATIVELY")
+	check(model.accept_input(2,"stop",51), "STOP_SEQUENCE_BASELINE")
+	check(model.authoritative_step(51) == 0.0, "STOP_HAS_NO_NOMINAL_STEP")
+	check(not model.accept_input(0,"right",51) and not model.accept_input(3,"up",51), "INVALID_INPUT_MODEL_REJECTED")
+
+	var stale := replica(51,"STALE")
+	check(model.observe(document,stale,1) and not model.view().healthy and not model.view().active, "STALE_CLEARS_ACTIVE_RECONCILIATION")
+	check(model.observe(document,replica(51),1), "HEALTHY_REOPENS_MODEL")
+	check(model.accept_input(1,"left",51), "FRESH_STREAM_SEQUENCE_MODEL")
+	check(model.authoritative_step(50) == 0.0, "LEFT_EXPECTED_STEP")
+
+	var profile := Profile.new()
+	profile.configure(1,200,1,8.0)
+	var trajectory := Trajectory.new()
+	trajectory.configure(profile,32.0,832.0)
+	trajectory.reset(432.0)
+	trajectory.set_intent(1)
+	var first := trajectory.advance(.2)
+	check(is_equal_approx(first.after,440.0) and is_equal_approx(trajectory.model_x,440.0), "CLIENT_ADVANCES_ONE_UNIT_WITHOUT_ACK")
+	var second := trajectory.advance(.2)
+	check(is_equal_approx(second.after,448.0), "CLIENT_CONTINUES_PAST_ONE_STEP_WITH_HELD_INPUT")
+	trajectory.correct_by(-8.0)
+	check(is_equal_approx(trajectory.model_x,440.0) and is_equal_approx(trajectory.visual_x,448.0), "AUTHORITATIVE_CORRECTION_MOVES_MODEL_ONLY")
+	var magnetic := trajectory.advance(.025)
+	check(magnetic.after < 448.0 and magnetic.after > 440.0, "RENDER_MAGNETS_TOWARD_CORRECTED_MODEL")
+	trajectory.advance(1)
+	check(is_equal_approx(trajectory.visual_x,trajectory.model_x), "MAGNET_SETTLES")
+	trajectory.set_intent(0)
+	var stopped_model := trajectory.model_x
+	trajectory.advance(1)
+	check(is_equal_approx(trajectory.model_x,stopped_model), "RELEASE_STOPS_LOCAL_SIMULATION")
+
 	print(JSON.stringify({"suite":"prediction","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)
