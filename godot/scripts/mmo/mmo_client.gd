@@ -255,6 +255,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 		if _pending.op == "input" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
 			var input_code: String = message.error.code
 			_pending = {}
+			_desired_input = "stop"
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 			input_rejected.emit(input_code)
 			_schedule_desired_input()
@@ -273,7 +274,8 @@ func _on_frame(frame: PackedByteArray) -> void:
 			return
 		_fail(message.error.code, true)
 		return
-	var op: String = _pending.op
+	var completed: Dictionary = _pending.duplicate(true)
+	var op: String = completed.op
 	if op == "move" and (state != "MOVING" or _move_fact.is_empty() or message.data != _move_fact):
 		_fail("MOVE_RECEIPT_MISMATCH")
 		return
@@ -345,7 +347,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if state == "READY":
 				response_received.emit(op, data.duplicate(true))
 		"input":
-			var sent_direction: String = _pending.get("payload", {}).get("direction", "")
+			var sent_direction: String = completed.get("payload", {}).get("direction", "")
 			if sent_direction.is_empty():
 				_fail("INPUT_BASELINE_MISMATCH")
 				return
