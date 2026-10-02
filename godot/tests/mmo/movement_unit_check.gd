@@ -121,14 +121,14 @@ func start() -> void:
 	platform._process(0.1)
 	check(platform.sprite.position.x < 440 and platform.sprite.texture == platform.WALK_RIGHT, "WALK_DURING_ACTUAL_TRAVEL")
 	platform._process(0.1)
-	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.IDLE, "RIGHT_ARRIVAL_IDLE")
+	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "RIGHT_ARRIVAL_SIDE_POSE")
 	platform.sprite.position.x = -99999
 	platform._process(0)
 	check(platform.sprite.position.x == 440 and view.confirmed_local_x == 51, "SPRITE_TAMPER_NOT_AUTHORITY")
 	view.confirmed_local_x = 0
 	platform.project(map,view)
 	platform._process(100)
-	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.IDLE, "LEFT_BOUND_ARRIVAL_IDLE")
+	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.WALK_LEFT, "LEFT_BOUND_SIDE_POSE")
 	view.confirmed_local_x = 100
 	platform.project(map,view)
 	platform._process(100)
@@ -151,7 +151,7 @@ func start() -> void:
 	check(platform.sprite.position.x == frozen_x and platform.motion.walk_distance == distance and platform.sprite.frame == frame, "SUSPENDED_MOTION_AND_PHASE_FROZEN")
 	platform.set_suspended(false)
 	platform._process(1)
-	check(platform.sprite.position.x == 824 and platform.sprite.texture == platform.IDLE, "ARRIVAL_NO_WALK_HOLD")
+	check(platform.sprite.position.x == 824 and platform.sprite.texture == platform.WALK_LEFT, "ARRIVAL_LAST_SIDE_POSE")
 	var scaled := map.duplicate(true)
 	scaled.units_per_meter = 2
 	var canonical := scaled.duplicate()
@@ -169,7 +169,7 @@ func start() -> void:
 	remote._process(.05)
 	check(is_equal_approx(remote.position.x, 100 + platform.motion.speed * .05) and remote.sprite.texture == remote.WALK_RIGHT, "REMOTE_USES_SAME_PROFILE")
 	remote._process(1)
-	check(remote.position.x == 104 and remote.sprite.texture == remote.IDLE, "REMOTE_ARRIVAL_IDLE")
+	check(remote.position.x == 104 and remote.sprite.texture == remote.WALK_RIGHT, "REMOTE_ARRIVAL_SIDE_POSE")
 	# Equal visual distances give equal walk frames despite different elapsed time.
 	var motion_a := preload("res://scripts/presentation/player_motion.gd").new()
 	var motion_b := preload("res://scripts/presentation/player_motion.gd").new()
@@ -180,6 +180,34 @@ func start() -> void:
 	motion_b.animate(platform.sprite,0,6,100,2.0)
 	check(platform.sprite.frame == phase_frame and phase_frame == 1, "WALK_PHASE_DISTANCE_NOT_TIME")
 	check(not platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":0}}), "INVALID_MOTION_RULES_REJECTED")
+	# A sequence of one-step targets must never flash a front-facing idle strip.
+	for interval in [200,350]:
+		for hz in [60,144]:
+			var gait := preload("res://scripts/presentation/player_motion.gd").new()
+			gait.configure(1, interval, 1, 8.0)
+			gait.reset()
+			var visual := 0.0
+			var dt := 1.0 / float(hz)
+			var no_front_flash := true
+			var stopped_phase := true
+			for step in range(1, 21):
+				var target := float(step * 8)
+				for tick in range(int(ceil(float(interval) / 1000.0 / dt))):
+					var before := visual
+					var old_frame: int = remote.sprite.frame
+					visual = move_toward(visual, target, gait.speed * dt)
+					gait.animate(remote.sprite, before, visual, target, dt)
+					no_front_flash = no_front_flash and remote.sprite.texture == remote.WALK_RIGHT
+					if before == visual: stopped_phase = stopped_phase and remote.sprite.frame == old_frame
+			check(no_front_flash and stopped_phase, "CONTINUOUS_GAIT_%dMS_%dHZ" % [interval,hz])
+			var stopped_frame: int = remote.sprite.frame
+			gait.animate(remote.sprite,visual,visual,visual,20)
+			check(remote.sprite.texture == remote.WALK_RIGHT and remote.sprite.frame == stopped_frame, "STOP_FACING_AND_LEGS_FROZEN")
+			gait.animate(remote.sprite,visual,visual-1,visual-8,dt)
+			check(remote.sprite.texture == remote.WALK_LEFT, "REVERSE_FOLLOWS_ACTUAL_DISTANCE")
+			gait.reset()
+			gait.animate(remote.sprite,0,0,0,dt)
+			check(remote.sprite.texture == remote.IDLE, "FRESH_BASELINE_FRONT_IDLE")
 	viewport.queue_free()
 	print(JSON.stringify({"suite":"movement","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)

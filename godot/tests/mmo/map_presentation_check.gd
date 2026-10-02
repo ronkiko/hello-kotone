@@ -93,6 +93,12 @@ func unit_checks() -> void:
 		check(is_equal_approx(platform.server_to_pixel(item.max_x), 32 + platform.world_length), "MAX_WALL")
 		check(is_equal_approx(platform.sprite.position.x, platform.server_to_pixel(item.spawn_x)), "SPAWN_PROJECTION")
 		check(platform.terrain.get_used_cells().size() <= 32, "BOUNDED_TILES")
+		var marks := platform.ruler_marks()
+		check(not marks.is_empty() and marks.size() <= 60, "RULER_VISIBLE_BOUNDED")
+		var valid_marks := true
+		for mark in marks:
+			valid_marks = valid_marks and mark.x >= item.min_x and mark.x <= item.max_x and is_equal_approx(mark.pixel, platform.server_to_pixel(mark.x))
+		check(valid_marks, "RULER_ABSOLUTE_X_AND_SCALE")
 		check(platform.sprite.get_script() == null, "NO_LEGACY_CONTROLLER")
 		var saved_x: float = platform.sprite.position.x
 		var key := InputEventKey.new()
@@ -111,6 +117,7 @@ func unit_checks() -> void:
 	check(not platform.project(map, view(map, 101)), "OUTSIDE_MAP_NOT_RENDERED")
 	var huge := definition("city/huge", 0, 9007199254740991, 0)
 	check(platform.project(huge, view(huge, 0)) and platform.terrain.get_used_cells().size() <= 32, "HUGE_MAP_BOUNDED")
+	check(platform.ruler_marks().size() <= 42, "HUGE_MAP_RULER_BOUNDED")
 	viewport.queue_free()
 
 func wait_state(target: String) -> void:

@@ -78,5 +78,11 @@ min_move_interval_ms. A bounded 10% catch-up margin gives 44 px/s with the curre
 1-unit / 200-ms world and 8 px/metre. It is presentation only; confirmed positions,
 request cadence, one-step prediction and receipts remain authoritative as before.
 Walk frames follow actual visual distance over an art stride of four displayed
-metres. Arrival switches to idle immediately; jitter cannot run stationary legs.
+metres. Arrival freezes the last side-facing walk frame; target gaps never flash the
+front-facing idle strip. Stationary legs do not cycle. Fresh enter resets the pose.
 Suspension freezes both motion and animation; a fresh baseline resets phase.
+
+The floor now carries an absolute server-X ruler. Minor marks represent coordinate
+steps at normal scale; numbered major marks and the gold confirmed-X cell/tag make
+position readable. Dense map scales use bounded visible multiples. The marker
+follows confirmed replica X, independently of predicted/interpolated sprite X.

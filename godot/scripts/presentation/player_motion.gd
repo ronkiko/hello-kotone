@@ -24,8 +24,10 @@ func reset() -> void:
 
 func animate(sprite: Sprite2D, before: float, after: float, target: float, delta: float) -> void:
 	var distance := absf(after - before)
-	# Arrival is idle immediately; no timed walking after the body stops.
-	var direction := 0 if is_equal_approx(after, target) else (-1 if target < after else 1)
+	# Keep the last facing pose across target gaps; stationary legs do not cycle.
+	var direction := animation if animation in [-1, 1] else 0
+	if not is_equal_approx(before, after):
+		direction = -1 if after < before else 1
 	if direction != animation:
 		animation = direction
 		idle_elapsed = 0.0

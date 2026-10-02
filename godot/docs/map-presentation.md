@@ -73,3 +73,7 @@ requires a display; omit --desktop for headless checks.
 
 API reference: [TileMapLayer](https://docs.godotengine.org/en/stable/classes/class_tilemaplayer.html),
 [TileSetAtlasSource](https://docs.godotengine.org/en/stable/classes/class_tilesetatlassource.html).
+
+The floor coordinate ruler uses absolute server X and map units_per_meter. Only
+visible ticks are drawn, with adaptive spacing for dense/large maps. Gold highlight
+and X tag mark confirmed local X; sprite interpolation/prediction cannot move it.
