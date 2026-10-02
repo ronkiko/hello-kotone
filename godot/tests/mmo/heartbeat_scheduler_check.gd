@@ -60,6 +60,8 @@ func start() -> void:
 	client.state = "READY"
 	client._next_request_at = 0
 	client._last_request_at = Time.get_ticks_msec()
+	client._desired_input = "stop"
+	client._server_input = "stop"
 	client._process(0)
 	check(channel.sent.size() == 2,"ORDINARY_REQUEST_ACTIVITY_DEFERS_PING")
 	for state in ["RESYNCING","MOVING","LOGGING_OUT","FAILED","DISCONNECTED","CONNECTING_GAME"]:

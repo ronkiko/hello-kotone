@@ -132,7 +132,9 @@ func execute(command: Dictionary) -> void:
 			while client.state != "FAILED" and client.world_replica.view().confirmed_local_x == before_x:
 				await process_frame
 			key(false)
-			adapter._process(0)
+			# Failure can already have removed World and its InputAdapter.
+			if is_instance_valid(adapter):
+				adapter._process(0)
 			if client.state != "FAILED":
 				await wait_state(command.get("expect","READY"))
 			else:
