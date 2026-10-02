@@ -66,9 +66,14 @@ func _on_locomotion_intent_changed(direction: int) -> void:
 func _on_input_accepted(input_seq: int, direction: String, x: int) -> void:
 	if not prediction.accept_input(input_seq, direction, x):
 		return
-	if direction == "stop" and platform != null:
-		# Release is immediate locally; final resting X still converges to the server.
-		platform.reconcile_local_to_confirmed()
+	if platform != null:
+		if direction != "stop":
+			# A fresh accepted direction intentionally releases an earlier
+			# boundary hold. WORLD_PAUSED rejects such an input, so pause holds remain.
+			platform.set_authoritative_hold(false)
+		else:
+			# Release is immediate locally; final resting X still converges to the server.
+			platform.reconcile_local_to_confirmed()
 
 func _on_input_rejected(code: String) -> void:
 	if platform != null:
@@ -77,10 +82,20 @@ func _on_input_rejected(code: String) -> void:
 		"RATE_LIMITED": status_label.text = "Input pacing rejected. Release and try again."
 		"WORLD_PAUSED": status_label.text = "World paused. Input stopped."
 
-func _on_local_moved(event: Dictionary, _previous_x: int) -> void:
-	var correction_units := prediction.authoritative_step(event.data.player.x)
-	if platform != null and correction_units != 0.0:
-		platform.apply_local_correction(correction_units)
+func _on_local_moved(event: Dictionary, previous_x: int) -> void:
+	var actual_x: int = event.data.player.x
+	var blocked := actual_x == previous_x
+	var correction_units := prediction.authoritative_step(actual_x, blocked)
+	if platform != null:
+		if blocked:
+			# Server held the body: stop extending local prediction and magnet
+			# exactly to confirmed X. Held keyboard intent is preserved.
+			platform.set_authoritative_hold(true)
+			platform.reconcile_local_to_confirmed()
+		else:
+			platform.set_authoritative_hold(false)
+			if correction_units != 0.0:
+				platform.apply_local_correction(correction_units)
 	_project_display()
 
 func _leave_world() -> void:

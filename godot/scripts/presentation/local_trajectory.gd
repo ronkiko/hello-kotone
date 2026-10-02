@@ -6,6 +6,7 @@ var visual_x := 0.0
 var min_x := 0.0
 var max_x := 0.0
 var intent := 0
+var authoritative_hold := false
 var installed := false
 
 func configure(value: RefCounted, low: float, high: float) -> void:
@@ -20,6 +21,7 @@ func reset(x: float) -> void:
 	model_x = clampf(x, min_x, max_x)
 	visual_x = model_x
 	intent = 0
+	authoritative_hold = false
 	installed = true
 
 func set_intent(direction: int) -> bool:
@@ -27,6 +29,9 @@ func set_intent(direction: int) -> bool:
 		return false
 	intent = direction
 	return true
+
+func set_authoritative_hold(value: bool) -> void:
+	authoritative_hold = value
 
 func correct_by(delta_pixels: float) -> void:
 	if installed:
@@ -42,7 +47,7 @@ func advance(delta: float) -> Dictionary:
 		return {"before": before, "after": visual_x, "target": model_x, "intent": intent, "settled": true}
 	var dt := maxf(delta, 0.0)
 	var old_model := model_x
-	if intent != 0:
+	if intent != 0 and not authoritative_hold:
 		model_x = clampf(model_x + float(intent) * profile.nominal_speed * dt, min_x, max_x)
 	var aligned_before := is_equal_approx(visual_x, old_model)
 	if aligned_before:
@@ -50,4 +55,4 @@ func advance(delta: float) -> Dictionary:
 	else:
 		visual_x = move_toward(visual_x, model_x, profile.reconcile_speed() * dt)
 	return {"before": before, "after": visual_x, "target": model_x, "intent": intent,
-		"settled": is_equal_approx(visual_x, model_x)}
+		"authoritative_hold": authoritative_hold, "settled": is_equal_approx(visual_x, model_x)}

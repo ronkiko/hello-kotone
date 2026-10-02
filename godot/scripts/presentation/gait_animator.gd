@@ -32,7 +32,7 @@ func update(sprite: Sprite2D, before: float, after: float, target: float, locomo
 		return
 
 	var settled := is_equal_approx(after, target)
-	# A held direction may temporarily wait at the one-step speculative boundary.
+	# Held input may be temporarily blocked by authoritative World state.
 	# Keep the last side pose, but do not advance the legs while the body is still.
 	if locomotion_intent != 0 or not settled:
 		walking = locomotion_intent != 0

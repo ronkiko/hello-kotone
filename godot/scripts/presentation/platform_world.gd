@@ -132,6 +132,9 @@ func set_suspended(value: bool) -> void:
 func set_local_intent(direction: int) -> bool:
 	return trajectory.set_intent(direction)
 
+func set_authoritative_hold(value: bool) -> void:
+	trajectory.set_authoritative_hold(value)
+
 func apply_local_correction(delta_units: float) -> void:
 	if _map.is_empty():
 		return
