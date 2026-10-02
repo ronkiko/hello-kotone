@@ -1,87 +1,51 @@
-# Explicit recovery — v3.main.5.08
+# Explicit recovery — protocol v5
 
-After a fault World freezes immediately and returns to Login. Login retains the
-last valid host/port/nickname in the Autoload's memory and offers Reconnect.
-Fields remain editable. Settings are not saved to disk. Every click starts a
-fresh Login → new one-use ticket → advertised Game → session_rules → enter snapshot → verified
-map → world_rules → ordered state boundary → READY / new World scene.
+After a terminal fault the World freezes immediately and the UI returns to Login.
+Every retry starts a fresh Login -> one-use ticket -> advertised Game ->
+session_rules -> enter snapshot -> map/world rules/state -> READY lifecycle.
 
-There is no automatic reconnect, read-only retry or mutation replay. If Game is
-still shutting down or the old presence is not yet released, an unavailable /
-ALREADY_ONLINE outcome is visible; retry explicitly after the service recovers.
-`reconnect_world()` is an explicit adapter API using the last valid endpoint;
-Login uses `connect_world()` so edited fields are honored. Endpoint getters return
-defensive copies; invalid edits do not replace the last valid endpoint.
+There is no automatic reconnect and no automatic mutation replay.
 
-A missing move/logout/enter response is not evidence of non-application. Unknown
-outcome is visible. A received own moved fact remains confirmed even if its receipt
-is lost; fresh enter is the authoritative next baseline. Prediction, ticket,
-pending request and unsent intentions are discarded. Holding D through a failure
-and reentry cannot send a move: release and press again in the new World scene.
+## Unknown input outcome
 
-`state()` is only for a healthy ordered stream. Preceding events continue reducing
-while RESYNC_PENDING, but interpolation/animation pauses until SYNCED. Revision
-must equal the state snapshot boundary; gaps/wrong epoch fence and require a new
-Login/enter. A new epoch can only enter through a fresh cleared replica. Channel
-signals bind a local generation: callbacks from a closed/replaced transport cannot
-change the new connection or schedule requests. Cancellation during open/connected
-callbacks leaves the socket closed and no login/enter queued.
+A missing `input` response does not prove whether the server installed the held
+direction. The client marks the outcome unknown, fences the old connection and never
+re-sends that input sequence on a new session.
 
-Local and remote presentation freezes synchronously on stale replica, including
-animation and camera interpolation. Existing confirmed facts remain inspectable,
-but World scene is replaced with Login and freed. A fresh World uses only the new
-baseline, never old interpolation targets or old membership.
+Game disconnect clears the old session's held input. Fresh enter restarts input_seq at
+1 and its snapshot decides the actual X.
 
-The fresh snapshot's map reference controls cache reuse. A valid changed version/
-hash downloads and verifies public map(); unchanged content reuses the cache.
-This does not migrate checkpoints: current Game rejects an old map reference with
-INVALID_MAP. UI asks the operator to restore or migrate compatible content; it
-never resets saves or renders cached geometry as accepted authority. Map migration
-is future obligation 5; presentation/map lifecycle review is obligation 16 in the
-ai_research permanent roadmap. Live map replacement remains outside this patch.
+Holding a key through failure/reentry cannot replay old movement: the new World
+requires a release before fresh input.
 
-Run from ai_research (add --require-committed for exact final evidence):
+## Healthy resync vs reconnect
 
-```bash
-python3 v3/game/op/check-client-recovery.py --project ../hello-kotone/godot --desktop
-```
+`state()` is only a healthy-stream boundary. Events that precede its response keep
+reducing in TCP order, but the snapshot revision must match the current reduced
+revision. Gap/wrong epoch requires reconnect; state cannot heal it.
 
-The harness drives the shipped UI/A-D adapter through direct sockets, using isolated
-user data and temporary service configuration/maps/SQLite. Command files coordinate
-test actions only. Fault servers are deterministic wire fixtures, not a game proxy.
+Transport callbacks are generation-fenced so a closed socket cannot mutate a newer
+session.
 
-Manual check: run a shared/recovery stand, connect, walk, stop Game, observe Login
-and retained fields. Restart Game, click Reconnect, release the movement keys, then
-walk again. Refresh works on a healthy connection. If Login is stopped, retry is
-visible and never loops automatically. Graceful stop flushes; abrupt process loss
-may restore an earlier durable checkpoint rather than the last seen live X.
+## Presentation
 
+STALE freezes local/remote presentation. Existing confirmed facts remain inspectable,
+but old trajectory/input prediction is not carried into the fresh World scene.
 
-## Healthy idle — corrective 5.08
+Map cache remains presentation cache only. A fresh snapshot/map reference decides
+which content is valid.
 
-Game `session_rules` reports Host request/idle/keepalive intervals independently of
-World rules. It is the first Game request before enter, so Host pacing is known
-before bootstrap. The client spaces subsequent requests by the advertised minimum
-plus one clock tick after receipt. Unknown operation on an older Host fails explicitly.
+## Healthy idle
 
-READY with no scheduled/pending request sends empty `ping` at the advertised idle
-interval, awaiting strict correlated `{pong:true}`. Any outgoing request refreshes
-activity; incoming events do not. Ping emits no state change/world_ready, does not
-resync or mutate replica and does not displace movement/state/logout. A pending
-ping temporarily occupies the one existing request slot. No ping is scheduled
-during bootstrap/move/resync/logout/fault, and policy/activity clear on teardown.
+`session_rules` negotiates Host request/idle/keepalive policy before enter. READY idle
+uses strict read-only ping with a free request slot. User input has priority over a due
+ping. Pong never changes replica/revision/world_ready.
 
-Lost/malformed pong closes and freezes normally, with outcome_unknown=false. Only
-explicit reconnect establishes a fresh session. No read-only retry or mutation
-replay is used. Keepalive consumes the existing 4096-request budget; future bounded
-session renewal/sleep-resume is recorded with trigger in obligation 20.
+Lost/malformed pong is a known read-only failure, not an unknown movement mutation.
+
+## Check
 
 ```bash
+python3 v3/game/op/check-client-recovery.py --project ../hello-kotone/godot --desktop --require-committed
 python3 v3/game/op/check-client-heartbeat.py --project ../hello-kotone/godot --require-committed
 ```
-
-Regression stands use idle_timeout_ms=600 and request pacing 50/120 ms. Healthy
-idle exceeds 2x timeout with identical session/epoch/revision/X/membership and no
-world_ready churn. Watching a real remote peer moving also continues to ping.
-Fault fixtures cover invalid policy, lost pong, dead socket, malformed pong and
-wrong correlation, followed by explicit fresh recovery.

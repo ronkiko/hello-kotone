@@ -1,111 +1,107 @@
-# Human authoritative movement — v3.main.5.05
+# Human movement — protocol v5 held input
 
-In MMO World, hold A/D (physical keys, with logical-key fallback) or left/right
-arrows. Opposing directions cancel. Release keys after entry, Refresh, focus loss
-or a known rejection before starting again. The old standalone local controller
-remains detached from the MMO Kotone instance.
+MMO Kotone uses the same public authority boundary planned for future AI clients:
 
-InputAdapter samples the current key state; it owns no position, saved steps or
-request queue. MmoClient.move accepts only left/right, only in READY and only
-when its one scheduled/pending request slot is empty. It enters MOVING until a
-receipt or a known nonterminal rejection. Validated `world_rules` arrives before READY and supplies authoritative
-movement cadence. Pacing waits that interval after the receipt; no Game interval
-is hardcoded in the client. Rules are world-level and independent of zone/map. Network request spacing still applies.
-An accepted in-flight step may finish after key release; release creates no new
-intent and no accumulated commands are drained later. Fresh held input after a
-successful receipt is a new intention, not replay of a previous request.
+```text
+A/D / arrows
+  -> local held intent
+  -> input(input_seq, left/right/stop)
+  -> authoritative World cadence
+  -> moved facts
+  -> WorldReplica confirmed X
+```
 
-The public payload is exactly {direction}; never X, pixels, speed or sprite data.
-Own moved applies to WorldReplica before dispatch. The correlated move receipt
-must match that fact's epoch/zone/revision/player_id and cannot set X again.
-Receipt without an own fact, mismatch, second own moved before the receipt,
-malformed response or contradictory rejection fences the connection. Remote
-facts continue reducing while a move is pending.
+The client never sends X, pixels, render position, velocity or a physical result.
 
-OUT_OF_BOUNDS, RATE_LIMITED and WORLD_PAUSED are validated known move rejections:
-keep session and SYNCED replica, show a bounded local UI message, and require key
-release before retry. No automatic retry occurs. Lost/timed-out/cancelled move
-reply has an unknown mutation outcome: retain confirmed facts as STALE, fence
-the connection and require an explicit fresh Login/enter. State never repairs a
-corrupt/unknown stream. A lost receipt after moved retains the new confirmed X.
+## Input state
 
-PlatformWorld projects confirmed X into a target and keeps a private visual X.
-It interpolates at 160 pixels/s, clamps to projected map bounds, animates existing
-left/right textures per frame, and follows with Camera2D. Patch 5.06 supplies one
-speculative display target after an accepted local intention; see
-[prediction/reconciliation](prediction-reconciliation.md).
-Sprite2D edits cannot change that target, replica or a future
-move request; the next render tick/state refresh restores presentation. First
-entry snaps to the confirmed spawn; later confirmed facts move smoothly.
+`MoveInput` samples current keyboard state only. It owns no position and no step queue.
+After a fresh World/focus change the keys must be released once before movement starts.
+
+Press/reversal/release changes a local locomotion intent (-1/0/+1). `MmoClient`
+coalesces that into the latest desired `input` state. At most one public request is
+in flight; a change that happens while its predecessor is pending replaces the desired
+next state instead of accumulating requests.
+
+`input_seq` is strict +1 inside one Game session. Fresh enter starts again at 1.
+Lost input ACK is outcome-unknown and is never replayed on another connection.
+
+## Server cadence
+
+One accepted right/left input is not one physical step. The Game remembers the held
+direction and advances the World at `world_rules.movement.min_move_interval_ms`.
+Release sends `stop`.
+
+Physical truth arrives only through ordered `moved` events. A normal fact changes X.
+At a map boundary or when the World deliberately holds the body, a same-X moved fact
+is still authoritative reconciliation.
+
+## Continuous local prediction
+
+The local body does not wait for every server tick.
+
+```text
+held intent
+  -> LocalTrajectory continuous model
+  -> render X immediately
+  -> GaitAnimator from actual rendered displacement
+
+server moved facts
+  -> WorldReplica confirmed X
+  -> LocalPrediction reconciliation
+  -> LocalTrajectory correction
+```
+
+Normal local speed is derived from public World cadence and map scale:
+
+```text
+step_pixels = step_units / units_per_meter * pixels_per_meter
+nominal_speed = step_pixels * 1000 / min_move_interval_ms
+```
+
+The current 1-unit / 200-ms / 8-px scale therefore renders at 40 px/s. Render X,
+predicted model X and confirmed server X are separate values.
+
+A normal matching fact does not visually rewind the body. If authoritative facts
+disagree, the render model is corrected and the sprite converges at bounded reconcile
+speed.
+
+A local same-X moved fact means **authoritative hold**. The client:
+1. stops extending local prediction even if the key is still held;
+2. rebases its model to confirmed X;
+3. magnetically returns the sprite to that X;
+4. waits for a changed moved fact or a newly accepted direction before prediction
+   can continue.
+
+This is the intended “server can hold the coordinate and the character comes back
+like a magnet” behavior.
+
+## Animation
+
+Gait is driven by actual rendered displacement, not by server request timing.
+Walk phase advances by travelled visual distance. When held intent is temporarily
+blocked and the body is stationary, the side pose remains but legs do not cycle.
+When local intent is stop and reconciliation is settled, the sprite returns to
+front idle without a timeout heuristic.
+
+Remote players use confirmed-target interpolation and the same distance-driven gait.
+Buffered remote timelines remain a later scaling/polish obligation.
+
+## Failure/recovery
+
+Known `RATE_LIMITED` / `WORLD_PAUSED` input rejections do not invent movement.
+Unknown input outcome, stream gap, wrong epoch or lost transport fences the session.
+No input mutation is automatically replayed. Fresh Login -> enter snapshot establishes
+the next authority baseline.
 
 ## Check
 
-From ai_research:
+From `ai_research`:
 
-```sh
+```bash
 python3 v3/game/op/check-client-movement.py --project ../hello-kotone/godot --desktop --require-committed
+python3 v3/game/op/check-client-prediction.py --project ../hello-kotone/godot --desktop --require-committed
 ```
 
-The real shared stand uses the shipped World InputAdapter and injected physical
-A/D events: player1 goes spawn 50 -> min 0 -> max 100, sends an extra step at both
-ends, refreshes after Sprite2D tampering, logs out and explicitly reenters at X100.
-No test teleports or private server writes are used. Each move is public Game
-traffic from the Godot client. Without --desktop it runs headless; the real
-full-width check allows 70 seconds and retains the actual server's 200 ms limit.
-
-Fixtures audit direction-only requests, single flight, delayed key release,
-remote events, nonterminal rejections with fresh retry, malformed/missing/wrong/
-duplicate receipts, second own fact, lost replies before/after moved, timeout
-and synchronous cancellation. Fixture counts reject automatic replay/reconnect.
-Tests isolate user data/saves. Existing wire, replica, map and UI suites remain
-required regression checks.
-
-## Later obligations
-
-Prediction/reconciliation is implemented in patch 06, remote characters 07 and recovery/heartbeat
-08. Configurable movement pacing and long-session request-budget handling are
-recorded with triggers and acceptance in the shared permanent future obligations;
-the current 4096-request limit remain explicit Alpha limits.
-
-API reference: [Input](https://docs.godotengine.org/en/stable/classes/class_input.html),
-[Node application focus notifications](https://docs.godotengine.org/en/stable/classes/class_node.html).
-
-## Presentation timing corrective
-
-Local and remote render speed comes from public movement step/cadence and map
-units_per_meter: step_units / units_per_meter * pixels_per_meter * 1000 /
-min_move_interval_ms. A bounded 10% catch-up margin gives 44 px/s with the current
-1-unit / 200-ms world and 8 px/metre. It is presentation only; confirmed positions,
-request cadence, one-step prediction and receipts remain authoritative as before.
-Walk frames follow actual visual distance over an art stride of four displayed
-metres. Arrival freezes the last side-facing walk frame; target gaps never flash the
-front-facing idle strip. Stationary legs do not cycle. Fresh enter resets the pose.
-Suspension freezes both motion and animation; a fresh baseline resets phase.
-
-The floor now carries an absolute server-X ruler. Minor marks represent coordinate
-steps at normal scale; numbered major marks and the gold confirmed-X cell/tag make
-position readable. Dense map scales use bounded visible multiples. The marker
-follows confirmed replica X, independently of predicted/interpolated sprite X.
-
-
-## Local trajectory / gait separation corrective
-
-Presentation no longer treats every server step as an independent walk animation.
-The motion stack is split into three responsibilities:
-
-- `PlayerMotion` is a pure World/map motion profile. One normal step uses exact
-  negotiated cadence; extra 25% speed is available only after renderer lag exceeds
-  one full step.
-- `LocalTrajectory` owns render X and the bounded display target. It never writes
-  WorldReplica or prediction and never extends the existing one-step speculative
-  envelope.
-- `GaitAnimator` owns facing/walk/front-idle sprites. Walk phase follows actual
-  rendered distance. A held local locomotion intent can keep the last side pose
-  while waiting at the speculative boundary without cycling stationary legs.
-  Release plus completed reconciliation has an exact meaning and returns to
-  front-facing idle without a timeout heuristic.
-
-`MoveInput` now exposes the current held/released locomotion intent separately
-from move admission. It still queues no steps and sends only direction requests.
-Remote players keep confirmed-target interpolation for Alpha, but use the same
-motion profile and gait animator; buffered remote timelines remain a future review.
+Manual acceptance before v3.main.5.09 must include long hold, short tap, release between
+server facts, reversal, both walls, authoritative hold/magnet behavior and front idle.

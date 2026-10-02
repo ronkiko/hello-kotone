@@ -1,101 +1,83 @@
-# Direct MMO wire core — v3.main.5.01
+# Direct MMO wire core — protocol v5
 
-This Godot client connects directly to the public Login/Game protocol v4. Storage
-is owned by the server. The shared roadmap and acceptance live in `ai_research`;
-this checkout lives at `~/work2/hello-kotone`.
+The Godot client connects directly to Login and Game over the public TCP/JSONL
+protocol. Storage remains server-side. No Python proxy or private Game API exists in
+the gameplay path.
 
-`MmoClient` is an idle persistent Autoload. Patch 5.02 connects the Login/Loading
-shell to its lifecycle signals; the renderer and local controller remain separate.
-The startup Connect button calls this API; other consumers can also use it:
+`MmoClient` is a persistent Autoload. Connect performs:
 
-```gdscript
-MmoClient.world_ready.connect(on_world_ready)
-MmoClient.fault.connect(on_network_fault)
-MmoClient.connect_world("127.0.0.1", 21060, "player1")
+```text
+Login
+ -> ticket + advertised Game endpoint
+ -> session_rules
+ -> enter
+ -> verified map/cache
+ -> world_rules
+ -> state boundary
+ -> READY
 ```
 
-The client automatically performs Login -> advertised Game endpoint -> session_rules -> enter ->
-verified map/cache -> world_rules -> state -> READY. `initial_snapshot`, `last_snapshot`, `map_document`,
-`player_id` and `session_id` expose confirmed handshake data. Read-only
-`request_state()` / `request_map()`, `move("left"/"right")` and `logout()` return
-false when busy. Move sends direction only and enters MOVING until its receipt
-or known nonterminal rejection. See [human movement](human-movement.md).
-`disconnect_world()` explicitly cancels the connection without promising a flush.
-No connection or request is automatically retried. A public connection is closed
-after 4096 requests; recovery is explicit (patch 08). Keepalive consumes the same bounded request budget.
+Protocol version is 5. The public Game operations used by this client are:
+`session_rules`, `enter`, `ping`, `map`, `world_rules`, `state`, `input`
+and `logout`. The old public one-step `move` operation does not exist.
 
-Signals: `state_changed`, `world_ready`, `response_received`, `event_received`,
-`move_intended`, `move_rejected`, `fault`, `disconnected`. `move_intended(direction)`
-notifies a locally accepted scheduled move before transmission; it is neither an
-ack nor a fact. Busy/paced/refused moves or synchronous pre-send cancellation
-do not emit it. Login success does not expose its ticket via a signal.
-Faults contain a bounded local code, operation and `outcome_unknown`; server
-messages/raw frames and credentials are not logged. A validated rejection has a
-known outcome; losing a login/enter/move/logout response has an unknown outcome.
+## Movement wire contract
 
-The core uses non-blocking StreamPeerTCP partial reads/writes, asynchronous DNS,
-one pending request, one scheduled request, negotiated Host request spacing and 16 KiB
-read budget per frame. Limits: 65536 bytes including LF, connect/write 5 seconds,
-request 20 seconds, partial-frame assembly 10 seconds without extending the
-deadline for each arriving byte. Tests can shorten these timeouts.
+Human movement sends only:
 
-The strict parser rejects duplicate keys, trailing commas, invalid UTF-8/scalars,
-fraction/exponent numbers, unsafe integers, depth >16, raw CR anywhere, CRLF and BOM. Successful
-public responses and event schemas are validated before dispatch; map schema 1
-uses a canonical SHA-256 hash and must match the snapshot reference. Bootstrap
-version errors are recognized without silently downgrading the protocol. Failure
-responses require a known wire code, the correct rejected/error status and a legal
-public operation for that rejection. FLUSH_FAILED requires correlated logout;
-UNSUPPORTED_VERSION is accepted only via the bootstrap envelope. Invalid replies
-leave a pending mutation's outcome unknown.
+```json
+{"input_seq": 1, "direction": "right"}
+```
 
-Events are delivered separately from request correlation. Patch 03 adds
-`world_replica`: enter establishes a baseline, events reduce N+1 before dispatch,
-and explicit `request_state()` replaces the whole baseline. During this request
-lifecycle is RESYNCING and replica is STALE/RESYNC_PENDING; preceding events
-continue to reduce without replay. Patch 04 adds verified disk cache and world/map rendering; patch 05 adds
-bounded input and smooth confirmed-target presentation. Patch 06 adds a separate
-one-step prediction model and bounded display reconciliation, without wire changes.
-Corrective 08 negotiates Host session_rules before enter. READY idle sends a
-read-only ping at the advertised keepalive interval, only with a free request
-slot. Normal outgoing requests postpone ping; incoming events do not. Pong
-changes neither replica nor lifecycle signals. Lost pong fences the session
-and requires explicit recovery; see [recovery](recovery.md).
+where direction is `left`, `right` or `stop`.
+
+An input response confirms that the Game installed that input state and reports the
+authoritative X at that owner boundary. It is not a movement receipt. Later physical
+changes arrive independently as ordered `moved` events.
+
+The client may render continuously from held input before those facts arrive.
+Predicted/render X never appears in a request.
+
+## Request/session policy
+
+Only one public request is pending at a time. Input changes are bounded/coalesced as
+latest desired state; they are not queued step-by-step. Human input gets the free
+request slot before keepalive.
+
+`session_rules` provides request spacing, idle timeout and keepalive interval.
+`world_rules` separately provides gameplay movement cadence. Host transport policy
+is not a World rule.
+
+READY idle sends read-only `ping` only when no user/request work occupies the slot.
+Incoming events do not suppress keepalive.
+
+## Stream and failure semantics
+
+Game events do not consume request correlation. `WorldReplica` requires contiguous
+revision N+1 in one epoch/zone. State on a healthy stream is an exact boundary and
+cannot repair an already detected gap.
+
+No public mutation is automatically replayed. Losing the correlated response for
+`input`, `enter` or `logout` may make outcome unknown; the connection is fenced
+and recovery requires a fresh Login/enter baseline.
+
+Tickets, session IDs and input sequence state are cleared on teardown. Old transport
+callbacks are fenced by connection generation.
+
+## Parser/limits
+
+The wire parser remains strict: LF-terminated frames, no raw CR/LF inside a frame,
+65536-byte maximum including LF, bounded nesting, safe integers, strict UTF-8,
+duplicate-key rejection and strict public response/event schemas.
+
+Public connection budget remains 4096 requests for the current Alpha. Long-session
+renewal is tracked separately in the shared roadmap.
 
 ## Checks
 
-From `hello-kotone` (Godot 4.x executable on PATH):
+From `ai_research`:
 
-```sh
-godot --headless --path godot --script res://tests/mmo/protocol_check.gd
+```bash
+python3 v3/game/op/check-client-wire.py --project ../hello-kotone/godot --require-committed
+python3 v3/game/op/check-client-heartbeat.py --project ../hello-kotone/godot --require-committed
 ```
-
-Against an already running shared server stand:
-
-```sh
-godot --headless --path godot --script res://tests/mmo/wire_check.gd -- port=21060 events=true
-```
-
-From `ai_research`, run the complete repeatable check. It creates an isolated
-temporary server stand, starts real Storage/Login/Game, launches the actual Godot
-client scripts and stops its own processes. Python is only test orchestration;
-there is no proxy between Godot and the real services.
-
-```sh
-python3 v3/game/op/check-client-wire.py --project ../hello-kotone/godot
-```
-
-The check covers login/enter/map/state/logout, rejection, duplicate ownership,
-event multiplexing, DNS and deterministic fixture faults (fragmented/coalesced
-frames, malformed/oversized frames, EOF, version/correlation errors, timeout and
-lost mutation replies without replay). Fixtures are only negative test endpoints.
-Runtime/evidence is written to a printed temporary directory; the summary contains
-the commits and source hashes of the tested client files, without keys/tickets.
-For final acceptance, use `--require-committed` on clean checkouts of both repos.
-The report records the exact tested commit pair and rejects changes during the run.
-
-API reference: [StreamPeer partial IO](https://docs.godotengine.org/en/stable/classes/class_streampeer.html).
-
-The shipped startup and World landing scenes are described in
-[Login/Loading shell](login-shell.md). Scene transitions preserve the Autoload,
-validated map and session; no UI node opens a socket.
