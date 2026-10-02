@@ -36,8 +36,8 @@ the strip and updates the camera after deferred UI layout. Refresh updates the
 projection, preserves the scene/session and does not replay events.
 
 This is deliberately a simple repeated platform/background. Patch 05 adds human
-input outside the renderer and smooth movement toward confirmed targets. Remote
-characters and reconnect remain later patches. Prediction is now a separate
+input outside the renderer and smooth movement toward confirmed targets. Remote characters are implemented in [patch 07](multiplayer-presentation.md);
+reconnect remains patch 08. Prediction is now a separate
 bounded display target in [patch 06](prediction-reconciliation.md).
 
 ## Run

@@ -1,6 +1,7 @@
 extends Node2D
 ## Read-only projection. Replica facts plus an optional bounded display target.
 const Protocol = preload("res://scripts/mmo/protocol_v4.gd")
+const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
 const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
@@ -14,6 +15,8 @@ const TILE_SIZE := 16
 var terrain := TileMapLayer.new()
 var camera := Camera2D.new()
 var sprite: Sprite2D
+var local_label := Label.new()
+var remote_players: Dictionary = {}
 var world_length := 0.0
 var _map: Dictionary = {}
 var _view: Dictionary = {}
@@ -48,6 +51,15 @@ func _ready() -> void:
 	sprite.scale = Vector2(0.65, 0.65)
 	sprite.position.y = FLOOR_Y - 42.25
 	add_child(sprite)
+	sprite.z_index = 1
+	local_label.position.y = sprite.position.y - 54
+	local_label.size = Vector2(128, 18)
+	local_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	local_label.add_theme_font_size_override("font_size", 11)
+	local_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	local_label.add_theme_constant_override("outline_size", 3)
+	local_label.z_index = 2
+	add_child(local_label)
 	camera.position.y = 58.0
 	camera.position_smoothing_enabled = false
 	add_child(camera)
@@ -69,7 +81,15 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 		return false
 	if display_x != null and not Protocol.integer(display_x, document.min_x, document.max_x):
 		return false
-	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash
+	# Membership arrives as a defensive WorldReplica projection, never raw frames.
+	var players: Variant = view.get("players", {})
+	if not players is Dictionary or players.size() > 128:
+		return false
+	for id in players:
+		var player: Variant = players[id]
+		if not Protocol.player(player) or player.player_id != id or player.zone_id != document.map_id or not Protocol.integer(player.x, document.min_x, document.max_x):
+			return false
+	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash or _view.get("epoch") != view.get("epoch") or _view.get("local_player_id") != view.get("local_player_id")
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
 	_display_x = display_x
@@ -80,14 +100,41 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 	if initial:
 		_first_cell = -1000000
 		_visual_x = target
+		for id in remote_players.keys():
+			_remove_remote(id)
 	elif not is_equal_approx(target, _target_x):
 		_walk_direction = -1 if target < _target_x else 1
 		_walk_until = Time.get_ticks_msec() + 280
 	_position_installed = true
 	_target_x = target
 	sprite.position.x = _visual_x
+	_sync_players()
 	_reframe()
 	return true
+
+func _remove_remote(id: String) -> void:
+	var node: Node = remote_players[id]
+	remote_players.erase(id)
+	remove_child(node)
+	node.queue_free()
+
+func _sync_players() -> void:
+	var players: Dictionary = _view.get("players", {})
+	var local_id: String = _view.get("local_player_id", "")
+	for id in remote_players.keys():
+		if not players.has(id) or id == local_id:
+			_remove_remote(id)
+	local_label.text = "%s (you)" % players[local_id].nickname if players.has(local_id) else ""
+	for id in players:
+		if id == local_id:
+			continue
+		if not remote_players.has(id):
+			var node := RemotePlayer.new()
+			node.player_id = id
+			node.position.y = FLOOR_Y - 42.25
+			add_child(node)
+			remote_players[id] = node
+		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0
@@ -107,6 +154,7 @@ func _process(delta: float) -> void:
 	_visual_x = clampf(move_toward(_visual_x, _target_x, VISUAL_SPEED * delta), ORIGIN_X, ORIGIN_X + world_length)
 	# External Sprite2D edits cannot become a new target or a movement request.
 	sprite.position.x = _visual_x
+	local_label.position.x = _visual_x - 64
 	var animation := _walk_direction if Time.get_ticks_msec() < _walk_until else 0
 	if animation != _animation:
 		_animation = animation

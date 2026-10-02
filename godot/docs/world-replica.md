@@ -63,3 +63,7 @@ only orchestrates services/processes. Fixtures cover loading events, events
 before/after state in one TCP write, corrupt sequences, invalid snapshots and
 explicit reentry with a new epoch. Request counts prove no hidden retry/reconnect
 or state repair. UI checks activate Refresh and verify scene/session preservation.
+
+Patch [07](multiplayer-presentation.md) projects defensive `view().players` into
+remote scene nodes keyed by player_id. The reducer remains scene/network-free;
+remote interpolation never changes confirmed facts.
