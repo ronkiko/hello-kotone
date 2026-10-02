@@ -9,6 +9,11 @@ func start() -> void:
 	client.world_replica.changed.connect(func(): replica_changes += 1)
 
 func execute(command: Dictionary) -> void:
+	if command.action == "logout":
+		# Test coordinator must wait until its UI action can be admitted; a pending
+		# ping legitimately shares the one public request slot. No request retry.
+		while client.state == "READY" and (not client._pending.is_empty() or not client._scheduled.is_empty()):
+			await process_frame
 	if command.action == "watch":
 		await watch(command)
 		return
