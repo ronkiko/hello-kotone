@@ -15,7 +15,7 @@ const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
 const REQUEST_LIMIT := 4096
-const REQUEST_INTERVAL_MS := 75 # Server public minimum is 50 ms.
+
 var state := "IDLE"
 var last_error: Dictionary = {}
 var player_id := ""
@@ -42,6 +42,11 @@ var _scheduled: Dictionary = {}
 var _request_deadline := 0
 var _next_request_at := 0
 var _request_count := 0
+var _session_rules: Dictionary = {}
+var session_rules: Dictionary:
+	get: return _session_rules.duplicate(true)
+var _request_interval_ms := 0
+var _last_request_at := 0
 var _world_rules: Dictionary = {}
 var world_rules: Dictionary:
 	get: return _world_rules.duplicate(true)
@@ -146,10 +151,9 @@ func _on_connected() -> void:
 		if state == "AUTHORIZING":
 			_schedule("login", {"nickname": _nickname})
 	elif state == "CONNECTING_GAME":
-		_set_state("ENTERING_WORLD")
-		if state == "ENTERING_WORLD":
-			_schedule("enter", {"ticket": _ticket})
-			_ticket = ""
+		_set_state("LOADING_SESSION_RULES")
+		if state == "LOADING_SESSION_RULES":
+			_schedule("session_rules", {})
 
 func _schedule(op: String, payload: Dictionary) -> void:
 	_scheduled = {"op": op, "payload": payload}
@@ -167,6 +171,9 @@ func _process(_delta: float) -> void:
 	if not _pending.is_empty() and now >= _request_deadline:
 		_fail("REQUEST_TIMEOUT")
 		return
+	# Keepalive shares the request slot, never overwrites user intent or a pending op.
+	if state == "READY" and _scheduled.is_empty() and _pending.is_empty() and not _session_rules.is_empty() and now - _last_request_at >= _session_rules.keepalive_interval_ms:
+		_schedule("ping", {})
 	if _scheduled.is_empty() or not _pending.is_empty() or now < _next_request_at:
 		return
 	if _request_count >= REQUEST_LIMIT:
@@ -179,9 +186,11 @@ func _process(_delta: float) -> void:
 	var frame := (JSON.stringify(message) + "\n").to_utf8_buffer()
 	_scheduled = {}
 	_request_deadline = now + request_timeout_ms
-	_next_request_at = now + REQUEST_INTERVAL_MS
+	_next_request_at = now + _request_interval_ms
 	if not _channel.send(frame):
 		_fail("WRITE_FAILED")
+	else:
+		_last_request_at = now
 
 func _on_frame(frame: PackedByteArray) -> void:
 	var message := Protocol.decode(frame)
@@ -226,7 +235,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 				return
 			var code: String = message.error.code
 			_pending = {}
-			_next_request_at = Time.get_ticks_msec() + REQUEST_INTERVAL_MS
+			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 			_next_move_at = Time.get_ticks_msec() + _world_rules.movement.min_move_interval_ms
 			_set_state("READY")
 			if state == "READY":
@@ -240,13 +249,25 @@ func _on_frame(frame: PackedByteArray) -> void:
 		return
 	_pending = {}
 	# Spacing after receipt also covers a delayed/partial socket write.
-	_next_request_at = Time.get_ticks_msec() + REQUEST_INTERVAL_MS
+	_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 	var data: Dictionary = message.data
 	match op:
 		"login":
 			# Credentials stay private and never appear in a signal or diagnostic.
 			_ticket = data.ticket
 			_open(data.game_server.host, data.game_server.port, "CONNECTING_GAME")
+		"session_rules":
+			_session_rules = data.duplicate(true)
+			# Post-receipt spacing adds a clock-tick margin to advertised admission.
+			_request_interval_ms = data.min_request_interval_ms + 1
+			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
+			_set_state("ENTERING_WORLD")
+			if state == "ENTERING_WORLD":
+				_schedule("enter", {"ticket": _ticket})
+				_ticket = ""
+		"ping":
+			# Transport liveness only: no replica/scene/state_changed/world_ready.
+			response_received.emit(op, data.duplicate(true))
 		"enter":
 			player_id = data.player_id
 			session_id = data.session_id
@@ -341,6 +362,9 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	last_snapshot = {}
 	map_document = {}
 	map_source = ""
+	_session_rules = {}
+	_request_interval_ms = 0
+	_last_request_at = 0
 	_world_rules = {}
 	_move_fact = {}
 	_next_move_at = 0

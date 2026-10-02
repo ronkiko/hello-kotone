@@ -49,6 +49,8 @@ owns the camera. The standalone local controller stays detached in MMO World.
 Faults freeze presentation and return to Login with in-memory endpoint fields
 and an explicit Reconnect control. New tickets/snapshots replace old sessions;
 unknown moves are never replayed, and held input requires release after reentry.
+Host session_rules now advertises request pacing and idle keepalive cadence;
+read-only ping keeps READY spectators online without state resync or world changes.
 The shared roadmap lives in the neighboring `ai_research` repository, under
 `v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
 See [Explicit recovery](docs/recovery.md) for reconnect, epoch and map failure rules.

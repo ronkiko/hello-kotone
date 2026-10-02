@@ -3,7 +3,7 @@
 After a fault World freezes immediately and returns to Login. Login retains the
 last valid host/port/nickname in the Autoload's memory and offers Reconnect.
 Fields remain editable. Settings are not saved to disk. Every click starts a
-fresh Login → new one-use ticket → advertised Game → enter snapshot → verified
+fresh Login → new one-use ticket → advertised Game → session_rules → enter snapshot → verified
 map → world_rules → ordered state boundary → READY / new World scene.
 
 There is no automatic reconnect, read-only retry or mutation replay. If Game is
@@ -55,3 +55,33 @@ and retained fields. Restart Game, click Reconnect, release the movement keys, t
 walk again. Refresh works on a healthy connection. If Login is stopped, retry is
 visible and never loops automatically. Graceful stop flushes; abrupt process loss
 may restore an earlier durable checkpoint rather than the last seen live X.
+
+
+## Healthy idle — corrective 5.08
+
+Game `session_rules` reports Host request/idle/keepalive intervals independently of
+World rules. It is the first Game request before enter, so Host pacing is known
+before bootstrap. The client spaces subsequent requests by the advertised minimum
+plus one clock tick after receipt. Unknown operation on an older Host fails explicitly.
+
+READY with no scheduled/pending request sends empty `ping` at the advertised idle
+interval, awaiting strict correlated `{pong:true}`. Any outgoing request refreshes
+activity; incoming events do not. Ping emits no state change/world_ready, does not
+resync or mutate replica and does not displace movement/state/logout. A pending
+ping temporarily occupies the one existing request slot. No ping is scheduled
+during bootstrap/move/resync/logout/fault, and policy/activity clear on teardown.
+
+Lost/malformed pong closes and freezes normally, with outcome_unknown=false. Only
+explicit reconnect establishes a fresh session. No read-only retry or mutation
+replay is used. Keepalive consumes the existing 4096-request budget; future bounded
+session renewal/sleep-resume is recorded with trigger in obligation 20.
+
+```bash
+python3 v3/game/op/check-client-heartbeat.py --project ../hello-kotone/godot --require-committed
+```
+
+Regression stands use idle_timeout_ms=600 and request pacing 50/120 ms. Healthy
+idle exceeds 2x timeout with identical session/epoch/revision/X/membership and no
+world_ready churn. Watching a real remote peer moving also continues to ping.
+Fault fixtures cover invalid policy, lost pong, dead socket, malformed pong and
+wrong correlation, followed by explicit fresh recovery.

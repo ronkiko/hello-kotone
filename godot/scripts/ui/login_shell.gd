@@ -6,6 +6,7 @@ const STAGES := {
 	"CONNECTING_LOGIN": "Connecting to Login...",
 	"AUTHORIZING": "Authorizing nickname...",
 	"CONNECTING_GAME": "Connecting to Game...",
+	"LOADING_SESSION_RULES": "Loading session policy...",
 	"ENTERING_WORLD": "Entering world...",
 	"LOADING_MAP": "Loading map...",
 	"LOADING_RULES": "Loading world rules...",

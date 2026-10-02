@@ -4,7 +4,7 @@ extends RefCounted
 const VERSION := 4
 const MAX_FRAME_BYTES := 65536
 const WireJson = preload("res://scripts/mmo/wire_json.gd")
-const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "move", "logout", "world_rules"]
+const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "move", "logout", "world_rules", "session_rules", "ping"]
 # Wire codes/status semantics from protocol v4, independently implemented here.
 # Internal-only WRITER_BUSY has no legal public rejection operation.
 const PUBLIC_ERROR_CODES := [
@@ -20,7 +20,7 @@ const REJECTION_CODES := [
 ]
 const REJECTION_OPERATIONS := {
 	"WORLD_PAUSED": ["move"],
-	"NOT_AUTHENTICATED": ["map", "state", "move", "logout", "world_rules"],
+	"NOT_AUTHENTICATED": ["map", "state", "move", "logout", "world_rules", "ping"],
 	"ALREADY_AUTHENTICATED": ["enter"],
 	"NICKNAME_NOT_ALLOWED": ["login"],
 	"ALREADY_ONLINE": ["enter"],
@@ -127,6 +127,12 @@ static func response(value: Variant) -> bool:
 			return fields(data, ["world_id", "movement"]) and token(data.world_id) \
 				and fields(data.movement, ["step_units", "min_move_interval_ms"]) \
 				and integer(data.movement.step_units, 1, 1) and integer(data.movement.min_move_interval_ms, 1, 60000)
+		"session_rules":
+			return fields(data, ["min_request_interval_ms", "idle_timeout_ms", "keepalive_interval_ms"]) \
+				and integer(data.min_request_interval_ms, 1, 60000) and integer(data.idle_timeout_ms, 1, 3600000) \
+				and integer(data.keepalive_interval_ms, data.min_request_interval_ms + 1, int(data.idle_timeout_ms / 2))
+		"ping":
+			return fields(data, ["pong"]) and data.pong is bool and data.pong
 		"move":
 			return fields(data, ["epoch", "zone_id", "revision", "player_id"]) \
 				and token(data.epoch) and zone(data.zone_id) and integer(data.revision, 1) and token(data.player_id)
