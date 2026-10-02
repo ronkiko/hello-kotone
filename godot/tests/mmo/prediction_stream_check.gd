@@ -93,7 +93,10 @@ func start() -> void:
 	check(intentions == 1 and model.view().predicted_x == predicted, "HELD_INPUT_NO_PREDICTION_BACKLOG")
 	await create_timer(.12).timeout
 	check(client.world_replica.local_player().x == x and facts == 0 and receipts == 0, "LATENCY_CONFIRMED_UNCHANGED")
-	check(absf(world.platform.sprite.position.x - start_px) > 0 and absf(world.platform.sprite.position.x - start_px) < absf(predicted_px - start_px), "IMMEDIATE_RENDER_PROGRESS_AT_WORLD_SPEED")
+	if predicted == x:
+		check(is_equal_approx(world.platform.sprite.position.x, start_px), "CLAMPED_PREDICTION_NO_BOUNDARY_MOTION")
+	else:
+		check(absf(world.platform.sprite.position.x - start_px) > 0 and absf(world.platform.sprite.position.x - start_px) < absf(predicted_px - start_px), "IMMEDIATE_RENDER_PROGRESS_AT_WORLD_SPEED")
 	var render_before_tamper: float = world.platform.sprite.position.x
 	world.platform.sprite.position.x = -99999
 	world.platform._process(0)
