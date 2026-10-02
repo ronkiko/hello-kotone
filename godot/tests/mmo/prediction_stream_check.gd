@@ -86,7 +86,11 @@ func start() -> void:
 				"MATCHED_FACTS_DO_NOT_REWIND_CONTINUOUS_PREDICTION")
 		else:
 			check(options.mode == "hold" and client.world_replica.local_player().x == confirmed, "SERVER_HOLD_KEEPS_CONFIRMED_X")
-			check(world.platform.trajectory.model_x < start_px + 16.0, "HOLD_FACTS_PULL_PREDICTED_MODEL_BACK")
+			check(world.platform.trajectory.authoritative_hold, "SAME_X_FACT_INSTALLS_AUTHORITATIVE_HOLD")
+			check(is_equal_approx(world.platform.trajectory.model_x, world.platform.server_to_pixel(confirmed)), "HOLD_REBASES_MODEL_TO_CONFIRMED")
+			var held_model := world.platform.trajectory.model_x
+			await create_timer(.25).timeout
+			check(world.platform.trajectory.model_x == held_model, "HOLD_PREVENTS_LOCAL_RUNAWAY")
 		key(false); world.input_adapter._process(0)
 		while input_acks < 2 and client.state != "FAILED":
 			await process_frame

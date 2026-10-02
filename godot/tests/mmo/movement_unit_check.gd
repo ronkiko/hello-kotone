@@ -88,14 +88,20 @@ func start() -> void:
 	platform._process(0)
 	check(platform.sprite.position.x == before_match, "MATCHING_SERVER_STREAM_NO_VISUAL_REWIND")
 
-	# Server can hold X; reconciliation shifts the predicted model, render returns magnetically.
+	# Server same-X fact is an authoritative hold: local prediction stops extending,
+	# target becomes confirmed X and render returns magnetically.
 	var before_correction := platform.sprite.position.x
-	platform.apply_local_correction(-1.0)
-	check(platform.trajectory.model_x < platform.trajectory.visual_x, "SERVER_HOLD_SHIFTS_MODEL_NOT_SPRITE")
+	platform.set_authoritative_hold(true)
+	platform.reconcile_local_to_confirmed()
+	check(platform.trajectory.authoritative_hold and platform.trajectory.model_x == platform.server_to_pixel(52), "SERVER_HOLD_REBASES_TO_CONFIRMED")
 	platform._process(.02)
 	check(platform.sprite.position.x < before_correction and platform.sprite.position.x > platform.trajectory.model_x, "MAGNETIC_RECONCILIATION")
 	platform._process(.2)
 	check(is_equal_approx(platform.sprite.position.x,platform.trajectory.model_x), "CORRECTION_SETTLES_BOUNDED")
+	var held_x := platform.trajectory.model_x
+	platform._process(1)
+	check(platform.trajectory.model_x == held_x, "HELD_WORLD_STOPS_LOCAL_PREDICTION_DESPITE_KEY_INTENT")
+	platform.set_authoritative_hold(false)
 
 	# Release stops local simulation immediately; final resting point converges to authoritative X.
 	platform.set_local_intent(0)
