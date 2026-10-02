@@ -176,11 +176,11 @@ func _process(_delta: float) -> void:
 	if not _pending.is_empty() and now >= _request_deadline:
 		_fail("REQUEST_TIMEOUT")
 		return
-	# Keepalive shares the request slot, never overwrites user intent or a pending op.
-	if state == "READY" and _scheduled.is_empty() and _pending.is_empty() and not _session_rules.is_empty() and now - _last_request_at >= _session_rules.keepalive_interval_ms:
-		_schedule("ping", {})
+	# Human input wins the one public request slot. Keepalive only uses otherwise-idle time.
 	if state == "READY" and _scheduled.is_empty() and _pending.is_empty():
 		_schedule_desired_input()
+	if state == "READY" and _scheduled.is_empty() and _pending.is_empty() and not _session_rules.is_empty() and now - _last_request_at >= _session_rules.keepalive_interval_ms:
+		_schedule("ping", {})
 	if _scheduled.is_empty() or not _pending.is_empty() or now < _next_request_at:
 		return
 	if _request_count >= REQUEST_LIMIT:

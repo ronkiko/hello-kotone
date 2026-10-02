@@ -12,6 +12,7 @@ var _phase := 0
 var _finished := false
 var _deadline := 0
 var _evidence: Dictionary = {}
+var _remote_stop_sent := false
 
 func _initialize() -> void:
 	_start.call_deferred()
@@ -50,7 +51,7 @@ func _ready_world() -> void:
 		_remote.failed.connect(func(): _check(false, "REMOTE_FAILED"); finish())
 		_remote.entered.connect(_drive_remote)
 		_remote.replied.connect(func(op: String):
-			if op == "move":
+			if op == "input" and _remote_stop_sent:
 				_remote.request("logout"))
 		_remote.start("127.0.0.1", int(_options.port))
 	elif _options.get("mode") == "resync_race":
@@ -73,7 +74,7 @@ func _ready_world() -> void:
 		pass
 
 func _drive_remote() -> void:
-	_remote.request("move", {"direction": "right"})
+	_remote.request("input", {"input_seq": 1, "direction": "right"})
 
 func _replica_changed() -> void:
 	if _options.get("mode") == "cancel_callback" and _client.world_replica.view().revision == 2:
@@ -95,6 +96,9 @@ func _event(value: Dictionary) -> void:
 			_check(view.players.has(value.data.player.player_id), "REAL_JOINED")
 		elif value.event == "moved":
 			_check(view.players[value.data.player.player_id].x == 51, "REAL_MOVED")
+			if not _remote_stop_sent:
+				_remote_stop_sent = true
+				_remote.request("input", {"input_seq": 2, "direction": "stop"})
 		elif value.event == "left":
 			_check(not view.players.has(value.data.player_id), "REAL_LEFT")
 			_resync_after_left.call_deferred()

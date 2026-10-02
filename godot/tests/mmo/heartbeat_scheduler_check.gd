@@ -54,7 +54,7 @@ func start() -> void:
 	client._desired_input = "stop"
 	check(client.set_input("right"),"HUMAN_INPUT_SCHEDULED")
 	client._process(0)
-	check(channel.sent.size() == 2 and channel.sent[1].op == "input" and channel.sent[1].payload.direction == "right", "SCHEDULED_INPUT_NOT_DISPLACED_BY_PING")
+	check(channel.sent.size() == 2 and channel.sent[1].op == "input" and channel.sent[1].payload.direction == "right", "INPUT_HAS_PRIORITY_OVER_DUE_PING")
 	client._scheduled = {}
 	client._pending = {}
 	client.state = "READY"
