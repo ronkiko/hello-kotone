@@ -4,7 +4,7 @@ const Kotone = preload("res://scenes/kotone.tscn")
 const IDLE = preload("res://assets/kotone_v2_idle_front.png")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
 const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
-const VISUAL_SPEED := 160.0
+const Motion = preload("res://scripts/presentation/player_motion.gd")
 var sprite: Sprite2D
 var identity := Label.new()
 var suspended := false
@@ -14,8 +14,7 @@ var visual_x := 0.0
 var _min_x := 0.0
 var _max_x := 0.0
 var _installed := false
-var _elapsed := 0.0
-var _animation := 0
+var motion := Motion.new()
 
 func _ready() -> void:
 	sprite = Kotone.instantiate()
@@ -39,20 +38,16 @@ func project(nickname: String, x: float, low: float, high: float) -> void:
 	target_x = clampf(x, low, high)
 	if not _installed:
 		visual_x = target_x
+		motion.reset()
 		_installed = true
 	position.x = visual_x
 
 func _process(delta: float) -> void:
-	if suspended or not _installed or sprite == null:
+	if suspended or not _installed or sprite == null or motion.speed <= 0.0:
 		return
-	var animation := 0 if is_equal_approx(visual_x, target_x) else (-1 if target_x < visual_x else 1)
-	visual_x = clampf(move_toward(visual_x, target_x, VISUAL_SPEED * delta), _min_x, _max_x)
+	var before := visual_x
+	visual_x = clampf(move_toward(visual_x, target_x, motion.speed * delta), _min_x, _max_x)
 	# Sprite/node edits cannot change the confirmed target.
 	position.x = visual_x
 	sprite.position = Vector2.ZERO
-	if animation != _animation:
-		_animation = animation
-		_elapsed = 0.0
-		sprite.texture = IDLE if animation == 0 else (WALK_LEFT if animation < 0 else WALK_RIGHT)
-	_elapsed += delta
-	sprite.frame = int(_elapsed / (0.3 if animation == 0 else 0.12)) % sprite.hframes
+	motion.animate(sprite, before, visual_x, target_x, delta)

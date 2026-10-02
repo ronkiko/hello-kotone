@@ -69,3 +69,14 @@ the current 4096-request limit remain explicit Alpha limits.
 
 API reference: [Input](https://docs.godotengine.org/en/stable/classes/class_input.html),
 [Node application focus notifications](https://docs.godotengine.org/en/stable/classes/class_node.html).
+
+## Presentation timing corrective
+
+Local and remote render speed comes from public movement step/cadence and map
+units_per_meter: step_units / units_per_meter * pixels_per_meter * 1000 /
+min_move_interval_ms. A bounded 10% catch-up margin gives 44 px/s with the current
+1-unit / 200-ms world and 8 px/metre. It is presentation only; confirmed positions,
+request cadence, one-step prediction and receipts remain authoritative as before.
+Walk frames follow actual visual distance over an art stride of four displayed
+metres. Arrival switches to idle immediately; jitter cannot run stationary legs.
+Suspension freezes both motion and animation; a fresh baseline resets phase.

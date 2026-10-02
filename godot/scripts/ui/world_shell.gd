@@ -53,6 +53,7 @@ func _show_world() -> void:
 
 func _project_display() -> void:
 	if platform != null:
+		platform.set_movement_rules(MmoClient.world_rules)
 		platform.project(MmoClient.map_document, MmoClient.world_replica.view(), prediction.view().target_x)
 
 func _on_move_intended(direction: String) -> void:

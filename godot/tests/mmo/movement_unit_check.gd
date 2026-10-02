@@ -107,6 +107,7 @@ func start() -> void:
 	viewport.size = Vector2i(458,116)
 	root.add_child(viewport)
 	var platform := Platform.new()
+	platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":200}})
 	viewport.add_child(platform)
 	platform.set_process(false)
 	var map := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
@@ -118,18 +119,67 @@ func start() -> void:
 	platform._process(0.01)
 	check(platform.sprite.position.x > 432 and platform.sprite.position.x < 440, "SMOOTH_CONFIRMED_TARGET")
 	platform._process(0.1)
-	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.WALK_RIGHT, "RIGHT_ANIMATION_AND_TARGET")
+	check(platform.sprite.position.x < 440 and platform.sprite.texture == platform.WALK_RIGHT, "WALK_DURING_ACTUAL_TRAVEL")
+	platform._process(0.1)
+	check(platform.sprite.position.x == 440 and platform.sprite.texture == platform.IDLE, "RIGHT_ARRIVAL_IDLE")
 	platform.sprite.position.x = -99999
 	platform._process(0)
 	check(platform.sprite.position.x == 440 and view.confirmed_local_x == 51, "SPRITE_TAMPER_NOT_AUTHORITY")
 	view.confirmed_local_x = 0
 	platform.project(map,view)
 	platform._process(100)
-	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.WALK_LEFT, "LEFT_BOUND_AND_ANIMATION")
+	check(platform.sprite.position.x == 32 and platform.sprite.texture == platform.IDLE, "LEFT_BOUND_ARRIVAL_IDLE")
 	view.confirmed_local_x = 100
 	platform.project(map,view)
 	platform._process(100)
 	check(platform.sprite.position.x == 832, "RIGHT_BOUND_NO_OVERSHOOT")
+	# Timing is derived, shared and distance driven, never a 160px/s timer.
+	check(is_equal_approx(platform.motion.speed, 44.0), "WORLD_200MS_SPEED")
+	check(platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":350}}), "WORLD_350MS_RULES")
+	view.confirmed_local_x = 99
+	platform.project(map,view)
+	check(is_equal_approx(platform.motion.speed, 8.0 / .35 * 1.1), "NEGOTIATED_350MS_SPEED")
+	platform._process(.05)
+	check(platform.sprite.texture == platform.WALK_LEFT and platform.sprite.position.x > 824, "350MS_NO_FAST_SNAP")
+	var distance: float = platform.motion.walk_distance
+	var frame: int = platform.sprite.frame
+	platform._process(0)
+	check(platform.motion.walk_distance == distance and platform.sprite.frame == frame, "NO_DISTANCE_NO_WALK_PHASE")
+	platform.set_suspended(true)
+	var frozen_x: float = platform.sprite.position.x
+	platform._process(10)
+	check(platform.sprite.position.x == frozen_x and platform.motion.walk_distance == distance and platform.sprite.frame == frame, "SUSPENDED_MOTION_AND_PHASE_FROZEN")
+	platform.set_suspended(false)
+	platform._process(1)
+	check(platform.sprite.position.x == 824 and platform.sprite.texture == platform.IDLE, "ARRIVAL_NO_WALK_HOLD")
+	var scaled := map.duplicate(true)
+	scaled.units_per_meter = 2
+	var canonical := scaled.duplicate()
+	canonical.erase("content_hash")
+	scaled.content_hash = JSON.stringify(canonical, "", true).sha256_text()
+	view.map.content_hash = scaled.content_hash
+	check(platform.project(scaled,view), "VALID_SCALED_PROFILE")
+	check(is_equal_approx(platform.motion.speed, 4.0 / .35 * 1.1), "MAP_SCALE_DERIVES_SPEED")
+	var remote := preload("res://scripts/presentation/remote_player.gd").new()
+	viewport.add_child(remote)
+	remote.set_process(false)
+	remote.motion.configure(1, 350, 2, 8.0)
+	remote.project("player2", 100, 0, 200)
+	remote.project("player2", 104, 0, 200)
+	remote._process(.05)
+	check(is_equal_approx(remote.position.x, 100 + platform.motion.speed * .05) and remote.sprite.texture == remote.WALK_RIGHT, "REMOTE_USES_SAME_PROFILE")
+	remote._process(1)
+	check(remote.position.x == 104 and remote.sprite.texture == remote.IDLE, "REMOTE_ARRIVAL_IDLE")
+	# Equal visual distances give equal walk frames despite different elapsed time.
+	var motion_a := preload("res://scripts/presentation/player_motion.gd").new()
+	var motion_b := preload("res://scripts/presentation/player_motion.gd").new()
+	motion_a.configure(1,200,1,8.0)
+	motion_b.configure(1,350,2,8.0)
+	motion_a.animate(platform.sprite,0,6,100,.01)
+	var phase_frame: int = platform.sprite.frame
+	motion_b.animate(platform.sprite,0,6,100,2.0)
+	check(platform.sprite.frame == phase_frame and phase_frame == 1, "WALK_PHASE_DISTANCE_NOT_TIME")
+	check(not platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":0}}), "INVALID_MOTION_RULES_REJECTED")
 	viewport.queue_free()
 	print(JSON.stringify({"suite":"movement","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)

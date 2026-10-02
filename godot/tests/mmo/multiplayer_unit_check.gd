@@ -25,6 +25,7 @@ func start() -> void:
 	viewport.size = Vector2i(458,116)
 	root.add_child(viewport)
 	var platform := Platform.new()
+	platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":200}})
 	viewport.add_child(platform)
 	platform.set_process(false)
 	check(platform.project(document,replica.view()), "PROJECT_SNAPSHOT")

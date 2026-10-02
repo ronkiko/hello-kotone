@@ -6,7 +6,7 @@ const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
 const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
 const IDLE = preload("res://assets/kotone_v2_idle_front.png")
-const VISUAL_SPEED := 160.0
+const Motion = preload("res://scripts/presentation/player_motion.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 const PIXELS_PER_METER := 8.0
 const ORIGIN_X := 32.0
@@ -22,13 +22,11 @@ var world_length := 0.0
 var _map: Dictionary = {}
 var _view: Dictionary = {}
 var _display_x: Variant = null
-var _elapsed := 0.0
+var motion := Motion.new()
+var _movement: Dictionary = {}
 var _position_installed := false
 var _target_x := 0.0
 var _visual_x := 0.0
-var _walk_direction := 0
-var _walk_until := 0
-var _animation := 0
 var _first_cell := -1000000
 
 func _ready() -> void:
@@ -68,11 +66,18 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_resize_projection)
 	project(_map, _view, _display_x)
 
+func set_movement_rules(rules: Dictionary) -> bool:
+	var value: Variant = rules.get("movement")
+	if not Protocol.fields(value, ["step_units", "min_move_interval_ms"]) or not Protocol.integer(value.step_units, 1, 1) or not Protocol.integer(value.min_move_interval_ms, 1, 60000):
+		return false
+	_movement = value.duplicate(true)
+	return true
+
 func server_to_pixel(x: int) -> float:
 	return ORIGIN_X + float(x - int(_map.min_x)) / float(_map.units_per_meter) * PIXELS_PER_METER
 
 func project(document: Dictionary, view: Dictionary, display_x: Variant = null) -> bool:
-	if not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")):
+	if _movement.is_empty() or not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")):
 		return false
 	for key in ["map_id", "content_version", "content_hash"]:
 		if document[key] != view.map[key]:
@@ -91,6 +96,7 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 		if not Protocol.player(player) or player.player_id != id or player.zone_id != document.map_id or not Protocol.integer(player.x, document.min_x, document.max_x):
 			return false
 	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash or _view.get("epoch") != view.get("epoch") or _view.get("local_player_id") != view.get("local_player_id")
+	motion.configure(_movement.step_units, _movement.min_move_interval_ms, document.units_per_meter, PIXELS_PER_METER)
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
 	_display_x = display_x
@@ -101,11 +107,9 @@ func project(document: Dictionary, view: Dictionary, display_x: Variant = null) 
 	if initial:
 		_first_cell = -1000000
 		_visual_x = target
+		motion.reset()
 		for id in remote_players.keys():
 			_remove_remote(id)
-	elif not is_equal_approx(target, _target_x):
-		_walk_direction = -1 if target < _target_x else 1
-		_walk_until = Time.get_ticks_msec() + 280
 	_position_installed = true
 	_target_x = target
 	sprite.position.x = _visual_x
@@ -141,6 +145,7 @@ func _sync_players() -> void:
 			node.position.y = FLOOR_Y - 42.25
 			add_child(node)
 			remote_players[id] = node
+		remote_players[id].motion.configure(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
 		remote_players[id].suspended = _suspended
 		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
@@ -159,17 +164,12 @@ func _resize_projection() -> void:
 func _process(delta: float) -> void:
 	if _suspended or _map.is_empty() or sprite == null:
 		return
-	_visual_x = clampf(move_toward(_visual_x, _target_x, VISUAL_SPEED * delta), ORIGIN_X, ORIGIN_X + world_length)
+	var before := _visual_x
+	_visual_x = clampf(move_toward(_visual_x, _target_x, motion.speed * delta), ORIGIN_X, ORIGIN_X + world_length)
 	# External Sprite2D edits cannot become a new target or a movement request.
 	sprite.position.x = _visual_x
 	local_label.position.x = _visual_x - 64
-	var animation := _walk_direction if Time.get_ticks_msec() < _walk_until else 0
-	if animation != _animation:
-		_animation = animation
-		_elapsed = 0.0
-		sprite.texture = IDLE if animation == 0 else (WALK_LEFT if animation < 0 else WALK_RIGHT)
-	_elapsed += delta
-	sprite.frame = int(_elapsed / (0.3 if animation == 0 else 0.12)) % sprite.hframes
+	motion.animate(sprite, before, _visual_x, _target_x, delta)
 	_reframe()
 
 func _update_tiles() -> void:

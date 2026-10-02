@@ -76,6 +76,7 @@ func start() -> void:
 	viewport.size = Vector2i(458,116)
 	root.add_child(viewport)
 	var platform := Platform.new()
+	platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":200}})
 	viewport.add_child(platform)
 	platform.set_process(false)
 	var view := replica.view()
@@ -85,7 +86,7 @@ func start() -> void:
 	platform._process(.02)
 	check(platform.sprite.position.x > 432 and platform.sprite.position.x < 440, "RENDER_BETWEEN_CONFIRMED_AND_PREDICTED")
 	platform._resize_projection()
-	platform._process(.1)
+	platform._process(.2)
 	check(platform.sprite.position.x == 440, "RESIZE_RETAINS_DISPLAY_TARGET")
 	platform.sprite.position.x = -99999
 	platform._process(0)

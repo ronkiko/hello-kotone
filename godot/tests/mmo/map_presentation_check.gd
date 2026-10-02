@@ -85,6 +85,7 @@ func unit_checks() -> void:
 	viewport.size = Vector2i(458, 116)
 	root.add_child(viewport)
 	var platform := Platform.new()
+	platform.set_movement_rules({"movement":{"step_units":1,"min_move_interval_ms":200}})
 	viewport.add_child(platform)
 	for item in [definition("city/apartment", 0, 100, 50), definition("city/street", 0, 200, 100), definition("city/work", 10, 60, 30), definition("city/scaled", 100, 1100, 600, 10)]:
 		check(platform.project(item, view(item, item.spawn_x)), "PROJECT_" + item.map_id)
