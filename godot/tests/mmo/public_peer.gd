@@ -1,5 +1,5 @@
 extends Node
-## Acceptance-only second public peer; movement input API remains patch 05.
+## Acceptance-only second public peer using the same protocol-v5 held-input contract.
 
 signal entered
 signal replied(op: String)
@@ -13,7 +13,6 @@ var _scheduled: Dictionary = {}
 var _sequence := 0
 var _next_at := 0
 var _ticket := ""
-var _last_moved: Dictionary = {}
 
 func start(host: String, port: int) -> void:
 	_open(host, port, "login", {"nickname": "player2"})
@@ -40,7 +39,7 @@ func _process(_delta: float) -> void:
 		return
 	_sequence += 1
 	_pending = {"request_id": "p%d" % _sequence, "op": _scheduled.op}
-	var data := {"protocol_version": 4, "type": "request", "request_id": _pending.request_id,
+	var data := {"protocol_version": Protocol.VERSION, "type": "request", "request_id": _pending.request_id,
 		"op": _scheduled.op, "payload": _scheduled.payload}
 	_scheduled = {}
 	if not _channel.send((JSON.stringify(data) + "\n").to_utf8_buffer()):
@@ -51,17 +50,8 @@ func _frame(bytes: PackedByteArray) -> void:
 	if value.get("type") == "event":
 		if not Protocol.event(value):
 			failed.emit()
-		elif value.event == "moved" and value.data.player.player_id == player_id:
-			_last_moved = value.duplicate(true)
 		return
 	var valid: bool = Protocol.response(value)
-	if _pending.get("op") == "move":
-		valid = Protocol.fields(value, ["protocol_version", "type", "request_id", "op", "status", "data", "error"]) \
-			and value.protocol_version == 4 and value.type == "response" and value.status == "ok" and value.error == null \
-			and Protocol.fields(value.data, ["epoch", "zone_id", "revision", "player_id"]) and not _last_moved.is_empty()
-		if valid:
-			valid = value.data.epoch == _last_moved.epoch and value.data.zone_id == _last_moved.zone_id \
-				and value.data.revision == _last_moved.revision and value.data.player_id == player_id
 	if not valid or _pending.is_empty() or value.request_id != _pending.request_id or value.op != _pending.op or value.status != "ok":
 		failed.emit()
 		return

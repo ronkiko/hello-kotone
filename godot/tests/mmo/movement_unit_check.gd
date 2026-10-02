@@ -31,7 +31,7 @@ func key(code: int, pressed: bool) -> void:
 	Input.flush_buffered_events()
 
 func start() -> void:
-	var input_reply := {"protocol_version":4,"type":"response","request_id":"r1","op":"input","status":"ok",
+	var input_reply := {"protocol_version":5,"type":"response","request_id":"r1","op":"input","status":"ok",
 		"data":{"epoch":"e1","zone_id":"city/apartment","player_id":"p1","input_seq":1,"x":50},"error":null}
 	check(Protocol.response(input_reply), "INPUT_RESPONSE_SCHEMA")
 	var client := FakeClient.new()

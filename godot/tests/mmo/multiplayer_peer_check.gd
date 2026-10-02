@@ -40,6 +40,7 @@ func key(code: int, pressed: bool) -> void:
 
 func human_step(direction: String) -> void:
 	var adapter: Node = current_scene.input_adapter
+	var before_x: int = client.world_replica.view().confirmed_local_x
 	# Two windows cannot both own desktop focus. Explicit test focus + release
 	# exercise the shipped InputAdapter, without changing product focus behavior.
 	adapter._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
@@ -49,8 +50,12 @@ func human_step(direction: String) -> void:
 	var code := KEY_A if direction == "left" else KEY_D
 	key(code,true)
 	adapter._process(0)
+	check(client.state == "MOVING", "A_D_HELD_INPUT_SCHEDULED")
+	while not finished and client.state != "FAILED" and client.world_replica.view().confirmed_local_x == before_x:
+		await process_frame
 	key(code,false)
-	check(client.state == "MOVING", "A_D_INTENTION_SCHEDULED")
+	adapter._process(0)
+	await wait_state("READY")
 
 func enter() -> void:
 	check(client.connect_world("127.0.0.1", int(options.port), options.nickname), "CONNECT")
@@ -104,8 +109,7 @@ func execute(command: Dictionary) -> void:
 		"move":
 			for i in range(command.get("count",1)):
 				await create_timer(.22).timeout
-				human_step(command.direction)
-				await wait_state("READY")
+				await human_step(command.direction)
 			value = await inspect(command)
 		"logout":
 			check(client.logout(), "LOGOUT")

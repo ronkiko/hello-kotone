@@ -111,7 +111,7 @@ func execute(command: Dictionary) -> void:
 			else:
 				check(login.host.text == "127.0.0.1" and login.port.value == int(options.port) and login.nickname.text == "player1", "ENDPOINT_RETAINED_IN_MEMORY")
 				check(login.connect_button.text == "Reconnect", "EXPLICIT_RECONNECT_CONTROL")
-			if client.state == "FAILED": check(not client.request_state() and not client.move("right"),"FENCED_NO_STATE_REPAIR_OR_MUTATION")
+			if client.state == "FAILED": check(not client.request_state() and not client.set_input("right"),"FENCED_NO_STATE_REPAIR_OR_MUTATION")
 			login.connect_button.pressed.emit()
 			login.connect_button.pressed.emit()
 			await wait_state(command.get("expect","READY"))
@@ -120,16 +120,23 @@ func execute(command: Dictionary) -> void:
 				value = await inspect(command)
 			else: value = {"state":client.state,"fault":client.last_error.duplicate()}
 		"move":
-			await create_timer(.25).timeout
+			await create_timer(.1).timeout
 			var adapter: Node = current_scene.input_adapter
+			var before_x: int = client.world_replica.view().confirmed_local_x
 			adapter._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 			key(false)
 			adapter._process(0)
 			key(true)
 			adapter._process(0)
+			check(client.state == "MOVING", "FRESH_EXPLICIT_HUMAN_INPUT")
+			while client.state != "FAILED" and client.world_replica.view().confirmed_local_x == before_x:
+				await process_frame
 			key(false)
-			check(client.state == "MOVING", "FRESH_EXPLICIT_HUMAN_MOVE")
-			await wait_state(command.get("expect","READY"))
+			adapter._process(0)
+			if client.state != "FAILED":
+				await wait_state(command.get("expect","READY"))
+			else:
+				check(command.get("expect","READY") == "FAILED", "EXPECTED_INPUT_FAILURE")
 			if client.state == "READY": value = await inspect(command)
 		"refresh":
 			current_scene.refresh_button.pressed.emit()

@@ -15,7 +15,7 @@ func check(ok: bool, label: String) -> void:
 	if not ok: failures.append(label)
 
 func response(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version":4,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
+	return {"protocol_version":5,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
 
 func _initialize() -> void:
 	start.call_deferred()
@@ -42,14 +42,19 @@ func start() -> void:
 	check(channel.sent.size() == 1 and channel.sent[0].op == "ping" and client.state == "READY", "IDLE_PING_FREE_SLOT")
 	var before: Dictionary = client._pending.duplicate()
 	for i in range(1000): client._process(0)
-	check(channel.sent.size() == 1 and client._pending == before and not client.move("right"),"SINGLE_PENDING_PING_NO_BACKLOG")
+	check(channel.sent.size() == 1 and client._pending == before and client.set_input("right"),"PING_COALESCES_LATEST_INPUT_WITHOUT_BACKLOG")
 	client._on_frame(JSON.stringify(response("ping",{"pong":true})).to_utf8_buffer())
 	check(client.state == "READY" and client._pending.is_empty(),"PONG_RELEASES_SLOT")
 	client._next_request_at = 0
 	client._last_request_at = -10000
-	check(client.move("right"),"HUMAN_MOVE_SCHEDULED")
+	client.state = "READY"
+	client._scheduled = {}
+	client._pending = {}
+	client._server_input = "stop"
+	client._desired_input = "stop"
+	check(client.set_input("right"),"HUMAN_INPUT_SCHEDULED")
 	client._process(0)
-	check(channel.sent.size() == 2 and channel.sent[1].op == "move", "SCHEDULED_MOVE_NOT_DISPLACED_BY_PING")
+	check(channel.sent.size() == 2 and channel.sent[1].op == "input" and channel.sent[1].payload.direction == "right", "SCHEDULED_INPUT_NOT_DISPLACED_BY_PING")
 	client._scheduled = {}
 	client._pending = {}
 	client.state = "READY"
