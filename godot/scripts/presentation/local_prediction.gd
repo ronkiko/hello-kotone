@@ -77,6 +77,9 @@ func clear() -> void:
 	_records = {}
 
 func view() -> Dictionary:
+	var active := false
+	if _active_seq != 0 and _records.has(_active_seq):
+		active = _records[_active_seq].direction != "stop"
 	return {"confirmed_x": _confirmed_x, "active_input_seq": _active_seq,
-		"healthy": _healthy, "active": _active_seq != 0, "predicted_x": null,
+		"healthy": _healthy, "active": active, "predicted_x": null,
 		"target_x": _confirmed_x, "records": _records.duplicate(true)}

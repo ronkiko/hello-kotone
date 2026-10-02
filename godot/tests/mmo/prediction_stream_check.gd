@@ -63,10 +63,8 @@ func start() -> void:
 		await wait_ready_or_failed()
 		check(client.state == "FAILED" and client.last_error.operation == "input" and client.last_error.outcome_unknown,
 			"LOST_INPUT_REPLY_IS_UNKNOWN_OUTCOME")
-		var frozen: float = world.platform.sprite.position.x
-		world.platform._process(10)
-		check(world.platform.sprite.position.x == frozen and client.world_replica.view().status == "STALE",
-			"UNKNOWN_OUTCOME_FREEZES_NO_REPLAY")
+		check(client.world_replica.view().status == "STALE" and client.world_replica.view().reconnect_required,
+			"UNKNOWN_OUTCOME_FENCES_REPLICA_NO_REPLAY")
 		finish()
 		return
 
