@@ -173,13 +173,13 @@ func fixture_case() -> void:
 		return
 	else:
 		await wait_state("READY")
-	await settle()
-	check(receipts == 1 and own_events == 1 and client.world_replica.local_player().x == 51, "FACT_THEN_RECEIPT_ONCE")
-	check(is_equal_approx(world.platform.sprite.position.x,440), "CONFIRMED_VISUAL_TARGET")
 	if mode == "cadence350":
 		var copy: Dictionary = client.world_rules
 		copy.movement.min_move_interval_ms = 1
 		check(client.world_rules.movement.min_move_interval_ms == 350 and not client.move("right"), "AUTHORITATIVE_CADENCE_NO_LOCAL_200")
+	await settle()
+	check(receipts == 1 and own_events == 1 and client.world_replica.local_player().x == 51, "FACT_THEN_RECEIPT_ONCE")
+	check(is_equal_approx(world.platform.sprite.position.x,440), "CONFIRMED_VISUAL_TARGET")
 	await create_timer(0.35).timeout
 	check(receipts == 1 and own_events == 1, "NO_RELEASED_INPUT_REPLAY")
 	if mode == "cadence350":
