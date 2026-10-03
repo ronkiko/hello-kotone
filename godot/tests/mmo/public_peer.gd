@@ -4,7 +4,7 @@ extends Node
 signal entered
 signal replied(op: String)
 signal failed
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 var player_id := ""
 var _channel: RefCounted

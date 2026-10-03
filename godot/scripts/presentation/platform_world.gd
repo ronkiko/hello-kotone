@@ -1,6 +1,6 @@
 extends Node2D
 ## Read-only projection. Replica facts plus an optional bounded display target.
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")

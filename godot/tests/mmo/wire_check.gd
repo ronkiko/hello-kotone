@@ -57,7 +57,7 @@ func _ready_world() -> void:
 		return
 	_evidence = {"player_id": _client.player_id, "map_id": _client.map_document.map_id,
 		"bounds": [_client.map_document.min_x, _client.map_document.max_x],
-		"snapshot_revision": _client.last_snapshot.revision}
+		"snapshot_revision": _client.last_snapshot.revision, "realm": _client.world_session.view()}
 	_phase = 1
 	if _expect_events or _expect_duplicate:
 		_probe = load("res://scripts/mmo/mmo_client.gd").new()

@@ -16,13 +16,13 @@ func baseline(revision: int = 1, players: Array = []) -> Dictionary:
 		"players": [player()] if players.is_empty() else players.duplicate(true)}
 
 func event(kind: String, revision: int, value: Dictionary) -> Dictionary:
-	return {"protocol_version": 5, "type": "event", "event": kind, "epoch": "e1",
+	return {"protocol_version": 6, "type": "event", "event": kind, "epoch": "e1",
 		"zone_id": "city/apartment", "revision": revision,
 		"data": {"player_id": value.player_id} if kind == "left" else {"player": value.duplicate(true)}}
 
 func ready_replica() -> RefCounted:
 	var replica := Replica.new()
-	check(replica.start(baseline(), "p1", "player1") and replica.install_map(MAP), "baseline and map")
+	check(replica.world_session.bind(world_bootstrap("e1")) and replica.start(baseline(), "p1", "player1") and replica.install_map(MAP), "baseline and map")
 	return replica
 
 func _initialize() -> void:
@@ -97,12 +97,12 @@ func _initialize() -> void:
 
 	replica = Replica.new()
 	var before_map := baseline(1, [player(), player("p2", "player2", 101)])
-	check(replica.start(before_map, "p1", "player1") and not replica.install_map(MAP), "all player bounds checked when map arrives")
+	check(replica.world_session.bind(world_bootstrap(before_map.epoch)) and replica.start(before_map, "p1", "player1") and not replica.install_map(MAP), "all player bounds checked when map arrives")
 	replica.clear()
 	check(replica.view().status == "EMPTY" and replica.view().confirmed_local_x == null and replica.snapshot().is_empty(), "clear old sequence")
 	var new_epoch := baseline()
 	new_epoch.epoch = "e2"
-	check(replica.start(new_epoch, "p1", "player1") and replica.view().epoch == "e2", "fresh enter accepts new epoch")
+	check(replica.world_session.bind(world_bootstrap(new_epoch.epoch)) and replica.start(new_epoch, "p1", "player1") and replica.view().epoch == "e2", "fresh enter accepts new epoch")
 	check(not replica.apply_event(event("moved", 2, player("p1", "player1", 51))), "old epoch event cannot update new enter")
 	replica = ready_replica()
 	replica.invalidate("DISCONNECTED")
@@ -111,7 +111,7 @@ func _initialize() -> void:
 	for index in range(128):
 		crowded.append(player("p%03d" % index, "name%d" % index))
 	replica = Replica.new()
-	check(replica.start(baseline(1, crowded), "p000", "name0"), "wire population cap baseline")
+	check(replica.world_session.bind(world_bootstrap("e1")) and replica.start(baseline(1, crowded), "p000", "name0"), "wire population cap baseline")
 	check(not replica.apply_event(event("joined", 2, player("p999", "name999"))), "population cap enforced after joined")
 	print(JSON.stringify({"suite": "replica", "checks": _checks, "failures": _failures, "result": "PASS" if _failures.is_empty() else "FAIL"}))
 	quit(0 if _failures.is_empty() else 1)
@@ -120,3 +120,6 @@ func check(value: bool, label: String) -> void:
 	_checks += 1
 	if not value:
 		_failures.append(label)
+
+func world_bootstrap(epoch: String = "e1") -> Dictionary:
+	return {"identity": {"game_card_id": "hello-kotone", "realm_id": "local", "realm_instance_id": epoch}, "capabilities": ["input", "logout", "map", "state", "world_rules"]}

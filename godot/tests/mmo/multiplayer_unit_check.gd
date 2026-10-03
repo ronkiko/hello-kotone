@@ -13,14 +13,14 @@ func check(ok: bool, reason: String) -> void:
 	if not ok: failures.append(reason)
 
 func event(revision: int, player: Dictionary, kind: String) -> Dictionary:
-	return {"protocol_version":5,"type":"event","event":kind,"epoch":"e1","zone_id":"city/apartment","revision":revision,"data":{"player_id":player.player_id} if kind == "left" else {"player":player}}
+	return {"protocol_version":6,"type":"event","event":kind,"epoch":"e1","zone_id":"city/apartment","revision":revision,"data":{"player_id":player.player_id} if kind == "left" else {"player":player}}
 
 func start() -> void:
 	var replica := Replica.new()
 	var local := {"player_id":"p1","nickname":"player1","zone_id":"city/apartment","x":50}
 	var remote := {"player_id":"p2","nickname":"player2","zone_id":"city/apartment","x":52}
 	var baseline := {"epoch":"e1","revision":1,"map":{"map_id":document.map_id,"content_version":1,"content_hash":document.content_hash},"players":[local, remote]}
-	check(replica.start(baseline,"p1","player1") and replica.install_map(document), "BASELINE")
+	check(replica.world_session.bind(world_bootstrap(baseline.epoch)) and replica.start(baseline,"p1","player1") and replica.install_map(document), "BASELINE")
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(458,116)
 	root.add_child(viewport)
@@ -73,7 +73,7 @@ func start() -> void:
 	replica.clear()
 	baseline.epoch = "e2"
 	baseline.players = [local]
-	check(replica.start(baseline,"p1","player1") and replica.install_map(document) and platform.project(document,replica.view()), "FRESH_BASELINE")
+	check(replica.world_session.bind(world_bootstrap(baseline.epoch)) and replica.start(baseline,"p1","player1") and replica.install_map(document) and platform.project(document,replica.view()), "FRESH_BASELINE")
 	check(platform.remote_players.is_empty(), "NEW_EPOCH_REMOVES_OLD_REMOTES")
 	var scaled := document.duplicate(true)
 	scaled.min_x = 100
@@ -104,3 +104,6 @@ func start() -> void:
 	check(not is_instance_valid(avatar), "LEFT_NODE_FREED")
 	print(JSON.stringify({"suite":"multiplayer","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)
+
+func world_bootstrap(epoch: String = "e1") -> Dictionary:
+	return {"identity": {"game_card_id": "hello-kotone", "realm_id": "local", "realm_instance_id": epoch}, "capabilities": ["input", "logout", "map", "state", "world_rules"]}

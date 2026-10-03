@@ -87,6 +87,7 @@ func inspect(command: Dictionary) -> Dictionary:
 	await create_timer(.3).timeout
 	var view: Dictionary = client.world_replica.view()
 	check(client.state == "READY" and view.status == "SYNCED" and not view.reconnect_required, "FRESH_HEALTHY_WORLD")
+	check(client.world_session.view().active and client.world_session.view().identity.realm_instance_id == view.epoch, "REALM_BOUND_TO_REPLICA")
 	check(current_scene.name == "World" and client.get_instance_id() == instance_id, "PERSISTENT_CORE_FRESH_SCENE")
 	var world: Control = current_scene
 	check(not world.platform._suspended and not world.prediction.view().active, "READY_PRESENTATION")
@@ -94,7 +95,7 @@ func inspect(command: Dictionary) -> Dictionary:
 	check(world.platform.sprite.position.x == world.platform.server_to_pixel(view.confirmed_local_x), "CONFIRMED_PROJECTION")
 	if command.has("x"): check(view.confirmed_local_x == command.x,"EXPECTED_X")
 	if command.has("version"): check(view.map.content_version == command.version,"EXPECTED_MAP_VERSION")
-	var value := {"state":client.state,"epoch":view.epoch,"revision":view.revision,"x":view.confirmed_local_x,"map":view.map,"map_source":client.map_source,"population":view.players.size(),"world_ready_count":ready_count}
+	var value := {"state":client.state,"realm":client.world_session.view(),"epoch":view.epoch,"revision":view.revision,"x":view.confirmed_local_x,"map":view.map,"map_source":client.map_source,"population":view.players.size(),"world_ready_count":ready_count}
 	return value
 
 func execute(command: Dictionary) -> void:

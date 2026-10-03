@@ -29,7 +29,7 @@ from scratch rather than converted from the Canvas implementation.
 
 ## MMO integration — v3.main.5.08
 
-`MmoClient` uses direct protocol-v5 Login/Game TCP connections. Login -> fresh
+`MmoClient` uses direct protocol-v6 Login/Game TCP connections. Login -> fresh
 ticket -> enter -> validated map/world rules/state leads to World. A/D and arrows
 publish held input changes (`input_seq`, left/right/stop); Game owns autonomous
 movement cadence. Moved events update WorldReplica; ACK only confirms input state.
@@ -54,3 +54,23 @@ See [Map cache and presentation](docs/map-presentation.md) for projection/cache 
 See [World replica](docs/world-replica.md) for reduction/resync rules and checks.
 The build order above describes the earlier standalone prototype; the active MMO
 integration order is defined by series 5 in `ai_research`.
+
+
+## Realm binding — v3.main.6.07
+
+`WorldSession` owns the active `{game_card_id, realm_id, realm_instance_id}` binding
+and world capabilities separately from `WorldReplica` (current zone observation).
+The successful Host `enter` binds it before any zone replica signal or map
+projection. This client accepts the `hello-kotone` card with its required gameplay
+capabilities; no world selector is added to Login.
+
+Protocol v6 requires the snapshot epoch to equal the bootstrapped instance.
+Network maps/world rules carry full identity and are rejected before presentation
+or cache writes when they belong to another card, realm or instance. Facts, state
+and input acknowledgments are fenced through the same instance epoch.
+Immutable cached map bytes may be reused by a fresh bound snapshot reference.
+Failure invalidates WorldSession while retaining only stale zone presentation;
+explicit reconnect clears both and starts fresh Login/ticket/Host enter.
+Host session_rules stays separate from Runtime/card world rules and capabilities.
+The removed world_id alias is replaced by identity.realm_id. Restart all services
+and Godot together when upgrading v5 to v6.

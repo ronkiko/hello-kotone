@@ -4,7 +4,9 @@ extends RefCounted
 signal changed
 signal local_moved(event: Dictionary, previous_x: int)
 
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const WorldSession = preload("res://scripts/mmo/world_session.gd")
+var world_session := WorldSession.new()
 var _snapshot: Dictionary = {}
 var _players: Dictionary = {}
 var _map: Dictionary = {}
@@ -28,6 +30,7 @@ func local_player() -> Dictionary:
 	return _players.get(_local_id, {}).duplicate(true)
 
 func clear() -> void:
+	world_session.clear()
 	_snapshot = {}
 	_players = {}
 	_map = {}
@@ -42,6 +45,8 @@ func start(value: Dictionary, local_id: String, nickname: String) -> bool:
 	# A new enter/session is the only operation that can establish a new epoch.
 	if _reconnect_required:
 		return false
+	if not world_session.accepts_epoch(value.get("epoch", "")):
+		return _reject("WRONG_REALM_INSTANCE")
 	if not _snapshot.is_empty() or not Protocol.token(local_id) or not Protocol.token(nickname):
 		return _reject("INVALID_BASELINE")
 	if not _valid_snapshot(value, local_id, nickname):
@@ -54,6 +59,8 @@ func start(value: Dictionary, local_id: String, nickname: String) -> bool:
 func install_map(value: Dictionary) -> bool:
 	if _reconnect_required:
 		return false
+	if not world_session.view().active:
+		return _reject("UNBOUND_REALM")
 	if _snapshot.is_empty() or not Protocol.map_definition(value):
 		return _reject("INVALID_MAP")
 	var reference: Dictionary = _snapshot.map
@@ -166,6 +173,7 @@ func _commit(value: Dictionary, resync_pending: bool = false) -> void:
 	changed.emit()
 
 func _reject(reason: String) -> bool:
+	world_session.invalidate()
 	_status = "STALE"
 	_reason = reason
 	_reconnect_required = true

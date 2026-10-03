@@ -8,7 +8,7 @@ class FakeChannel extends RefCounted:
 	func poll() -> void: pass
 	func close() -> void: pass
 	func send(frame: PackedByteArray) -> bool:
-		sent.append(preload("res://scripts/mmo/protocol_v5.gd").decode(frame.slice(0,frame.size()-1)))
+		sent.append(preload("res://scripts/mmo/protocol_v6.gd").decode(frame.slice(0,frame.size()-1)))
 		return true
 func _initialize() -> void:
 	start.call_deferred()
@@ -30,12 +30,12 @@ func ready() -> FakeChannel:
 	client._next_request_at = 0
 	client._request_count = 0
 	var snapshot := {"epoch":"e1","revision":1,"map":{"map_id":MAP.map_id,"content_version":1,"content_hash":MAP.content_hash},"players":[{"player_id":"p1","nickname":"player1","zone_id":MAP.map_id,"x":50}]}
-	check(client.world_replica.start(snapshot,"p1","player1") and client.world_replica.install_map(MAP), "FRESH_TEST_SESSION")
+	check(client.world_session.bind(world_bootstrap(snapshot.epoch)) and client.world_replica.start(snapshot,"p1","player1") and client.world_replica.install_map(MAP), "FRESH_TEST_SESSION")
 	return client._channel
 func ack(data: Dictionary = {}) -> void:
 	var value := {"epoch":"e1","zone_id":MAP.map_id,"player_id":"p1","input_seq":1,"x":50}
 	value.merge(data,true)
-	client._on_frame(JSON.stringify({"protocol_version":5,"type":"response","request_id":"r1","op":"input","status":"ok","data":value,"error":null}).to_utf8_buffer())
+	client._on_frame(JSON.stringify({"protocol_version":6,"type":"response","request_id":"r1","op":"input","status":"ok","data":value,"error":null}).to_utf8_buffer())
 func start() -> void:
 	client = root.get_node("MmoClient")
 	client.set_process(false)
@@ -109,3 +109,6 @@ func start() -> void:
 	client.disconnect_world()
 	print(JSON.stringify({"suite":"movement","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))
 	quit(0 if failures.is_empty() else 1)
+
+func world_bootstrap(epoch: String = "e1") -> Dictionary:
+	return {"identity": {"game_card_id": "hello-kotone", "realm_id": "local", "realm_instance_id": epoch}, "capabilities": ["input", "logout", "map", "state", "world_rules"]}

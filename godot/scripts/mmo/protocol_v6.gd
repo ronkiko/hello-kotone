@@ -1,11 +1,11 @@
 extends RefCounted
 ## Public wire validation only. Replica reduction and presentation belong elsewhere.
 
-const VERSION := 5
+const VERSION := 6
 const MAX_FRAME_BYTES := 65536
 const WireJson = preload("res://scripts/mmo/wire_json.gd")
 const PUBLIC_OPERATIONS := ["login", "enter", "map", "state", "input", "logout", "world_rules", "session_rules", "ping"]
-# Wire codes/status semantics from protocol v5, independently implemented here.
+# Wire codes/status semantics from protocol v6, independently implemented here.
 # Internal-only WRITER_BUSY has no legal public rejection operation.
 const PUBLIC_ERROR_CODES := [
 	"WORLD_PAUSED", "FLUSH_FAILED", "STORAGE_CONFLICT", "WRITER_BUSY", "INVALID_TICKET",
@@ -47,7 +47,10 @@ static func integer(value: Variant, low: int = 0, high: int = 9007199254740991) 
 	return value is int and value >= low and value <= high
 
 static func matches(value: Variant, pattern: String) -> bool:
-	return value is String and RegEx.create_from_string(pattern).search(value) != null
+	if not value is String:
+		return false
+	var match_result := RegEx.create_from_string(pattern).search(value)
+	return match_result != null and match_result.get_string() == value
 
 static func token(value: Variant) -> bool:
 	return matches(value, "^[A-Za-z0-9_-]{1,64}$")
@@ -111,19 +114,20 @@ static func response(value: Variant) -> bool:
 			return fields(data, ["ticket", "expires_in_ms", "game_server"]) and digest(data.ticket) \
 				and integer(data.expires_in_ms, 1, 30000) and endpoint(data.game_server)
 		"enter":
-			if not fields(data, ["session_id", "player_id", "snapshot"]) or not token(data.session_id) \
-				or not token(data.player_id) or not snapshot(data.snapshot):
+			if not fields(data, ["session_id", "player_id", "bootstrap", "snapshot"]) or not token(data.session_id) \
+				or not token(data.player_id) or not bootstrap(data.bootstrap) or not snapshot(data.snapshot) \
+				or data.snapshot.epoch != data.bootstrap.identity.realm_instance_id:
 				return false
 			for item in data.snapshot.players:
 				if item.player_id == data.player_id:
 					return true
 			return false
 		"map":
-			return fields(data, ["map"]) and map_definition(data.map)
+			return fields(data, ["identity", "map"]) and identity(data.identity) and map_definition(data.map)
 		"state":
 			return fields(data, ["snapshot"]) and snapshot(data.snapshot)
 		"world_rules":
-			return fields(data, ["world_id", "movement"]) and token(data.world_id) \
+			return fields(data, ["identity", "movement"]) and identity(data.identity) \
 				and fields(data.movement, ["step_units", "min_move_interval_ms"]) \
 				and integer(data.movement.step_units, 1, 1) and integer(data.movement.min_move_interval_ms, 1, 60000)
 		"session_rules":
@@ -181,6 +185,21 @@ static func version_error(value: Variant) -> bool:
 	var previous := 0
 	for item in value.supported_versions:
 		if not integer(item, previous + 1) or item == VERSION:
+			return false
+		previous = item
+	return true
+
+static func identity(value: Variant) -> bool:
+	return fields(value, ["game_card_id", "realm_id", "realm_instance_id"]) and token(value.game_card_id) \
+		and token(value.realm_id) and token(value.realm_instance_id)
+
+static func bootstrap(value: Variant) -> bool:
+	if not fields(value, ["identity", "capabilities"]) or not identity(value.identity) \
+		or not value.capabilities is Array or value.capabilities.size() > 32:
+		return false
+	var previous := ""
+	for item in value.capabilities:
+		if not item is String or item.length() > 128 or not matches(item, "^[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}$") or item <= previous:
 			return false
 		previous = item
 	return true

@@ -1,6 +1,6 @@
 extends RefCounted
 ## Reconciles authoritative held-input steps against the nominal path for each accepted input sequence.
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
 var _baseline: Dictionary = {}
 var _confirmed_x: Variant = null
 var _healthy := false

@@ -1,4 +1,4 @@
-# Direct MMO wire core — protocol v5
+# Direct MMO wire core — protocol v6
 
 The Godot client connects directly to Login and Game over the public TCP/JSONL
 protocol. Storage remains server-side. No Python proxy or private Game API exists in
@@ -10,14 +10,14 @@ the gameplay path.
 Login
  -> ticket + advertised Game endpoint
  -> session_rules
- -> enter
+ -> enter: bind WorldSession realm identity + capabilities
  -> verified map/cache
  -> world_rules
  -> state boundary
  -> READY
 ```
 
-Protocol version is 5. The public Game operations used by this client are:
+Protocol version is 6. The public Game operations used by this client are:
 `session_rules`, `enter`, `ping`, `map`, `world_rules`, `state`, `input`
 and `logout`. The old public one-step `move` operation does not exist.
 
@@ -81,3 +81,23 @@ From `ai_research`:
 python3 v3/game/op/check-client-wire.py --project ../hello-kotone/godot --require-committed
 python3 v3/game/op/check-client-heartbeat.py --project ../hello-kotone/godot --require-committed
 ```
+
+
+## Realm binding — v3.main.6.07
+
+`WorldSession` owns the active `{game_card_id, realm_id, realm_instance_id}` binding
+and world capabilities separately from `WorldReplica` (current zone observation).
+The successful Host `enter` binds it before any zone replica signal or map
+projection. This client accepts the `hello-kotone` card with its required gameplay
+capabilities; no world selector is added to Login.
+
+Protocol v6 requires the snapshot epoch to equal the bootstrapped instance.
+Network maps/world rules carry full identity and are rejected before presentation
+or cache writes when they belong to another card, realm or instance. Facts, state
+and input acknowledgments are fenced through the same instance epoch.
+Immutable cached map bytes may be reused by a fresh bound snapshot reference.
+Failure invalidates WorldSession while retaining only stale zone presentation;
+explicit reconnect clears both and starts fresh Login/ticket/Host enter.
+Host session_rules stays separate from Runtime/card world rules and capabilities.
+The removed world_id alias is replaced by identity.realm_id. Restart all services
+and Godot together when upgrading v5 to v6.

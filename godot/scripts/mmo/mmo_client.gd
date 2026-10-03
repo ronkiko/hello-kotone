@@ -10,7 +10,7 @@ signal input_rejected(code: String)
 signal world_ready
 signal disconnected
 
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
@@ -24,6 +24,8 @@ var initial_snapshot: Dictionary = {}
 var last_snapshot: Dictionary = {}
 var map_document: Dictionary = {}
 var world_replica := Replica.new()
+var world_session: RefCounted:
+	get: return world_replica.world_session
 var map_cache := MapCache.new()
 var map_source := ""
 var connect_timeout_ms := 5000
@@ -259,6 +261,18 @@ func _on_frame(frame: PackedByteArray) -> void:
 		return
 	var completed: Dictionary = _pending.duplicate(true)
 	var op: String = completed.op
+	if op in ["map", "world_rules"] and not world_session.accepts_identity(message.data.identity):
+		_fail("REALM_IDENTITY_MISMATCH")
+		return
+	if op == "enter":
+		# Bind realm authority before reducer signals expose any zone projection.
+		if message.data.bootstrap.identity.game_card_id != "hello-kotone" or not world_session.bind(message.data.bootstrap):
+			_fail("REALM_BOOTSTRAP_MISMATCH")
+			return
+		for capability in ["map", "state", "world_rules", "input", "logout"]:
+			if not world_session.supports(capability):
+				_fail("WORLD_CAPABILITY_MISSING")
+				return
 	if op == "input" and not _valid_input_ack(message.data, completed):
 		# Keep pending mutation context until validation: a malformed ACK is unknown.
 		_fail("INPUT_BASELINE_MISMATCH")
@@ -397,6 +411,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_request_interval_ms = 0
 	_last_request_at = 0
 	_world_rules = {}
+	world_session.invalidate()
 	_desired_input = "stop"
 	_server_input = "stop"
 	_server_input_seq = 0

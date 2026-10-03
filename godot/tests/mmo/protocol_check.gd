@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Protocol = preload("res://scripts/mmo/protocol_v5.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
 var _checks := 0
 var _failures := 0
 
@@ -24,9 +24,9 @@ func _initialize() -> void:
 	bad_map.min_x = true
 	check(not Protocol.map_definition(bad_map), "bool is not integer")
 	check(not Protocol.endpoint({"host": "http://localhost", "port": 7777, "server_id": "g"}), "no URL endpoint")
-	var bootstrap := {"type": "version_error", "bootstrap_version": 1, "code": "UNSUPPORTED_VERSION", "received_version": 5, "supported_versions": [4]}
+	var bootstrap := {"type": "version_error", "bootstrap_version": 1, "code": "UNSUPPORTED_VERSION", "received_version": 6, "supported_versions": [4]}
 	check(Protocol.version_error(bootstrap), "bootstrap version mismatch")
-	bootstrap.supported_versions = [5]
+	bootstrap.supported_versions = [6]
 	check(not Protocol.version_error(bootstrap), "invalid bootstrap rejected")
 	for source in ['{"x":\r1}', '{"x":1}\r ', '{"x":1}\r', '{"x":\n1}']:
 		check(Protocol.decode(source.to_utf8_buffer()).is_empty(), "raw CR/LF anywhere rejected")
@@ -61,7 +61,7 @@ func _initialize() -> void:
 	quit(0 if _failures == 0 else 1)
 
 func failure(code: String, op: Variant, status: String) -> Dictionary:
-	return {"protocol_version": 5, "type": "response", "request_id": "r1" if op != null else null,
+	return {"protocol_version": 6, "type": "response", "request_id": "r1" if op != null else null,
 		"op": op, "status": status, "data": null, "error": {"code": code, "message": "Test rejection"}}
 
 func check(value: bool, label: String) -> void:
