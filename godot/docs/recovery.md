@@ -1,8 +1,8 @@
-# Explicit recovery — protocol v5
+# Explicit recovery — protocol v6
 
 After a terminal fault the World freezes immediately and the UI returns to Login.
 Every retry starts a fresh Login -> one-use ticket -> advertised Game ->
-session_rules -> enter snapshot -> map/world rules/state -> READY lifecycle.
+session_rules -> enter realm bootstrap + snapshot -> map/world rules/state -> READY lifecycle.
 
 There is no automatic reconnect and no automatic mutation replay.
 
@@ -13,7 +13,7 @@ direction. The client marks the outcome unknown, fences the old connection and n
 re-sends that input sequence on a new session.
 
 Game disconnect clears the old session's held input. Fresh enter restarts input_seq at
-1 and its snapshot decides the actual X.
+1 and its realm-bound snapshot shows the current X; the old command outcome remains unknown.
 
 Holding a key through failure/reentry cannot replay old movement: the new World
 requires a release before fresh input.

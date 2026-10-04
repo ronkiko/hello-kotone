@@ -1,4 +1,4 @@
-# Human movement — protocol v5 held input
+# Human movement — protocol v6 held input
 
 MMO Kotone uses the same public authority boundary planned for future AI clients:
 

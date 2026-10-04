@@ -43,7 +43,9 @@ only this accepts a new epoch. Old-epoch events cannot update it. Confirmed logo
 clears replica to EMPTY. Automatic reconnect/retry remains absent (patch 08).
 
 World reads nickname/zone/X and offers Refresh world. Refresh/Leave are disabled
-during resync. Standalone movement is not connected; rendering remains patch 04.
+during resync. The current World scene connects held input, LocalTrajectory and map/remote rendering.
+WorldSession binds realm identity/capabilities before starting this zone replica;
+see [MMO wire](mmo-wire.md#realm-binding--v3main607).
 
 ## Checks
 
@@ -58,7 +60,7 @@ python3 v3/game/op/check-client-shell.py --project ../hello-kotone/godot --deskt
 Reducer checks cover atomicity, defensive copies, snapshot replacement, strict
 membership/sequence/epoch, map bounds, population cap and stale disconnect state.
 Real shared Game runs two Godot public peers: observer MmoClient and an
-acceptance-only peer sending player2 enter/held input/stop/logout on protocol v5. Python
+acceptance-only peer sending player2 enter/held input/stop/logout on protocol v6. Python
 only orchestrates services/processes. Fixtures cover loading events, events
 before/after state in one TCP write, corrupt sequences, invalid snapshots and
 explicit reentry with a new epoch. Request counts prove no hidden retry/reconnect

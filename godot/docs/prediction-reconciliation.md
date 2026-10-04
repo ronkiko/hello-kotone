@@ -1,4 +1,4 @@
-# Continuous local prediction and authoritative reconciliation — protocol v5
+# Continuous local prediction and authoritative reconciliation — protocol v6
 
 Prediction is presentation, not authority.
 
