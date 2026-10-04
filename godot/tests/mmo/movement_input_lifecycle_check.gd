@@ -23,7 +23,7 @@ func ready() -> FakeChannel:
 	client.player_id = "p1"
 	client.session_id = "s1"
 	client.map_document = MAP.duplicate(true)
-	client._world_rules = {"world_id":"w1","movement":{"step_units":1,"min_move_interval_ms":200}}
+	client._world_rules = {"identity":world_bootstrap("e1").identity,"movement":{"step_units":1,"min_move_interval_ms":200}}
 	client._session_rules = {"min_request_interval_ms":50,"idle_timeout_ms":120000,"keepalive_interval_ms":40000}
 	client._request_interval_ms = 51
 	client._last_request_at = Time.get_ticks_msec()
