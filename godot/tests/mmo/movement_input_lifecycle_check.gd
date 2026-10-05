@@ -8,7 +8,7 @@ class FakeChannel extends RefCounted:
 	func poll() -> void: pass
 	func close() -> void: pass
 	func send(frame: PackedByteArray) -> bool:
-		sent.append(preload("res://scripts/mmo/protocol_v6.gd").decode(frame.slice(0,frame.size()-1)))
+		sent.append(preload("res://scripts/mmo/protocol_v7.gd").decode(frame.slice(0,frame.size()-1)))
 		return true
 func _initialize() -> void:
 	start.call_deferred()
@@ -35,7 +35,7 @@ func ready() -> FakeChannel:
 func ack(data: Dictionary = {}) -> void:
 	var value := {"epoch":"e1","zone_id":MAP.map_id,"player_id":"p1","input_seq":1,"x":50}
 	value.merge(data,true)
-	client._on_frame(JSON.stringify({"protocol_version":6,"type":"response","request_id":"r1","op":"input","status":"ok","data":value,"error":null}).to_utf8_buffer())
+	client._on_frame(JSON.stringify({"protocol_version":7,"type":"response","request_id":"r1","op":"input","status":"ok","data":value,"error":null}).to_utf8_buffer())
 func start() -> void:
 	client = root.get_node("MmoClient")
 	client.set_process(false)

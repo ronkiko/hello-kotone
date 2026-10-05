@@ -12,6 +12,8 @@ run/main_scene="res://scenes/mmo/login.tscn"
 
 MmoClient="*res://scripts/mmo/mmo_client.gd"
 
+Preworld="*res://scripts/mmo/preworld_client.gd"
+
 GameState="*res://scripts/game_state.gd"
 
 [display]

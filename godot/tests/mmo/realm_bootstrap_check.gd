@@ -1,6 +1,6 @@
 extends SceneTree
-## v6 realm-before-zone boundary, adversarial content and restart checks.
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+## v7 selected-character realm-before-zone boundary, adversarial content and restart checks.
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
 const Fixtures = preload("res://tests/mmo/replica_check.gd")
 var checks := 0
@@ -17,16 +17,20 @@ func identity(epoch: String = "e1") -> Dictionary:
 func bootstrap(epoch: String = "e1") -> Dictionary:
 	return {"identity": identity(epoch), "capabilities": ["input", "logout", "map", "state", "world_rules"]}
 
+func character() -> Dictionary:
+	return {"game_card_id": "hello-kotone", "realm_id": "local", "character_id": "p1", "display_name": "player1", "appearance_schema_version": 1,
+		"appearance_payload": {"archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "chestnut"}}
+
 func baseline(epoch: String = "e1") -> Dictionary:
 	return {"epoch": epoch, "revision": 1,
 		"map": {"map_id": Fixtures.MAP.map_id, "content_version": Fixtures.MAP.content_version, "content_hash": Fixtures.MAP.content_hash},
-		"players": [{"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 50}]}
+		"players": [{"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 50, "character": character()}]}
 
 func entry(epoch: String = "e1") -> Dictionary:
 	return {"session_id": "s1", "player_id": "p1", "bootstrap": bootstrap(epoch), "snapshot": baseline(epoch)}
 
 func reply(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version": 6, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
+	return {"protocol_version": 7, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
 
 func deliver(op: String, data: Dictionary) -> void:
 	client._pending = {"op": op, "request_id": "r1", "payload": {}}
@@ -35,6 +39,8 @@ func deliver(op: String, data: Dictionary) -> void:
 func reset() -> void:
 	client._clear_session()
 	client._nickname = "player1"
+	client._expected_identity = identity()
+	client._expected_character = character()
 	client.state = "ENTERING_WORLD"
 
 func _initialize() -> void:
@@ -52,7 +58,7 @@ func run() -> void:
 	for bad in [{}, {"identity": identity(), "capabilities": ["input", "input"]}, {"identity": identity(), "capabilities": [true]}, {"identity": identity(), "capabilities": ["x".repeat(129)]}, {"identity": identity(), "capabilities": ["future\n"]}, {"identity": {"game_card_id": "hello-kotone", "realm_id": "local\n", "realm_instance_id": "e1"}, "capabilities": []}, {"identity": identity(), "capabilities": ["input"], "session_rules": {}}]:
 		check(not Protocol.bootstrap(bad), "STRICT_BOOTSTRAP")
 	check(Protocol.bootstrap({"identity": identity(), "capabilities": []}), "GENERIC_EMPTY_CAPABILITIES")
-	check(Protocol.response(reply("enter", entry())), "VALID_V6_ENTER")
+	check(Protocol.response(reply("enter", entry())), "VALID_V7_ENTER")
 	var old_version := reply("enter", entry())
 	old_version.protocol_version = 5
 	check(not Protocol.response(old_version), "V5_BREAKING_SHAPE_REJECTED")
@@ -90,16 +96,19 @@ func run() -> void:
 			check(not client.world_session.view().active, "FOREIGN_REPLY_FENCES_REALM")
 	# Same content bytes may be reused only after fresh binding. An old network map cannot.
 	reset()
+	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
 	check(client.world_session.view().identity == identity("e2") and client.world_replica.view().epoch == "e2", "FRESH_INSTANCE_BINDS")
 	check(client.world_replica.install_map(Fixtures.MAP), "VERIFIED_CONTENT_REUSED_IN_NEW_INSTANCE")
 	deliver("map", {"identity": identity(), "map": Fixtures.MAP})
 	check(client.state == "FAILED" and client.last_error.code == "REALM_IDENTITY_MISMATCH", "OLD_MAP_SAME_BYTES_REJECTED")
 	reset()
+	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
-	client._on_frame(JSON.stringify({"protocol_version": 6, "type": "event", "event": "moved", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": {"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 51}}}).to_utf8_buffer())
+	client._on_frame(JSON.stringify({"protocol_version": 7, "type": "event", "event": "moved", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": {"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 51, "character": character()}}}).to_utf8_buffer())
 	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_x == 50 and client.world_replica.view().stale_reason == "WRONG_EPOCH", "OLD_FACT_REJECTED_BEFORE_PROJECTION")
 	reset()
+	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
 	deliver("state", {"snapshot": baseline("e1")})
 	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_x == 50, "OLD_STATE_REJECTED")

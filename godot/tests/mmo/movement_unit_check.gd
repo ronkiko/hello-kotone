@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Adapter = preload("res://scripts/ui/move_input.gd")
 const Platform = preload("res://scripts/presentation/platform_world.gd")
 var failures: Array[String] = []
@@ -31,7 +31,7 @@ func key(code: int, pressed: bool) -> void:
 	Input.flush_buffered_events()
 
 func start() -> void:
-	var input_reply := {"protocol_version":6,"type":"response","request_id":"r1","op":"input","status":"ok",
+	var input_reply := {"protocol_version":7,"type":"response","request_id":"r1","op":"input","status":"ok",
 		"data":{"epoch":"e1","zone_id":"city/apartment","player_id":"p1","input_seq":1,"x":50},"error":null}
 	check(Protocol.response(input_reply), "INPUT_RESPONSE_SCHEMA")
 	var client := FakeClient.new()

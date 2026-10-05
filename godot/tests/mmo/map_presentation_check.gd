@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Cache = preload("res://scripts/mmo/map_cache.gd")
 const Platform = preload("res://scripts/presentation/platform_world.gd")
 var failures: Array[String] = []
@@ -52,7 +52,7 @@ func start() -> void:
 
 func unit_checks() -> void:
 	var cache := Cache.new()
-	cache.directory = "user://unit-maps"
+	cache.directory = "user://unit-maps-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]
 	var map := definition("city/apartment", 0, 100, 50)
 	var ref := reference(map)
 	check(cache.load_verified(ref).is_empty(), "COLD_MISS")

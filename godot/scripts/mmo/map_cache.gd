@@ -1,6 +1,6 @@
 extends RefCounted
 ## Untrusted local files become usable only after wire-schema/hash/ref validation.
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 var directory := "user://mmo/maps-v1"
 
 func path_for(reference: Dictionary) -> String:

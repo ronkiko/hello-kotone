@@ -4,7 +4,7 @@ extends RefCounted
 signal changed
 signal local_moved(event: Dictionary, previous_x: int)
 
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const WorldSession = preload("res://scripts/mmo/world_session.gd")
 var world_session := WorldSession.new()
 var _snapshot: Dictionary = {}
@@ -47,7 +47,7 @@ func start(value: Dictionary, local_id: String, nickname: String) -> bool:
 		return false
 	if not world_session.accepts_epoch(value.get("epoch", "")):
 		return _reject("WRONG_REALM_INSTANCE")
-	if not _snapshot.is_empty() or not Protocol.token(local_id) or not Protocol.token(nickname):
+	if not _snapshot.is_empty() or not Protocol.token(local_id) or not Protocol.display_name(nickname):
 		return _reject("INVALID_BASELINE")
 	if not _valid_snapshot(value, local_id, nickname):
 		return _reject("INVALID_BASELINE")
@@ -125,7 +125,7 @@ func apply_event(value: Dictionary) -> bool:
 			return _reject("LOCAL_PLAYER_LEFT")
 		players.erase(id)
 	else:
-		if players[id].nickname != value.data.player.nickname:
+		if players[id].nickname != value.data.player.nickname or players[id].get("character") != value.data.player.get("character"):
 			return _reject("IDENTITY_CHANGED")
 		players[id] = value.data.player.duplicate(true)
 	var next: Dictionary = _snapshot.duplicate(true)

@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 var checks := 0
 var failures: Array[String] = []
 class FakeChannel extends RefCounted:
@@ -15,7 +15,7 @@ func check(ok: bool, label: String) -> void:
 	if not ok: failures.append(label)
 
 func response(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version":6,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
+	return {"protocol_version":7,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
 
 func _initialize() -> void:
 	start.call_deferred()

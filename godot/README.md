@@ -27,50 +27,33 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## MMO integration — v3.main.5.08
+## Current MMO client — v3.main.7.09
 
-`MmoClient` uses direct protocol-v6 Login/Game TCP connections. Login -> fresh
-ticket -> enter -> validated map/world rules/state leads to World. A/D and arrows
-publish held input changes (`input_seq`, left/right/stop); Game owns autonomous
-movement cadence. Moved events update WorldReplica; ACK only confirms input state.
-LocalTrajectory predicts continuously from current human intent, and server facts
-correct it magnetically. Gait follows actual display distance; held local input
-preserves side pose between facts, release and settling returns front idle.
-Remote avatars interpolate confirmed facts and freeze the last side pose at gaps.
-Floor ruler marks confirmed X independently of prediction/render X.
-Failures freeze presentation and return to explicit Reconnect: new Login/ticket/
-enter, no automatic input replay. Unknown input outcome remains explicit.
-Host session_rules advertises request pacing/idle keepalive; read-only ping keeps
-spectators online without world resync or mutations. Verified maps persist locally.
-The shared roadmap lives in the neighboring `ai_research` repository, under
-`v3/docs/roadmap/v3/main/5/`. This client checkout is `~/work2/hello-kotone`.
-See [Explicit recovery](docs/recovery.md) for reconnect, epoch and map failure rules.
-See [MMO wire core and checks](docs/mmo-wire.md) for the API and validation commands.
-See [Login/Loading shell](docs/login-shell.md) for startup and UI acceptance.
-See [Human movement](docs/human-movement.md) for controls, outcomes and tests.
-See [Multiplayer presentation](docs/multiplayer-presentation.md) for two-window play and checks.
-See [Prediction/reconciliation](docs/prediction-reconciliation.md) for latency and failure behavior.
-See [Map cache and presentation](docs/map-presentation.md) for projection/cache rules.
-See [World replica](docs/world-replica.md) for reduction/resync rules and checks.
-The build order above describes the earlier standalone prototype; the active MMO
-integration order is defined by series 5 in `ai_research`.
+Current public protocol is **v7**. The startup shell supports Account Login →
+Realm Directory → Realm Lobby → Character Creator/Selection → World, with two
+one-time handoffs. `Preworld` owns account/Lobby authority; `MmoClient` owns only
+the selected-character Game visit. Leave World stops held input, waits for logout
+and confirmed save/Registry completion, then returns to the same realm roster.
+Back clears realm authority; account logout clears all visits. There is no v6
+nickname Login or direct reconnect path.
 
+Secure server uses certificate-verified native TLS for Login/Lobby/Game without
+plaintext fallback. Local development accepts only literal loopback and dev accounts
+`dev1`–`dev3`. Passwords, handoff/session secrets stay in RAM and never become UI
+status text or preferences. Creator, own avatar and remote avatars share the same
+local semantic appearance mapping; physics remains server-authoritative.
 
-## Realm binding — v3.main.6.07
+Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
+fencing and bounded heartbeat remain active. Unknown outcomes never replay input or
+mutations; character mutation receipts reconcile only on explicit human action.
 
-`WorldSession` owns the active `{game_card_id, realm_id, realm_instance_id}` binding
-and world capabilities separately from `WorldReplica` (current zone observation).
-The successful Host `enter` binds it before any zone replica signal or map
-projection. This client accepts the `hello-kotone` card with its required gameplay
-capabilities; no world selector is added to Login.
+See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
+runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs
+below preserve architecture/history; their old Login/admission commands are
+superseded by the current flow:
 
-Protocol v6 requires the snapshot epoch to equal the bootstrapped instance.
-Network maps/world rules carry full identity and are rejected before presentation
-or cache writes when they belong to another card, realm or instance. Facts, state
-and input acknowledgments are fenced through the same instance epoch.
-Immutable cached map bytes may be reused by a fresh bound snapshot reference.
-Failure invalidates WorldSession while retaining only stale zone presentation;
-explicit reconnect clears both and starts fresh Login/ticket/Host enter.
-Host session_rules stays separate from Runtime/card world rules and capabilities.
-The removed world_id alias is replaced by identity.realm_id. Restart all services
-and Godot together when upgrading v5 to v6.
+- [World replica](docs/world-replica.md)
+- [Map presentation](docs/map-presentation.md)
+- [Human movement](docs/human-movement.md)
+- [Prediction/reconciliation](docs/prediction-reconciliation.md)
+- [Multiplayer presentation](docs/multiplayer-presentation.md)

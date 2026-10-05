@@ -16,7 +16,7 @@ func baseline(revision: int = 1, players: Array = []) -> Dictionary:
 		"players": [player()] if players.is_empty() else players.duplicate(true)}
 
 func event(kind: String, revision: int, value: Dictionary) -> Dictionary:
-	return {"protocol_version": 6, "type": "event", "event": kind, "epoch": "e1",
+	return {"protocol_version": 7, "type": "event", "event": kind, "epoch": "e1",
 		"zone_id": "city/apartment", "revision": revision,
 		"data": {"player_id": value.player_id} if kind == "left" else {"player": value.duplicate(true)}}
 

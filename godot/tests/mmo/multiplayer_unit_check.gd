@@ -13,7 +13,7 @@ func check(ok: bool, reason: String) -> void:
 	if not ok: failures.append(reason)
 
 func event(revision: int, player: Dictionary, kind: String) -> Dictionary:
-	return {"protocol_version":6,"type":"event","event":kind,"epoch":"e1","zone_id":"city/apartment","revision":revision,"data":{"player_id":player.player_id} if kind == "left" else {"player":player}}
+	return {"protocol_version":7,"type":"event","event":kind,"epoch":"e1","zone_id":"city/apartment","revision":revision,"data":{"player_id":player.player_id} if kind == "left" else {"player":player}}
 
 func start() -> void:
 	var replica := Replica.new()

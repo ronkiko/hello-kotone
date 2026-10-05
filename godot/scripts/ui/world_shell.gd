@@ -17,6 +17,10 @@ var _transition_pending := false
 
 func _ready() -> void:
 	leave_button.pressed.connect(_leave_world)
+	var signout := Button.new()
+	signout.text = "Sign out account"
+	signout.pressed.connect(Preworld.signout)
+	$Layout/Column.add_child(signout)
 	refresh_button.pressed.connect(MmoClient.request_state)
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
@@ -107,10 +111,10 @@ func _leave_world() -> void:
 
 func _on_state_changed(value: String) -> void:
 	_project_display()
-	leave_button.disabled = value != "READY"
+	leave_button.disabled = value not in ["READY", "MOVING"]
 	refresh_button.disabled = value != "READY" or (input_adapter != null and input_adapter.locomotion_intent != 0)
 	if value == "LOGGING_OUT":
-		status_label.text = "Leaving world..."
+		status_label.text = "Stopping and saving..."
 	elif value == "READY":
 		status_label.text = "A/D or arrows to walk."
 	elif value == "MOVING":

@@ -1,6 +1,7 @@
 extends Node2D
 ## Read-only projection. Replica facts plus an optional bounded display target.
-const Protocol = preload("res://scripts/mmo/protocol_v6.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Kotone = preload("res://scenes/kotone.tscn")
 const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
@@ -157,6 +158,8 @@ func _sync_players() -> void:
 	for id in remote_players.keys():
 		if not players.has(id) or id == local_id:
 			_remove_remote(id)
+	if players.has(local_id) and players[local_id].has("character"):
+		Appearance.install(sprite, players[local_id].character.appearance_payload)
 	local_label.text = "%s (you)" % players[local_id].nickname if players.has(local_id) else ""
 	for id in players:
 		if id == local_id:
@@ -169,6 +172,8 @@ func _sync_players() -> void:
 			remote_players[id] = node
 		remote_players[id].configure_motion(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
 		remote_players[id].suspended = _suspended
+		if players[id].has("character"):
+			Appearance.install(remote_players[id].sprite, players[id].character.appearance_payload)
 		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
 func _reframe() -> void:
