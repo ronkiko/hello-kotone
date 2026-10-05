@@ -66,11 +66,18 @@ func run() -> void:
 				Appearance.pose(own, false, direction, index)
 				check(own.position == Vector2(-128,-236) and own.scale == Vector2.ONE and platform.character_root.position == position, model + " directional idle preserves anchor")
 			var remote_gait := Gait.new()
-			remote_gait.idle_on_settle = false
+			remote_gait.observed_direction_without_intent = true
 			remote_gait.reset(other)
 			remote_gait.update(other, 0, direction * 3, direction * 3, 0, .1)
+			check(other.animation == Appearance.walk_animation(direction), model + " remote displacement selects observed walk direction")
 			remote_gait.update(other, direction * 3, direction * 3, direction * 3, 0, .1)
-			check(other.animation == Appearance.walk_animation(direction) and not other.flip_h, model + " remote arrival retains observed side without inventing release")
+			check(other.animation == Appearance.idle_animation(direction) and remote_gait.facing == direction and not other.flip_h, model + " remote arrival settles into observed directional idle")
+	# Direct helpers are total on malformed resources; package loading rejects them.
+	var malformed := AnimatedSprite2D.new()
+	malformed.sprite_frames = SpriteFrames.new()
+	Appearance.pose(malformed, false, -1, 7)
+	check(Appearance.idle_frame(malformed, 1.0, -1) == 0 and Appearance.walk_frame_count(malformed, -1) == 0, "directional helpers safely reject missing animation data")
+	malformed.free()
 	# Independent, asymmetric resources prove direction selection never synthesizes pixels.
 	var distinct := SpriteFrames.new()
 	distinct.remove_animation(&"default")
