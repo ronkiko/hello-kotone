@@ -27,13 +27,19 @@ func _ready() -> void:
 	Appearance.pose(sprite, false, 0, 0)
 	# Stable identity tint; labels remain readable even at the same server X.
 	sprite.modulate = Color.from_hsv(float(player_id.hash() & 255) / 255.0, 0.35, 1.0)
-	identity.position = Vector2(-64, -172 * Appearance.DISPLAY_SCALE - 18)
+	identity.position = Vector2(-64, -Appearance.display_height_px("kotone") - 18)
 	identity.size = Vector2(128, 18)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.add_theme_font_size_override("font_size", 11)
 	identity.add_theme_color_override("font_outline_color", Color.BLACK)
 	identity.add_theme_constant_override("outline_size", 3)
 	add_child(identity)
+
+func install_appearance(value: Dictionary) -> bool:
+	if not Appearance.install(sprite, value):
+		return false
+	identity.position.y = -Appearance.display_height_px(value.character_model_id) - 18
+	return true
 
 func configure_motion(step_units: int, interval_ms: int, units_per_meter: int, pixels_per_meter: float) -> void:
 	motion_profile.configure(step_units, interval_ms, units_per_meter, pixels_per_meter)
