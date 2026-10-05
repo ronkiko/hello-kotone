@@ -3,7 +3,8 @@
 `frame_tools.py` provides independent, atomic raster operations. It has no
 Godot/model/package dependency, no fixed frame size or pivot, and no automatic
 end-to-end flow. `character_assets.py` forwards these same commands as a client
-entry point; only `doctor`, `validate`, `build-spriteframes` know the MMO profile.
+entry point; only `doctor`, `validate`, `build-spriteframes` and
+`replay-recipe` know the MMO/repository profile.
 
 The agent chooses the source, operations and order. Inputs may be damaged sheets,
 new sheets with 512×512 cells, irregular pose layouts, or individual frames in
@@ -80,6 +81,16 @@ in raster operations or runtime. Coordinates use top-left origin/pixel centers.
 
 Kotone/Yuna are application data: 172/155 cm, 1 px/cm, canvas 256×256, pivot
 (128,236), ground y236. Source checksums, agent-chosen commands and individual
-reviewed plans live in `character_recipes/locomotion_v1/`. Recorded commands can
-be replayed deterministically; they are evidence of this conversion, not an
+reviewed plans live in `character_recipes/locomotion_v1/`. Raw locomotion
+sources live under repository-level `references/`, outside `res://assets`.
+Recorded commands can be replayed deterministically with:
+
+```text
+python godot/tools/character_assets.py replay-recipe \
+  godot/tools/character_recipes/locomotion_v1
+```
+
+Replay verifies every committed source SHA256, executes only atomic frame-tool
+operations into a temporary directory and requires byte-identical output against
+the committed canonical package. It is evidence of this conversion, not an
 algorithm that chooses flows for future art.
