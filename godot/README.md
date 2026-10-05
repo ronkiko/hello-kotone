@@ -73,6 +73,7 @@ Minimum locomotion package animations are `idle`, `walk_left`, and
 
 ```text
 python godot/tools/character_assets.py doctor
+python godot/tools/character_assets.py replay-recipe godot/tools/character_recipes/locomotion_v1
 python godot/tools/character_assets.py validate kotone yuna
 ```
 
@@ -81,13 +82,18 @@ The raster operations are independent tools in `tools/frame_tools.py`:
 `heuristic`, `place`, `render`. An agent chooses the flow and source coordinates.
 `prepare` takes physical height in cm plus px/cm, canvas, ground and pivot.
 `character_assets.py` forwards these operations and provides the MMO package
-validator/native Godot builder. See `tools/character_asset_llm_analysis.md`.
+validator/native Godot builder and deterministic committed-recipe replay. See
+`tools/character_asset_llm_analysis.md`.
 
 Kotone/Yuna locomotion is converted: 50 canonical PNG frames and two native
 SpriteFrames resources. Creator, own and remote visuals have unit sprite scale
 under the same 0.48 display transform; character roots are anchored at the floor.
-Original sheets remain source/reference material outside the active presenter.
-Recorded agent operations/plans and checksums are in `tools/character_recipes/`.
+Original locomotion sheets live outside the Godot runtime asset tree under
+`../references/kotone/v2/` and `../references/yuna/v1/`. The shipped
+`res://assets` tree contains only canonical runtime character content.
+Recorded agent operations/plans and checksums are in `tools/character_recipes/`;
+`replay-recipe` verifies source SHA256 and reproduces all canonical frames
+byte-for-byte in a temporary directory.
 Author visual acceptance is tracked in the shared 7.11 roadmap.
 
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
