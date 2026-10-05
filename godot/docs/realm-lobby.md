@@ -20,7 +20,8 @@ TLS rehearsal; a normal Internet server uses the system trust store.
 
 ## Human operation
 
-Start a fresh current world stand and open `godot/project.godot`:
+Run stand and validation commands from the neighboring `ai_research` repository
+root. Start a fresh current world stand and open `godot/project.godot`:
 
 ```bash
 ./v3/game/op/stand.sh init godot10 --profile world --port-base 22060
@@ -40,7 +41,7 @@ Unknown local model/content disables the stand and requires a client update.
 Delete requires a confirmation dialog and current selected generation.
 
 For Beta, use a separately provisioned `beta` stand/account as documented in
-[Beta security](beta-security.md); choose **Secure server**, the account/password,
+server `v3/game/docs/beta-security.md`; choose **Secure server**, the account/password,
 and its public Login endpoint. For the local rehearsal only, load that stand's
 `tls/localhost.pem` as the test CA. Never distribute the private key.
 
