@@ -7,6 +7,7 @@ var idle_elapsed := 0.0
 var facing := 1
 var walking := false
 var idle_on_settle := true
+var observed_direction_without_intent := false
 
 func configure(value: float) -> void:
 	cycle_pixels = maxf(value, 0.001)
@@ -21,11 +22,11 @@ func reset(sprite: AnimatedSprite2D) -> void:
 func update(sprite: AnimatedSprite2D, before: float, after: float, target: float, locomotion_intent: int, delta: float) -> void:
 	var distance := absf(after - before)
 	if distance > 0.0001:
-		# Local intent owns orientation; release correction preserves that view.
-		# Remote input is unknown, so observed displacement supplies its direction.
+		# Local intent owns orientation; reconciliation does not silently flip it.
+		# Remote presentation has no input, so it may opt into observed displacement.
 		if locomotion_intent != 0:
 			facing = -1 if locomotion_intent < 0 else 1
-		elif not idle_on_settle:
+		elif observed_direction_without_intent:
 			facing = -1 if after < before else 1
 		walking = true
 		idle_elapsed = 0.0
@@ -42,7 +43,7 @@ func update(sprite: AnimatedSprite2D, before: float, after: float, target: float
 
 	if not idle_on_settle:
 		walking = false
-		return # Remote release is unknown; freeze the last side pose.
+		return # Explicit opt-out for presentations that must freeze their last pose.
 
 	# Local release + completed reconciliation has an exact semantic meaning: idle.
 	if walking:
