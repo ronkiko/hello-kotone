@@ -59,8 +59,22 @@ do not encode model/state height through per-animation scaling. AnimatedSprite2D
 with SpriteFrames is the preferred future animation container once canonical
 256×256 assets are normalized.
 
-Existing pre-contract sheets remain source material until normalized; do not add
-new state-specific scale compensation for their arbitrary dimensions.
+Canonical animation authoring now uses **one 256×256 RGBA PNG per frame** under
+`assets/characters/<character_model_id>/<animation>/NNN.png`. Runtime animation
+metadata lives in the native Godot `SpriteFrames` resource
+`assets/characters/<character_model_id>/sprite_frames.tres`; manually-authored
+spritesheets are no longer the target runtime format.
+
+Minimum locomotion package animations are `idle`, `walk_left`, and
+`walk_right`. Validate a populated package with:
+
+```text
+python godot/tools/validate_character_frames.py kotone yuna
+```
+
+Existing pre-contract sheets remain source/reference material until their frames
+are extracted and normalized; do not add new state-specific scale compensation
+for their arbitrary dimensions.
 
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
 fencing and bounded heartbeat remain active. Unknown outcomes never replay input or
