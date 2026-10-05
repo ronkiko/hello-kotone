@@ -710,5 +710,9 @@
       "--output",
       "{output}/yuna/walk_left/007.png"
     ]
+  ],
+  "models": [
+    "kotone",
+    "yuna"
   ]
 }

@@ -34,7 +34,8 @@ rejects(lambda:packages.animation_spec_names(['idle_left=1:true','idle_left=2:tr
 
 recipe=packages.REPO_ROOT/'godot/tools/character_recipes/locomotion_v1/commands.json'
 manifest=json.loads(recipe.read_text())
-check(manifest.get('schema')==1 and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
+check(manifest.get('schema')==1 and manifest.get('models')==sorted(contract.models) and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
+check(sum(1 for model in manifest['models'] for _ in (packages.ASSET_ROOT/model).rglob('*.png'))==44,'recipe contract covers all 44 canonical frames')
 check(packages._tracked_repo_file(recipe),'recipe manifest is tracked by git')
 for source_entry in manifest['sources']:
     source_path=packages._repo_relative_path(source_entry['path'],'source path')
@@ -52,6 +53,12 @@ with tempfile.TemporaryDirectory() as temp:
     rejects(lambda:packages._assert_temporary_recipe_output(['place','--output',str(packages.REPO_ROOT/'bad.png')],p),'recipe output cannot write into repository')
     rejects(lambda:packages._assert_temporary_recipe_output(['place','--force','--output',str(p/'out.png')],p),'recipe replay forbids force')
     source=p/'source.png';source.write_bytes(b'source')
+    frame_spec=p/'frame.json';frame_spec.write_text('{}')
+    plan=recipe.parent/'kotone/idle_right/000.json'
+    packages._assert_recipe_inputs(['place','--source',str(source),'--frame-spec',str(frame_spec),'--plan',str(plan)],p,recipe.parent,set())
+    check(True,'temporary artifacts and tracked recipe plan are accepted as replay inputs')
+    rejects(lambda:packages._assert_recipe_inputs(['place','--source',str(packages.REPO_ROOT/'README.md')],p,recipe.parent,set()),'unverified repository source rejected')
+    rejects(lambda:packages._assert_recipe_inputs(['place','--plan',str(packages.REPO_ROOT/'README.md')],p,recipe.parent,set()),'plan outside recipe rejected')
     rejects(lambda:frames.output_file(source,[source],True),'force cannot mutate source')
     d=p/'frames';d.mkdir();(d/'000.png').touch();(d/'002.png').touch()
     rejects(lambda:packages.frame_files(d),'package frame gap rejected')

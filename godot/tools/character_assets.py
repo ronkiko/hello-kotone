@@ -196,6 +196,44 @@ def _assert_temporary_recipe_output(command: list[str], temp_root: Path) -> None
             raise ToolError("recipe output must stay inside temporary replay workspace") from exc
 
 
+def _assert_recipe_inputs(
+    command: list[str],
+    temp_root: Path,
+    recipe_root: Path,
+    verified_sources: set[Path],
+) -> None:
+    temp_root = temp_root.resolve()
+    recipe_root = recipe_root.resolve()
+    verified_sources = {path.resolve() for path in verified_sources}
+    for index, flag in enumerate(command[:-1]):
+        if flag not in {"--source", "--frame-spec", "--plan"}:
+            continue
+        path = Path(command[index + 1]).resolve()
+        if not path.exists():
+            raise ToolError(f"recipe input is missing: {path}")
+        if flag == "--source":
+            if path in verified_sources:
+                continue
+            try:
+                path.relative_to(temp_root)
+            except ValueError as exc:
+                raise ToolError(
+                    "recipe --source must be a verified committed source or a temporary replay artifact"
+                ) from exc
+        elif flag == "--frame-spec":
+            try:
+                path.relative_to(temp_root)
+            except ValueError as exc:
+                raise ToolError("recipe --frame-spec must be produced inside the temporary replay workspace") from exc
+        else:
+            try:
+                path.relative_to(recipe_root)
+            except ValueError as exc:
+                raise ToolError("recipe --plan must stay inside the committed recipe directory") from exc
+            if not _tracked_repo_file(path):
+                raise ToolError(f"{path.relative_to(REPO_ROOT)}: recipe plan is not tracked by git")
+
+
 def _expand_recipe_command(command: list, values: dict[str, str]) -> list[str]:
     if not isinstance(command, list) or not command:
         raise ToolError("recipe command must be a non-empty array")
@@ -224,12 +262,22 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         not isinstance(manifest, dict)
         or type(manifest.get("schema")) is not int
         or manifest.get("schema") != 1
+        or not isinstance(manifest.get("models"), list)
         or not isinstance(manifest.get("sources"), list)
         or not isinstance(manifest.get("commands"), list)
     ):
         raise ToolError("invalid recipe manifest")
+    models = manifest["models"]
+    if (
+        not models
+        or any(not isinstance(model, str) or MODEL_RE.fullmatch(model) is None for model in models)
+        or models != sorted(set(models))
+        or models != sorted(load_contract().models)
+    ):
+        raise ToolError("recipe models must exactly match the metric character contract")
 
     verified_sources = 0
+    verified_source_paths: set[Path] = set()
     for source in manifest["sources"]:
         if not isinstance(source, dict):
             raise ToolError("recipe source entry must be an object")
@@ -245,6 +293,10 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         actual = hashlib.sha256(path.read_bytes()).hexdigest()
         if actual != expected:
             raise ToolError(f"{raw_path}: source sha256 mismatch")
+        resolved_source = path.resolve()
+        if resolved_source in verified_source_paths:
+            raise ToolError(f"{raw_path}: duplicate recipe source")
+        verified_source_paths.add(resolved_source)
         verified_sources += 1
 
     with tempfile.TemporaryDirectory(prefix="character-recipe-") as temp:
@@ -267,6 +319,7 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         for raw in manifest["commands"]:
             command = _expand_recipe_command(raw, values)
             _assert_temporary_recipe_output(command, temp_root)
+            _assert_recipe_inputs(command, temp_root, recipe, verified_source_paths)
             process = subprocess.run(
                 [sys.executable, str(FRAME_TOOLS_PATH), *command],
                 cwd=REPO_ROOT,
@@ -286,8 +339,7 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         if not generated:
             raise ToolError("recipe generated no canonical PNG frames")
         relative = [path.relative_to(output) for path in generated]
-        models = sorted({path.parts[0] for path in relative if len(path.parts) >= 3})
-        if not models:
+        if any(len(path.parts) < 3 for path in relative):
             raise ToolError("recipe output has no model/animation/frame hierarchy")
 
         expected_paths: list[Path] = []
