@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "frame": {
+    "width_px": 256,
+    "height_px": 256
+  },
+  "anchor": {
+    "semantic": "ground_contact_center",
+    "pivot_x_px": 128,
+    "pivot_y_px": 236,
+    "baseline_y_px": 236
+  },
+  "safe_area": {
+    "left_px": 8,
+    "top_px": 8,
+    "right_px": 248,
+    "bottom_px": 244
+  },
+  "validation": {
+    "root_drift_tolerance_px": 1,
+    "allow_state_specific_scale": false
+  },
+  "models": {
+    "kotone": {
+      "nominal_standing_height_px": 192
+    },
+    "yuna": {
+      "nominal_standing_height_px": 176
+    }
+  }
+}
