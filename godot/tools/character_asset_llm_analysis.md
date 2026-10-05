@@ -12,6 +12,8 @@ Inputs:
 - `analysis-packet.json`;
 - optionally the original extracted source frames.
 
+- optionally a `detect-plan` heuristic draft produced by the tool.
+
 Your task is **analysis only**. Do not redraw, edit, upscale, clean, crop, or
 otherwise transform pixels.
 
@@ -20,6 +22,10 @@ Return one JSON object compatible with:
 ```text
 godot/tools/character_asset_normalization_plan.schema.json
 ```
+
+If a heuristic draft is supplied, treat it only as a suggestion. Check every
+root against the images and replace `analysis.method = "script_heuristic"` with
+`"llm_reviewed_heuristic"` only after review.
 
 ## Required semantic decisions
 
