@@ -85,7 +85,7 @@ The raster operations are independent tools in `tools/frame_tools.py`:
 validator/native Godot builder and deterministic committed-recipe replay. See
 `tools/character_asset_llm_analysis.md`.
 
-Kotone/Yuna locomotion is converted: 50 canonical PNG frames and two native
+Kotone/Yuna locomotion is converted: 36 canonical PNG frames and two native
 SpriteFrames resources. Creator, own and remote visuals have unit sprite scale
 under the same 0.48 display transform; character roots are anchored at the floor.
 Original locomotion sheets live outside the Godot runtime asset tree under

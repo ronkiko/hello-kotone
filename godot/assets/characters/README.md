@@ -70,7 +70,7 @@ uses a reviewed plan for one pose and performs a single uniform source transform
 
 Current source/checksum/plan/operation evidence is in
 `tools/character_recipes/locomotion_v1`. Kotone has 6 frames per animation; Yuna
-has 16 idle and 8 walk frames. Yuna left is an offline source mirror, with
+has 2 calm idle and 8 walk frames; its idle profile is 0.5 fps. Yuna left is an offline source mirror, with
 x_left=width−1−x_right. Yuna idle discards alpha <=5% extraction residue offline.
 No runtime matte/geometry correction is applied.
 

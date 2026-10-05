@@ -114,6 +114,18 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	check(peer.sent[-1].payload.get("idempotency_key", remembered.payload.idempotency_key) == remembered.payload.idempotency_key, "explicit retry uses identical key")
+	pre._receipts.clear()
+	for index in range(8):
+		pre._receipts["old-account-%d/hello-kotone/old-realm" % index] = remembered.duplicate(true)
+	scope()
+	pre.state = "CREATOR"
+	pre.catalog = {"appearance_schema_version": 2}
+	peer.connected_ok = true
+	peer.reply = {}
+	var sent_before := peer.sent.size()
+	await pre.create_character("New Alice", record().appearance_payload)
+	check(peer.sent.size() == sent_before + 1 and peer.sent[-1].op == "character_create" and pre.mutation_pending, "unresolved receipts in other scopes do not block create")
+	check(pre._receipts.size() == 9, "new ambiguous mutation preserves older receipts")
 	pre.logout_account()
 	scope()
 	peer.connected_ok = true

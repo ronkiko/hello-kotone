@@ -168,10 +168,8 @@ func show_creator() -> void:
 
 func create_character(display: String, payload: Dictionary) -> void:
 	if state != "CREATOR" or mutation_pending: return
-	if _receipts.size() >= 8:
-		error = {"phase": "Lobby", "code": "PENDING_OPERATION_LIMIT", "outcome_unknown": false}
-		changed.emit()
-		return
+	# An unknown mutation fences this account/realm only. Receipts in other
+	# scopes are retained for explicit reconciliation and must not block this one.
 	_mutation = {"op": "character_create", "scope": {"account_id": account_id, "game_card_id": realm.game_card_id, "realm_id": realm.realm_id},
 		"payload": {"idempotency_key": Crypto.new().generate_random_bytes(16).hex_encode(), "display_name": display,
 		"appearance_schema_version": catalog.appearance_schema_version, "appearance_payload": payload.duplicate(true)}}
@@ -179,7 +177,6 @@ func create_character(display: String, payload: Dictionary) -> void:
 
 func delete_selected() -> void:
 	if state != "LOBBY" or selection.is_empty() or mutation_pending: return
-	if _receipts.size() >= 8: return
 	_mutation = {"op": "character_delete", "scope": {"account_id": account_id, "game_card_id": realm.game_card_id, "realm_id": realm.realm_id},
 		"payload": {"idempotency_key": Crypto.new().generate_random_bytes(16).hex_encode(), "character_id": selection.character.character_id,
 		"character_generation": selection.character_generation}}

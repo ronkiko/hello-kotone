@@ -3,7 +3,6 @@ extends Control
 const WORLD_SCENE := "res://scenes/mmo/world.tscn"
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const ERRORS := {
-	"PENDING_OPERATION_LIMIT": "Reconcile a pending character operation before starting another.",
 	"AUTH_FAILED": "Sign-in failed. Check your account and password.",
 	"REAUTH_REQUIRED": "Sign in again to choose a realm.",
 	"NAME_TAKEN": "That character name is taken.",

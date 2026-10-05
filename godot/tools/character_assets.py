@@ -35,6 +35,9 @@ LLM_PROTOCOL_PATH = GODOT_ROOT / "tools" / "character_asset_llm_analysis.md"
 SPRITEFRAMES_BUILDER = "res://tools/build_character_spriteframes.gd"
 REQUIRED_ANIMATIONS = ("idle", "walk_left", "walk_right")
 DEFAULT_ANIMATION_SPECS = ("idle=3.333333:true", "walk_left=8:true", "walk_right=8:true")
+MODEL_ANIMATION_SPECS = {
+    "yuna": ("idle=0.5:true", "walk_left=8:true", "walk_right=8:true"),
+}
 
 
 @dataclass(frozen=True)
@@ -455,7 +458,7 @@ def command_build_spriteframes(args: argparse.Namespace) -> None:
     if not root.is_dir():
         raise ToolError(f"{root}: model package is missing")
 
-    specs = args.animation or list(DEFAULT_ANIMATION_SPECS)
+    specs = args.animation or list(MODEL_ANIMATION_SPECS.get(model_id, DEFAULT_ANIMATION_SPECS))
     seen: set[str] = set()
     for spec in specs:
         match = re.fullmatch(
