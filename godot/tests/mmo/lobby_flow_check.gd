@@ -10,6 +10,7 @@ var sync := ""
 var output := ""
 var failed := false
 var shell: Node
+var remote_idle_results: Array = []
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -76,10 +77,53 @@ func mark(label: String) -> void:
 	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
 	file.store_string("ready")
 
+func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
+	var side := "left" if direction < 0 else "right"
+	var prefix := "directional-" + side
+	var other_role := 3 - role
+	var renderer: Node = world.platform.remote_players[remote_id]
+	world.input_adapter.set_process(false)
+	mark(prefix + "-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-ready%d" % other_role)), side + " both windows ready"): return false
+	var start_x: int = client.world_replica.local_player().x
+	world.input_adapter._set_locomotion_intent(direction)
+	if not await wait_until(func(): return direction * (client.world_replica.local_player().get("x", start_x) - start_x) >= 4, side + " authoritative displacement"): return false
+	world.input_adapter._set_locomotion_intent(0)
+	if not await wait_until(func(): return client._server_input == "stop" and client.state == "READY", side + " acknowledged stop"): return false
+	var final_x: int = client.world_replica.local_player().x
+	var marker_path := sync.path_join(prefix + "-stop%d" % role)
+	var marker := FileAccess.open(marker_path + ".tmp", FileAccess.WRITE)
+	marker.store_string(str(final_x))
+	marker.close()
+	check(DirAccess.rename_absolute(marker_path + ".tmp", marker_path) == OK, side + " stop marker published atomically")
+	var peer_stop := sync.path_join(prefix + "-stop%d" % other_role)
+	if not await wait_until(func(): return FileAccess.file_exists(peer_stop), side + " peer stopped"): return false
+	var peer_x := int(FileAccess.get_file_as_string(peer_stop))
+	var expected := Appearance.idle_animation(direction)
+	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("x", -99999) == peer_x and is_equal_approx(renderer.visual_x, renderer.target_x) and renderer.sprite.animation == expected, side + " remote settled directional idle"): return false
+	if not await wait_until(func(): return world.platform.sprite.animation == expected and is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(final_x)), side + " own settled directional idle"): return false
+	check(renderer.gait.facing == direction and not renderer.gait.walking, side + " remote retains observed direction at rest")
+	check(not renderer.sprite.flip_h and not renderer.sprite.flip_v and renderer.sprite.scale == Vector2.ONE and renderer.sprite.position == Vector2(-128, -236), side + " remote uses authored direction with canonical anchor")
+	var first_frame: int = renderer.sprite.frame
+	var target_x: float = renderer.target_x
+	await screenshot("remote-idle-" + side)
+	if DisplayServer.get_name() != "headless":
+		check(FileAccess.file_exists(output.path_join("peer%d-remote-idle-%s.png" % [role, side])), side + " rendered window screenshot saved")
+	if not await wait_until(func(): return renderer.sprite.animation == expected and renderer.sprite.frame != first_frame, side + " remote idle frame advances", 5.0): return false
+	check(is_equal_approx(renderer.visual_x, target_x) and is_equal_approx(renderer.target_x, target_x), side + " idle animation leaves remote position unchanged")
+	remote_idle_results.append({"side": side, "remote_model": renderer.sprite.get_meta("character_model_id"), "animation": String(renderer.sprite.animation), "first_frame": first_frame, "next_frame": renderer.sprite.frame, "confirmed_x": peer_x, "rendered_x": renderer.visual_x, "target_x": renderer.target_x, "flip_h": renderer.sprite.flip_h, "visual_origin": [renderer.sprite.position.x, renderer.sprite.position.y], "display_backend": DisplayServer.get_name()})
+	mark(prefix + "-observed%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-observed%d" % other_role)), side + " both windows observed idle"): return false
+	return true
+
 func _run() -> void:
 	client = root.get_node("MmoClient")
 	pre = root.get_node("Preworld")
 	role = int(OS.get_environment("LOBBY09_ROLE"))
+	if DisplayServer.get_name() != "headless":
+		root.title = "7.11 peer %d - %s" % [role, "Kotone" if role == 1 else "Yuna"]
+		root.size = Vector2i(780, 440)
+		root.position = Vector2i(10 + (role - 1) * 800, 80)
 	sync = OS.get_environment("LOBBY09_SYNC")
 	output = OS.get_environment("LOBBY09_OUTPUT")
 	DirAccess.make_dir_recursive_absolute(output)
@@ -185,6 +229,9 @@ func _run() -> void:
 	await screenshot("multiplayer")
 	mark("observed%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("observed%d" % (3-role))), "peer observations complete"): quit(1); return
+	for direction in [-1, 1]:
+		if not await verify_remote_idle(world, remote_id, direction): quit(1); return
+	world.input_adapter.set_process(true)
 	var before: int = client.world_replica.local_player().x
 	check(client.set_input("right"), "held input sent")
 	if not await wait_until(func(): return client.world_replica.local_player().get("x", before) > before, "authoritative movement"): quit(1); return
@@ -221,5 +268,5 @@ func _run() -> void:
 		await press("Sign out account")
 		if not await wait_until(func(): return pre.state == "LOGIN" and current_scene.scene_file_path.ends_with("login.tscn"), "account logout from World flushes first"): quit(1); return
 	check(pre.state == "LOGIN" and pre.account_id == "" and client.session_id == "" and pre._binding.is_empty(), "account logout clears all authority")
-	print("LOBBY09_RESULT ", JSON.stringify({"role": role, "checks": checks, "passed": not failed}))
+	print("LOBBY09_RESULT ", JSON.stringify({"role": role, "checks": checks, "passed": not failed, "display_backend": DisplayServer.get_name(), "remote_idle": remote_idle_results}))
 	quit(1 if failed else 0)
