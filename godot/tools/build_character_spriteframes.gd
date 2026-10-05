@@ -121,7 +121,10 @@ func _run() -> void:
 			return
 		frames.add_animation(animation)
 		frames.set_animation_speed(animation, float(parsed.fps))
-		frames.set_animation_loop(animation, bool(parsed.loop))
+		frames.set_animation_loop_mode(
+			animation,
+			SpriteFrames.LOOP_LINEAR if bool(parsed.loop) else SpriteFrames.LOOP_NONE,
+		)
 		for file in files:
 			var path := "%s/%s" % [directory, file]
 			var texture := load(path) as Texture2D
