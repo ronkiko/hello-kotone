@@ -1,0 +1,84 @@
+extends RefCounted
+## Canonical 2D character sprite-frame ABI.
+##
+## The numbers live in a machine-readable manifest so art tooling/tests can use
+## the same contract. Runtime world position never depends on bitmap bounds.
+
+const MANIFEST_PATH := "res://assets/mmo/character_sprite_frame_contract_v1.json"
+
+static var _cached: Dictionary = {}
+
+static func load_contract() -> Dictionary:
+	if not _cached.is_empty():
+		return _cached.duplicate(true)
+	var file := FileAccess.open(MANIFEST_PATH, FileAccess.READ)
+	if file == null:
+		return {}
+	var value: Variant = JSON.parse_string(file.get_as_text())
+	if not value is Dictionary or not validate(value):
+		return {}
+	_cached = value.duplicate(true)
+	return _cached.duplicate(true)
+
+static func validate(value: Dictionary) -> bool:
+	if value.get("schema") != 1:
+		return false
+	var frame: Variant = value.get("frame")
+	var anchor: Variant = value.get("anchor")
+	var safe: Variant = value.get("safe_area")
+	var validation: Variant = value.get("validation")
+	var models: Variant = value.get("models")
+	if not frame is Dictionary or not anchor is Dictionary or not safe is Dictionary:
+		return false
+	if not validation is Dictionary or not models is Dictionary:
+		return false
+	if frame.get("width_px") != 256 or frame.get("height_px") != 256:
+		return false
+	if anchor.get("semantic") != "ground_contact_center":
+		return false
+	if anchor.get("pivot_x_px") != 128 or anchor.get("pivot_y_px") != 236:
+		return false
+	if anchor.get("baseline_y_px") != 236:
+		return false
+	if safe.get("left_px") != 8 or safe.get("top_px") != 8:
+		return false
+	if safe.get("right_px") != 248 or safe.get("bottom_px") != 244:
+		return false
+	if validation.get("root_drift_tolerance_px") != 1:
+		return false
+	if validation.get("allow_state_specific_scale") != false:
+		return false
+	if models.is_empty():
+		return false
+	for model_id in models:
+		var model: Variant = models[model_id]
+		if not model is Dictionary:
+			return false
+		var height: Variant = model.get("nominal_standing_height_px")
+		if not height is int or height <= 0 or height >= 236:
+			return false
+	return true
+
+static func frame_size() -> Vector2i:
+	var value := load_contract()
+	if value.is_empty():
+		return Vector2i.ZERO
+	return Vector2i(value.frame.width_px, value.frame.height_px)
+
+static func pivot() -> Vector2i:
+	var value := load_contract()
+	if value.is_empty():
+		return Vector2i.ZERO
+	return Vector2i(value.anchor.pivot_x_px, value.anchor.pivot_y_px)
+
+static func nominal_height(character_model_id: String) -> int:
+	var value := load_contract()
+	if value.is_empty() or not value.models.has(character_model_id):
+		return 0
+	return int(value.models[character_model_id].nominal_standing_height_px)
+
+static func sheet_geometry_matches(image: Image, columns: int, rows: int) -> bool:
+	if image == null or columns <= 0 or rows <= 0:
+		return false
+	var size := frame_size()
+	return image.get_width() == size.x * columns and image.get_height() == size.y * rows
