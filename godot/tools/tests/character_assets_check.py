@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Parser/contract checks; no raster runtime dependency."""
+import hashlib
 import json
 import sys
 import tempfile
@@ -27,6 +28,19 @@ for change in ({'source_root_px':[0,float('inf')]},{'source_body_height_px':True
     rejects(lambda: frames.placement_plan({**plan,**change}),'invalid or unreviewed placement rejected')
 contract=packages.load_contract()
 check(contract.target_height_px('kotone')==172 and contract.target_height_px('yuna')==155,'MMO projection is a separate consumer')
+
+recipe=packages.REPO_ROOT/'godot/tools/character_recipes/locomotion_v1/commands.json'
+manifest=json.loads(recipe.read_text())
+check(manifest.get('schema')==1 and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
+for source_entry in manifest['sources']:
+    source_path=packages._repo_relative_path(source_entry['path'],'source path')
+    check(source_path.is_file(),source_entry['id']+' source is committed')
+    check(hashlib.sha256(source_path.read_bytes()).hexdigest()==source_entry['sha256'],source_entry['id']+' source checksum')
+check(all(not item['path'].startswith('godot/assets/') for item in manifest['sources']),'raw locomotion sources live outside Godot runtime assets')
+check(not list((packages.GODOT_ROOT/'assets').glob('kotone_v2_*.png')) and not list((packages.GODOT_ROOT/'assets').glob('yuna_v1_*.png')),'legacy raw sheets absent from Godot assets')
+check(packages._expand_recipe_command(['place','--source','{repo}/references/a.png'],{'{repo}':'/repo'})==['place','--source','/repo/references/a.png'],'recipe placeholders expand deterministically')
+rejects(lambda:packages._expand_recipe_command(['place','--source','{mystery}/a.png'],{}),'unknown recipe placeholder rejected')
+rejects(lambda:packages._repo_relative_path('../outside.png','source path'),'recipe source traversal rejected')
 with tempfile.TemporaryDirectory() as temp:
     p=Path(temp);source=p/'source.png';source.write_bytes(b'source')
     rejects(lambda:frames.output_file(source,[source],True),'force cannot mutate source')
