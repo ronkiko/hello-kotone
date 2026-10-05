@@ -37,6 +37,7 @@ GODOT_ROOT = Path(__file__).resolve().parents[1]
 ASSET_ROOT = GODOT_ROOT / "assets" / "characters"
 CONTRACT_PATH = GODOT_ROOT / "assets" / "mmo" / "character_sprite_frame_contract_v1.json"
 PLAN_SCHEMA_PATH = GODOT_ROOT / "tools" / "character_asset_normalization_plan.schema.json"
+LLM_PROTOCOL_PATH = GODOT_ROOT / "tools" / "character_asset_llm_analysis.md"
 SPRITEFRAMES_BUILDER = "res://tools/build_character_spriteframes.gd"
 REQUIRED_ANIMATIONS = ("idle", "walk_left", "walk_right")
 DEFAULT_ANIMATION_SPECS = ("idle=3.333333:true", "walk_left=8:true", "walk_right=8:true")
@@ -547,6 +548,7 @@ def command_inspect(args: argparse.Namespace) -> None:
             "Optional source_cleanup may specify a matte transparent_color and fuzz_percent.",
         ],
         "plan_schema": str(PLAN_SCHEMA_PATH),
+        "llm_analysis_protocol": str(LLM_PROTOCOL_PATH),
     }
     (output / "analysis-packet.json").write_text(
         json.dumps(packet, indent=2) + "\n", encoding="utf-8"
