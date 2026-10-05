@@ -19,9 +19,11 @@ import math
 import os
 import re
 import shutil
+import statistics
 import struct
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -301,8 +303,11 @@ def load_plan(path: Path, contract: Contract) -> dict:
     if set(analysis) - {"author", "method", "confidence", "notes"}:
         raise ToolError(f"{path}: unknown analysis fields")
     if "method" in analysis and analysis["method"] not in {
+        "script_heuristic",
         "human",
         "llm",
+        "llm_reviewed_heuristic",
+        "human_reviewed_heuristic",
         "human_reviewed_llm",
     }:
         raise ToolError(f"{path}: invalid analysis.method")
@@ -450,6 +455,158 @@ def grid_draw(width: int, height: int, step: int) -> str:
     return " ".join(commands)
 
 
+def cleaned_probe(
+    im: ImageMagick,
+    source: Path,
+    destination: Path,
+    transparent_color: str | None,
+    fuzz_percent: float,
+) -> Path:
+    command: list[str] = [*im.convert, str(source), "-alpha", "on"]
+    if transparent_color:
+        command += [
+            "-fuzz",
+            f"{fuzz_percent:.6g}%",
+            "-transparent",
+            transparent_color,
+        ]
+    command += [f"PNG32:{destination}"]
+    run(command)
+    return destination
+
+
+def heuristic_root(
+    im: ImageMagick,
+    source: Path,
+    *,
+    transparent_color: str | None,
+    fuzz_percent: float,
+    workdir: Path,
+) -> tuple[tuple[float, float], tuple[int, int, int, int]]:
+    probe = cleaned_probe(
+        im,
+        source,
+        workdir / f"{source.stem}-probe.png",
+        transparent_color,
+        fuzz_percent,
+    )
+    bbox = alpha_bbox(im, probe)
+    if bbox is None:
+        raise ToolError(f"{source}: heuristic detector found no visible silhouette")
+    x, y, width, height = bbox
+    image_width, _ = identify_geometry(im, probe)
+    band_height = max(4, int(round(height * 0.08)))
+    band_y = max(y, y + height - band_height)
+    band_height = y + height - band_y
+    band = workdir / f"{source.stem}-feet.png"
+    run(
+        (
+            *im.convert,
+            probe,
+            "-crop",
+            f"{image_width}x{band_height}+0+{band_y}",
+            "+repage",
+            f"PNG32:{band}",
+        )
+    )
+    foot_bbox = alpha_bbox(im, band)
+    if foot_bbox is None:
+        root_x = x + width / 2.0
+    else:
+        foot_x, _, foot_width, _ = foot_bbox
+        root_x = foot_x + foot_width / 2.0
+    root_y = y + height - 1.0
+    return (root_x, root_y), bbox
+
+
+def command_detect_plan(args: argparse.Namespace) -> None:
+    im = find_imagemagick()
+    contract = load_contract()
+    model_id = validate_id(args.model, "character_model_id", MODEL_RE)
+    animation_id = validate_id(args.animation, "animation_id", ANIMATION_RE)
+    contract.target_height_px(model_id)
+    source_dir = args.source_dir.resolve()
+    frames = frame_files(source_dir)
+
+    transparent_color = args.transparent_color
+    if transparent_color and re.fullmatch(r"#[0-9A-Fa-f]{6}", transparent_color) is None:
+        raise ToolError("--transparent-color must be #RRGGBB")
+    if not 0 <= args.fuzz_percent <= 25:
+        raise ToolError("--fuzz-percent must be in [0,25]")
+    if args.fuzz_percent and not transparent_color:
+        raise ToolError("--fuzz-percent requires --transparent-color")
+
+    heights: list[float] = []
+    planned_frames: list[dict] = []
+    with tempfile.TemporaryDirectory(prefix="character-asset-detect-") as temp:
+        workdir = Path(temp)
+        for frame in frames:
+            root, bbox = heuristic_root(
+                im,
+                frame,
+                transparent_color=transparent_color,
+                fuzz_percent=args.fuzz_percent,
+                workdir=workdir,
+            )
+            heights.append(float(bbox[3]))
+            planned_frames.append(
+                {
+                    "file": frame.name,
+                    "source_root_px": [round(root[0], 3), round(root[1], 3)],
+                    "confidence": 0.55,
+                    "notes": "Heuristic bottom-silhouette root; review against analysis board.",
+                }
+            )
+
+    source_body_height = float(statistics.median(heights))
+    spread = (
+        statistics.pstdev(heights) / source_body_height
+        if len(heights) > 1 and source_body_height > 0
+        else 0.0
+    )
+    confidence = max(0.25, min(0.65, 0.62 - spread))
+    plan = {
+        "schema": 1,
+        "character_model_id": model_id,
+        "animation_id": animation_id,
+        "source_body_height_px": round(source_body_height, 3),
+        "analysis": {
+            "method": "script_heuristic",
+            "confidence": round(confidence, 3),
+            "notes": (
+                "Draft only. Body height is median alpha-silhouette height and root "
+                "is estimated from the bottom 8% silhouette. Review with LLM/human "
+                "before normalize; alpha geometry is diagnostic, not semantic authority."
+            ),
+        },
+        "frames": planned_frames,
+    }
+    if transparent_color:
+        plan["source_cleanup"] = {
+            "transparent_color": transparent_color,
+            "fuzz_percent": args.fuzz_percent,
+        }
+
+    output = args.output.resolve()
+    if output.exists() and not args.force:
+        raise ToolError(f"{output}: already exists; use --force to replace")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "result": "PASS_DRAFT",
+                "plan": str(output),
+                "frames": len(frames),
+                "source_body_height_px": source_body_height,
+                "confidence": confidence,
+                "review_required": True,
+            },
+            indent=2,
+        )
+    )
+
+
 def command_inspect(args: argparse.Namespace) -> None:
     im = find_imagemagick()
     contract = load_contract()
@@ -570,6 +727,12 @@ def command_normalize(args: argparse.Namespace) -> None:
     im = find_imagemagick()
     contract = load_contract()
     plan = load_plan(args.plan.resolve(), contract)
+    method = plan.get("analysis", {}).get("method")
+    if method == "script_heuristic" and not args.accept_unreviewed_heuristic:
+        raise ToolError(
+            "normalization plan is an unreviewed script_heuristic draft; "
+            "review it with an LLM/human or pass --accept-unreviewed-heuristic explicitly"
+        )
     source_dir = args.source_dir.resolve()
     source_frames = frame_files(source_dir)
     planned_names = [item["file"] for item in plan["frames"]]
@@ -850,6 +1013,19 @@ def build_parser() -> argparse.ArgumentParser:
     inspect.add_argument("--force", action="store_true")
     inspect.set_defaults(func=command_inspect)
 
+    detect = sub.add_parser(
+        "detect-plan",
+        help="create a low-confidence heuristic draft normalization plan",
+    )
+    detect.add_argument("--model", required=True)
+    detect.add_argument("--animation", required=True)
+    detect.add_argument("--source-dir", type=Path, required=True)
+    detect.add_argument("--output", type=Path, required=True)
+    detect.add_argument("--transparent-color")
+    detect.add_argument("--fuzz-percent", type=float, default=0.0)
+    detect.add_argument("--force", action="store_true")
+    detect.set_defaults(func=command_detect_plan)
+
     normalize = sub.add_parser(
         "normalize",
         help="apply an explicit LLM/human normalization plan with ImageMagick",
@@ -859,6 +1035,11 @@ def build_parser() -> argparse.ArgumentParser:
     normalize.add_argument("--output-dir", type=Path, required=True)
     normalize.add_argument("--report", type=Path)
     normalize.add_argument("--force", action="store_true")
+    normalize.add_argument(
+        "--accept-unreviewed-heuristic",
+        action="store_true",
+        help="explicitly allow a script_heuristic draft without LLM/human review",
+    )
     normalize.set_defaults(func=command_normalize)
 
     validate = sub.add_parser("validate", help="validate canonical character packages")
