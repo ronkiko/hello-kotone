@@ -39,6 +39,9 @@ func run() -> void:
 		check(shell.preview.sprite_frames == own.sprite_frames and other.sprite_frames == own.sprite_frames, model + " Creator own remote same resource")
 		check(own.scale == Vector2.ONE and own.position == Vector2(-128,-236), model + " canonical visual transform")
 		check(shell.preview.get_parent().scale == own.get_parent().scale and other.get_parent().scale == own.get_parent().scale, model + " common display transform")
+		var expected_height := Appearance.display_height_px(model)
+		check(is_equal_approx(platform.local_label.position.y, Platform.FLOOR_Y - expected_height - 18), model + " local label follows metric height")
+		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
 		gait.configure(10)
