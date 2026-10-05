@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""MMO package validation/Godot build adapter and entry point for frame_tools.
+"""MMO package adapter and entry point for frame_tools.
 
 Raster commands delegate to independent atomic tools; the agent owns their flow.
-Only validate/build-spriteframes use this application's model/frame contract.
+Validate/build use the model/frame contract. Replay verifies committed recipe
+inputs and reproduces canonical outputs only inside a temporary workspace.
 """
 from __future__ import annotations
 import argparse
@@ -163,6 +164,35 @@ def _recipe_root(path: Path) -> Path:
     return root
 
 
+def _tracked_repo_file(path: Path) -> bool:
+    resolved = path.resolve()
+    try:
+        relative = resolved.relative_to(REPO_ROOT.resolve())
+    except ValueError:
+        return False
+    process = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", relative.as_posix()],
+        cwd=REPO_ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return process.returncode == 0
+
+
+def _assert_temporary_recipe_output(command: list[str], temp_root: Path) -> None:
+    if "--force" in command:
+        raise ToolError("committed recipe replay forbids --force")
+    for index, item in enumerate(command[:-1]):
+        if item != "--output":
+            continue
+        output = Path(command[index + 1]).resolve()
+        try:
+            output.relative_to(temp_root.resolve())
+        except ValueError as exc:
+            raise ToolError("recipe output must stay inside temporary replay workspace") from exc
+
+
 def _expand_recipe_command(command: list, values: dict[str, str]) -> list[str]:
     if not isinstance(command, list) or not command:
         raise ToolError("recipe command must be a non-empty array")
@@ -207,6 +237,8 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         path = _repo_relative_path(raw_path, "source path")
         if not path.is_file():
             raise ToolError(f"{path}: committed recipe source is missing")
+        if not _tracked_repo_file(path):
+            raise ToolError(f"{raw_path}: recipe source is not tracked by git")
         actual = hashlib.sha256(path.read_bytes()).hexdigest()
         if actual != expected:
             raise ToolError(f"{raw_path}: source sha256 mismatch")
@@ -224,9 +256,14 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
             "{recipe}": str(recipe),
             "{output}": str(output),
         }
+        for recipe_file in recipe.rglob("*"):
+            if recipe_file.is_file() and not _tracked_repo_file(recipe_file):
+                raise ToolError(f"{recipe_file.relative_to(REPO_ROOT)}: recipe input is not tracked by git")
+
         operations = 0
         for raw in manifest["commands"]:
             command = _expand_recipe_command(raw, values)
+            _assert_temporary_recipe_output(command, temp_root)
             process = subprocess.run(
                 [sys.executable, str(FRAME_TOOLS_PATH), *command],
                 cwd=REPO_ROOT,
