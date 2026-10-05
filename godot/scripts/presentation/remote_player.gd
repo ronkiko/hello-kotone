@@ -17,7 +17,7 @@ var motion_profile := MotionProfile.new()
 var gait := GaitAnimator.new()
 
 func _ready() -> void:
-	gait.idle_on_settle = false
+	gait.observed_direction_without_intent = true
 	visual_layer.name = "CharacterVisualLayer"
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
 	add_child(visual_layer)
@@ -65,6 +65,7 @@ func _process(delta: float) -> void:
 	# Sprite/node edits cannot change the confirmed target.
 	position.x = visual_x
 	sprite.position = Vector2(Appearance.Library.FrameContract.visual_origin_offset())
-	# Remote input is intentionally unknown. Actual displacement drives walk;
-	# Arrival freezes the last side pose without inventing remote input state.
+	# Remote input is intentionally unknown. Actual displacement supplies facing;
+	# reaching the displayed target means zero visual velocity, so use directional
+	# idle without claiming anything about the remote player's held input.
 	gait.update(sprite, before, visual_x, target_x, 0, delta)
