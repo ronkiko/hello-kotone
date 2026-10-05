@@ -43,14 +43,24 @@ plaintext fallback. Local development accepts only literal loopback and dev acco
 status text or preferences. Creator, own avatar and remote avatars share the same
 local Kotone/Yuna semantic appearance mapping with canonical `character_model_id`; physics remains server-authoritative.
 
-Raster humanoid art now has a client-side machine contract:
+Raster humanoid art has a client-side machine contract:
 `assets/mmo/character_sprite_frame_contract_v1.json`, loaded by
 `scripts/presentation/character_sprite_frame_contract.gd`. Canonical frame is
-256×256, ground-contact pivot is (128,236), baseline is y=236. Current target
-presentation heights are Kotone=192 px and Yuna=176 px. These are art/presentation
-values only; world position and physics never come from bitmap bounds. Existing
-pre-contract sheets remain source material until normalized; do not add new
-state-specific scale compensation for their arbitrary dimensions.
+256×256, ground-contact pivot is (128,236), baseline is y=236. Physical model
+height is stored in centimeters and raster v1 uses `1 cm = 1 canonical px`:
+Kotone=172 cm -> 172 px, Yuna=155 cm -> 155 px. World position and physics never
+come from bitmap bounds.
+
+Godot presentation follows native transform semantics: a CharacterRoot/Node2D owns
+the world-facing position and the visual Sprite2D/AnimatedSprite2D is a child
+anchored so frame pixel (128,236) maps to root (0,0). If characters need to appear
+larger/smaller in a viewport, use one common parent transform or Camera2D zoom;
+do not encode model/state height through per-animation scaling. AnimatedSprite2D
+with SpriteFrames is the preferred future animation container once canonical
+256×256 assets are normalized.
+
+Existing pre-contract sheets remain source material until normalized; do not add
+new state-specific scale compensation for their arbitrary dimensions.
 
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
 fencing and bounded heartbeat remain active. Unknown outcomes never replay input or
