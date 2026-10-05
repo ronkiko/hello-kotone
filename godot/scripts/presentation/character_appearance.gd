@@ -36,26 +36,49 @@ static func walk_animation(facing: int) -> StringName:
 	return &"walk_left" if facing < 0 else &"walk_right"
 
 static func walk_frame_count(sprite: AnimatedSprite2D, facing: int) -> int:
-	return sprite.sprite_frames.get_frame_count(walk_animation(facing))
+	if sprite == null or sprite.sprite_frames == null:
+		return 0
+	var animation := walk_animation(facing)
+	if not sprite.sprite_frames.has_animation(animation):
+		return 0
+	return sprite.sprite_frames.get_frame_count(animation)
 
 static func pose(sprite: AnimatedSprite2D, walking: bool, facing: int, index: int) -> void:
-	if sprite.sprite_frames == null: return
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	var animation := walk_animation(facing) if walking else idle_animation(facing)
+	if not sprite.sprite_frames.has_animation(animation):
+		return
+	var count := sprite.sprite_frames.get_frame_count(animation)
+	if count <= 0:
+		return
 	# Gait owns progression from displacement. Native playback stays paused so a
 	# blocked/stale world cannot advance legs independently of rendered movement.
 	sprite.pause()
-	sprite.animation = walk_animation(facing) if walking else idle_animation(facing)
-	sprite.frame = posmod(index, sprite.sprite_frames.get_frame_count(sprite.animation))
+	sprite.animation = animation
+	sprite.frame = posmod(index, count)
 
 static func idle_frame(sprite: AnimatedSprite2D, elapsed: float, facing: int = 1) -> int:
+	if sprite == null or sprite.sprite_frames == null:
+		return 0
 	var frames := sprite.sprite_frames
 	var animation := idle_animation(facing)
+	if not frames.has_animation(animation):
+		return 0
 	var count := frames.get_frame_count(animation)
+	var speed := frames.get_animation_speed(animation)
+	if count <= 0 or speed <= 0.0:
+		return 0
 	var total := 0.0
-	for i in range(count): total += frames.get_frame_duration(animation, i)
-	var cursor := fmod(maxf(elapsed, 0.0) * frames.get_animation_speed(animation), total)
 	for i in range(count):
-		cursor -= frames.get_frame_duration(animation, i)
-		if cursor < 0.0: return i
+		total += maxf(frames.get_frame_duration(animation, i), 0.0)
+	if total <= 0.0:
+		return 0
+	var cursor := fmod(maxf(elapsed, 0.0) * speed, total)
+	for i in range(count):
+		cursor -= maxf(frames.get_frame_duration(animation, i), 0.0)
+		if cursor < 0.0:
+			return i
 	return 0
 
 var payload := {}
