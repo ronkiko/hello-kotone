@@ -51,10 +51,10 @@ res://assets/characters/<character_model_id>/sprite_frames.tres
 
 There is no silent fallback to another model.
 
-Manual spritesheets are not canonical runtime assets. Existing historical sheets
-outside this directory are source/reference material for offline extraction. A
-future build pipeline may atlas canonical frames automatically without changing
-this directory contract.
+Manual spritesheets are not canonical runtime assets. Locomotion source/master
+sheets are stored outside the Godot runtime tree under repository-level
+`references/`; do not place them under `res://assets`. A future build pipeline
+may atlas canonical frames automatically without changing this directory contract.
 
 
 ## Offline tools
@@ -76,6 +76,7 @@ No runtime matte/geometry correction is applied.
 
 ```
 python godot/tools/character_assets.py doctor
+python godot/tools/character_assets.py replay-recipe godot/tools/character_recipes/locomotion_v1
 python godot/tools/character_assets.py validate kotone yuna
 python godot/tools/character_assets.py build-spriteframes --model kotone
 python godot/tools/character_assets.py build-spriteframes --model yuna
