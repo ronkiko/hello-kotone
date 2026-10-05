@@ -13,6 +13,9 @@ const Library = preload("res://scripts/presentation/character_animation_library.
 # Shared viewport presentation transform; canonical sprite scale remains one.
 const DISPLAY_SCALE := 0.48
 
+static func display_height_px(character_model_id: String) -> float:
+	return float(Library.FrameContract.canonical_height_px(character_model_id)) * DISPLAY_SCALE
+
 static func model_supported(character_model_id: String) -> bool:
 	return MODELS.has(character_model_id) and Library.load_frames(character_model_id) != null
 
