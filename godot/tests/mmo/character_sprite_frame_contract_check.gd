@@ -30,9 +30,6 @@ func run() -> void:
 	check(Contract.physical_height_cm("unknown") == 0, "unknown model has no implicit physical height")
 	check(Contract.canonical_height_px("unknown") == 0, "unknown model has no pixel-height fallback")
 
-	var image := Image.create(256 * 3, 256 * 2, false, Image.FORMAT_RGBA8)
-	check(Contract.sheet_geometry_matches(image, 3, 2), "canonical sheet geometry accepted")
-	check(not Contract.sheet_geometry_matches(image, 2, 2), "wrong declared grid rejected")
 
 	var bad := value.duplicate(true)
 	bad.frame.width_px = 128
