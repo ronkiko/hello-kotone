@@ -40,6 +40,16 @@ static func validate(value: Dictionary) -> bool:
 		return false
 	if not safe is Dictionary or not validation is Dictionary or not models is Dictionary:
 		return false
+	if frame.keys().size() != 2 or not frame.has("width_px") or not frame.has("height_px"):
+		return false
+	if anchor.keys().size() != 4 or not anchor.has("semantic") or not anchor.has("pivot_x_px") or not anchor.has("pivot_y_px") or not anchor.has("baseline_y_px"):
+		return false
+	if projection.keys().size() != 1 or not projection.has("canonical_pixels_per_cm"):
+		return false
+	if safe.keys().size() != 4 or not safe.has("left_px") or not safe.has("top_px") or not safe.has("right_px") or not safe.has("bottom_px"):
+		return false
+	if validation.keys().size() != 2 or not validation.has("root_drift_tolerance_px") or not validation.has("allow_state_specific_scale"):
+		return false
 	if frame.get("width_px") != 256 or frame.get("height_px") != 256:
 		return false
 	if anchor.get("semantic") != "ground_contact_center":
@@ -65,6 +75,8 @@ static func validate(value: Dictionary) -> bool:
 	for model_id in models:
 		var model: Variant = models[model_id]
 		if not model is Dictionary:
+			return false
+		if model.keys().size() != 1 or not model.has("physical_height_cm"):
 			return false
 		if not _whole_positive(model.get("physical_height_cm")):
 			return false
