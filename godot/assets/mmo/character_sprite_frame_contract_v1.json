@@ -10,6 +10,9 @@
     "pivot_y_px": 236,
     "baseline_y_px": 236
   },
+  "metric_projection": {
+    "canonical_pixels_per_cm": 1
+  },
   "safe_area": {
     "left_px": 8,
     "top_px": 8,
@@ -22,10 +25,10 @@
   },
   "models": {
     "kotone": {
-      "nominal_standing_height_px": 192
+      "physical_height_cm": 172
     },
     "yuna": {
-      "nominal_standing_height_px": 176
+      "physical_height_cm": 155
     }
   }
 }
