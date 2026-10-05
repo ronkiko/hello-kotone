@@ -4,7 +4,7 @@
   "sources": [
     {
       "id": "kotone-idle",
-      "path": "godot/assets/kotone_v2_idle_front.png",
+      "path": "references/kotone/v2/kotone_v2_idle_front.png",
       "sha256": "169b477342e04ef16468827ff550ece026e5901cb8fb5b4267baca17be9edf15",
       "grid": [
         6,
@@ -13,7 +13,7 @@
     },
     {
       "id": "kotone-left",
-      "path": "godot/assets/kotone_v2_walking_left.png",
+      "path": "references/kotone/v2/kotone_v2_walking_left.png",
       "sha256": "bb135966d505119bb96e9c073a03486deeadc9ebd35e6206d7f1455c573efcec",
       "grid": [
         6,
@@ -22,7 +22,7 @@
     },
     {
       "id": "kotone-right",
-      "path": "godot/assets/kotone_v2_walking_right.png",
+      "path": "references/kotone/v2/kotone_v2_walking_right.png",
       "sha256": "88f2c55b0d77da1dd4950380c33e4f9851155b60f341755231038a7d9b0779ea",
       "grid": [
         6,
@@ -52,7 +52,7 @@
     [
       "split-grid",
       "--source",
-      "{repo}/godot/assets/kotone_v2_idle_front.png",
+      "{repo}/references/kotone/v2/kotone_v2_idle_front.png",
       "--columns",
       "6",
       "--rows",
@@ -63,7 +63,7 @@
     [
       "split-grid",
       "--source",
-      "{repo}/godot/assets/kotone_v2_walking_left.png",
+      "{repo}/references/kotone/v2/kotone_v2_walking_left.png",
       "--columns",
       "6",
       "--rows",
@@ -74,7 +74,7 @@
     [
       "split-grid",
       "--source",
-      "{repo}/godot/assets/kotone_v2_walking_right.png",
+      "{repo}/references/kotone/v2/kotone_v2_walking_right.png",
       "--columns",
       "6",
       "--rows",
