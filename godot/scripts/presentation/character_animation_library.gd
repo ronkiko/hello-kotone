@@ -53,9 +53,16 @@ static func load_frames(character_model_id: String) -> SpriteFrames:
 	if not has_required_animations(frames):
 		return null
 	for animation in frames.get_animation_names():
+		var animation_name := String(animation)
+		if not valid_model_id(animation_name):
+			return null
+		if frames.get_frame_count(animation) <= 0 or frames.get_animation_speed(animation) <= 0.0:
+			return null
 		for index in range(frames.get_frame_count(animation)):
 			var texture := frames.get_frame_texture(animation, index)
-			if texture == null or not texture.resource_path.begins_with(package_root(character_model_id) + "/" + String(animation) + "/"):
+			if texture == null or texture.get_size() != Vector2(FrameContract.frame_size()):
+				return null
+			if not texture.resource_path.begins_with(package_root(character_model_id) + "/" + animation_name + "/"):
 				return null
 	return frames
 
