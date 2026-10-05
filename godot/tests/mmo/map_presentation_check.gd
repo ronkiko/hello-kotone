@@ -91,7 +91,7 @@ func unit_checks() -> void:
 		check(platform.project(item, view(item, item.spawn_x)), "PROJECT_" + item.map_id)
 		check(is_equal_approx(platform.server_to_pixel(item.min_x), 32), "MIN_ORIGIN")
 		check(is_equal_approx(platform.server_to_pixel(item.max_x), 32 + platform.world_length), "MAX_WALL")
-		check(is_equal_approx(platform.sprite.position.x, platform.server_to_pixel(item.spawn_x)), "SPAWN_PROJECTION")
+		check(is_equal_approx(platform.character_root.position.x, platform.server_to_pixel(item.spawn_x)), "SPAWN_PROJECTION")
 		check(platform.terrain.get_used_cells().size() <= 32, "BOUNDED_TILES")
 		var marks := platform.ruler_marks()
 		check(not marks.is_empty() and marks.size() <= 60, "RULER_VISIBLE_BOUNDED")
@@ -100,7 +100,7 @@ func unit_checks() -> void:
 			valid_marks = valid_marks and mark.x >= item.min_x and mark.x <= item.max_x and is_equal_approx(mark.pixel, platform.server_to_pixel(mark.x))
 		check(valid_marks, "RULER_ABSOLUTE_X_AND_SCALE")
 		check(platform.sprite.get_script() == null, "NO_LEGACY_CONTROLLER")
-		var saved_x: float = platform.sprite.position.x
+		var saved_x: float = platform.character_root.position.x
 		var key := InputEventKey.new()
 		key.keycode = KEY_D
 		key.pressed = true
@@ -108,7 +108,7 @@ func unit_checks() -> void:
 		await process_frame
 		key.pressed = false
 		Input.parse_input_event(key)
-		check(platform.sprite.position.x == saved_x, "INPUT_CANNOT_CHANGE_CONFIRMED_X")
+		check(platform.character_root.position.x == saved_x, "INPUT_CANNOT_CHANGE_CONFIRMED_X")
 		check(platform.project(item, view(item, item.min_x)), "PROJECT_LEFT_BOUNDARY")
 		check(platform.project(item, view(item, item.max_x)), "PROJECT_RIGHT_BOUNDARY")
 	viewport.size = Vector2i(320, 116)
@@ -147,12 +147,12 @@ func stream_checks() -> void:
 		await process_frame
 		await process_frame
 		var world: Control = current_scene
-		check(world.platform != null and is_equal_approx(world.platform.sprite.position.x, world.platform.server_to_pixel(client.world_replica.local_player().x)), "CONFIRMED_SPRITE")
+		check(world.platform != null and is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(client.world_replica.local_player().x)), "CONFIRMED_SPRITE")
 		var cells: int = world.platform.terrain.get_used_cells().size()
 		var pixels: float = minf(world.platform.world_length, world.platform.get_viewport_rect().size.x)
 		check(cells * 16 >= pixels - 16 and cells <= 32, "VIEWPORT_PLATFORM_COVERAGE")
 		check(client.map_cache.load_verified(client.world_replica.view().map) == map, "VERIFIED_DISK_" + cycle)
-		evidence.append({"cycle":cycle,"source":client.map_source,"zone":map.map_id,"world_length":world.platform.world_length,"sprite_x":world.platform.sprite.position.x})
+		evidence.append({"cycle":cycle,"source":client.map_source,"zone":map.map_id,"world_length":world.platform.world_length,"sprite_x":world.platform.character_root.position.x})
 		if options.has("capture") and cycle == "cold":
 			await create_timer(0.15).timeout
 			await RenderingServer.frame_post_draw

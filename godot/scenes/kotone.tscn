@@ -1,9 +1,17 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/kotone_v2_idle_front.png" id="1_texture"]
+[ext_resource type="SpriteFrames" path="res://assets/characters/kotone/sprite_frames.tres" id="1_frames"]
 [ext_resource type="Script" path="res://scripts/kotone_controller.gd" id="2_script"]
 
-[node name="Kotone" type="Sprite2D"]
-texture = ExtResource("1_texture")
-hframes = 6
+[node name="Kotone" type="Node2D"]
 script = ExtResource("2_script")
+
+[node name="CharacterVisualLayer" type="Node2D" parent="."]
+scale = Vector2(0.48, 0.48)
+
+[node name="Visual" type="AnimatedSprite2D" parent="CharacterVisualLayer"]
+position = Vector2(-128, -236)
+centered = false
+sprite_frames = ExtResource("1_frames")
+animation = &"idle"
+autoplay = "idle"

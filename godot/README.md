@@ -60,8 +60,7 @@ the world-facing position and the visual Sprite2D/AnimatedSprite2D is a child
 anchored so frame pixel (128,236) maps to root (0,0). If characters need to appear
 larger/smaller in a viewport, use one common parent transform or Camera2D zoom;
 do not encode model/state height through per-animation scaling. AnimatedSprite2D
-with SpriteFrames is the preferred future animation container once canonical
-256×256 assets are normalized.
+with SpriteFrames is the active animation container for normalized canonical frames.
 
 Canonical animation authoring now uses **one 256×256 RGBA PNG per frame** under
 `assets/characters/<character_model_id>/<animation>/NNN.png`. Runtime animation
@@ -77,12 +76,19 @@ python godot/tools/character_assets.py doctor
 python godot/tools/character_assets.py validate kotone yuna
 ```
 
-The same tool provides `extract-grid`, LLM/human `inspect`, deterministic
-ImageMagick `normalize`, and native Godot `build-spriteframes`.
+The raster operations are independent tools in `tools/frame_tools.py`:
+`split-grid`, `extract`, `clean`, `resize`, `mirror`, `prepare`, `inspect`,
+`heuristic`, `place`, `render`. An agent chooses the flow and source coordinates.
+`prepare` takes physical height in cm plus px/cm, canvas, ground and pivot.
+`character_assets.py` forwards these operations and provides the MMO package
+validator/native Godot builder. See `tools/character_asset_llm_analysis.md`.
 
-Existing pre-contract sheets remain source/reference material until their frames
-are extracted and normalized; do not add new state-specific scale compensation
-for their arbitrary dimensions.
+Kotone/Yuna locomotion is converted: 50 canonical PNG frames and two native
+SpriteFrames resources. Creator, own and remote visuals have unit sprite scale
+under the same 0.48 display transform; character roots are anchored at the floor.
+Original sheets remain source/reference material outside the active presenter.
+Recorded agent operations/plans and checksums are in `tools/character_recipes/`.
+Author visual acceptance is tracked in the shared 7.11 roadmap.
 
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
 fencing and bounded heartbeat remain active. Unknown outcomes never replay input or

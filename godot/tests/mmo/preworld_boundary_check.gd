@@ -38,7 +38,7 @@ func result(op: String, data: Dictionary) -> Dictionary:
 
 func record() -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "test", "account_id": "account-one", "character_id": "char-one", "display_name": "Alice Kotone", "slot": 1, "lifecycle_state": "active", "character_schema_version": 1, "appearance_schema_version": 2,
-		"appearance_payload": {"character_model_id": "kotone", "archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "silver"}, "initial_spawn_profile": "default", "created_at_ms": 1, "updated_at_ms": 1}
+		"appearance_payload": {"character_model_id": "kotone", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "silver"}, "initial_spawn_profile": "default", "created_at_ms": 1, "updated_at_ms": 1}
 
 func _initialize() -> void:
 	run.call_deferred()

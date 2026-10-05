@@ -16,7 +16,7 @@ func _initialize() -> void:
 func _frames() -> SpriteFrames:
 	var frames := SpriteFrames.new()
 	frames.remove_animation(&"default")
-	var image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	var image := Image.create(256, 256, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
 	var texture := ImageTexture.create_from_image(image)
 	for animation in Library.REQUIRED_ANIMATIONS:

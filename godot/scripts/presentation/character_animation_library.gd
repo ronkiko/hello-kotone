@@ -37,8 +37,11 @@ static func has_required_animations(frames: SpriteFrames) -> bool:
 	for animation in REQUIRED_ANIMATIONS:
 		if not frames.has_animation(animation):
 			return false
-		if frames.get_frame_count(animation) <= 0:
+		if frames.get_frame_count(animation) <= 0 or frames.get_animation_speed(animation) <= 0:
 			return false
+		for index in range(frames.get_frame_count(animation)):
+			var texture := frames.get_frame_texture(animation, index)
+			if texture == null or texture.get_size() != Vector2(FrameContract.frame_size()): return false
 	return true
 
 static func load_frames(character_model_id: String) -> SpriteFrames:
@@ -49,12 +52,20 @@ static func load_frames(character_model_id: String) -> SpriteFrames:
 	var frames := resource as SpriteFrames
 	if not has_required_animations(frames):
 		return null
+	for animation in frames.get_animation_names():
+		for index in range(frames.get_frame_count(animation)):
+			var texture := frames.get_frame_texture(animation, index)
+			if texture == null or not texture.resource_path.begins_with(package_root(character_model_id) + "/" + String(animation) + "/"):
+				return null
 	return frames
 
 static func configure_sprite(sprite: AnimatedSprite2D, frames: SpriteFrames) -> bool:
 	if sprite == null or not has_required_animations(frames):
 		return false
+	sprite.pause()
 	sprite.sprite_frames = frames
+	sprite.animation = &"idle"
+	sprite.frame = 0
 	sprite.centered = false
 	sprite.position = Vector2(FrameContract.visual_origin_offset())
 	sprite.scale = Vector2.ONE

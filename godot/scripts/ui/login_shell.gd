@@ -40,7 +40,7 @@ var model_previews := {}
 var model_selected := ""
 var hovered_model := ""
 var preview_elapsed := 0.0
-var preview: Sprite2D
+var preview: AnimatedSprite2D
 var _page := ""
 var _transition_pending := false
 
@@ -295,7 +295,7 @@ func _process(delta: float) -> void:
 			# Both pointer and keyboard focus use the same card-local gesture.
 			Appearance.pose(model_previews[key], false, 0, int(preview_elapsed / 0.12) if active and preview_elapsed < 1.8 else 0)
 	elif is_instance_valid(preview) and _page in ["CREATOR", "LOBBY"]:
-		Appearance.pose(preview, false, 0, int(preview_elapsed / 0.3))
+		Appearance.pose(preview, false, 0, Appearance.idle_frame(preview, preview_elapsed))
 
 func _creator_page() -> void:
 	if creator_stage == "MODEL":
@@ -342,11 +342,17 @@ func _preview(payload: Dictionary, parent: Node = null) -> void:
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	frame.add_child(viewport)
-	preview = Sprite2D.new()
-	preview.position = Vector2(55, 49)
-	preview.set_meta("presentation_scale", 0.64)
+	var character_root := Node2D.new()
+	character_root.name = "CharacterRoot"
+	character_root.position = Vector2(55, 94)
+	viewport.add_child(character_root)
+	var visual_layer := Node2D.new()
+	visual_layer.name = "CharacterVisualLayer"
+	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
+	character_root.add_child(visual_layer)
+	preview = AnimatedSprite2D.new()
 	preview.set_meta("character_model_id", payload.get("character_model_id", ""))
-	viewport.add_child(preview)
+	visual_layer.add_child(preview)
 	Appearance.install(preview, payload)
 
 func _failure_page() -> void:

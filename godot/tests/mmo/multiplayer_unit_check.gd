@@ -41,17 +41,17 @@ func start() -> void:
 	check(avatar.get_instance_id() == instance_id and avatar.position.x == platform.server_to_pixel(52) and avatar.target_x == platform.server_to_pixel(56), "STABLE_ID_NO_TELEPORT")
 	var camera_x: float = platform.camera.position.x
 	avatar._process(.02)
-	check(avatar.position.x > platform.server_to_pixel(52) and avatar.position.x < avatar.target_x and avatar.sprite.texture == avatar.WALK_RIGHT, "REMOTE_INTERPOLATES")
+	check(avatar.position.x > platform.server_to_pixel(52) and avatar.position.x < avatar.target_x and avatar.sprite.animation == &"walk_right", "REMOTE_INTERPOLATES")
 	avatar._process(1)
 	check(avatar.position.x == avatar.target_x and platform.camera.position.x == camera_x and replica.local_player().x == 50, "REMOTE_CANNOT_MOVE_CAMERA_OR_LOCAL_FACT")
 	var settled_frame: int = avatar.sprite.frame
 	avatar._process(.5)
-	check(avatar.sprite.texture == avatar.WALK_RIGHT and avatar.sprite.frame == settled_frame, "REMOTE_GAP_FREEZES_SIDE_POSE_AND_LEGS")
+	check(avatar.sprite.animation == &"walk_right" and avatar.sprite.frame == settled_frame, "REMOTE_GAP_FREEZES_SIDE_POSE_AND_LEGS")
 	check(platform.project(document,replica.view(),51) and avatar.target_x == platform.server_to_pixel(56), "LOCAL_PREDICTION_DOES_NOT_AFFECT_REMOTE")
 	avatar.position.x = -99999
 	avatar.sprite.position.x = -99999
 	avatar._process(0)
-	check(avatar.position.x == avatar.target_x and avatar.sprite.position == Vector2.ZERO and replica.view().players.p2.x == 56, "REMOTE_TAMPER_NO_AUTHORITY_WRITE")
+	check(avatar.position.x == avatar.target_x and avatar.sprite.position == Vector2(-128, -236) and replica.view().players.p2.x == 56, "REMOTE_TAMPER_NO_AUTHORITY_WRITE")
 	var before := replica.snapshot()
 	for i in range(1000): platform.project(document,replica.view(),51)
 	check(platform.remote_players.size() == 1 and avatar.get_instance_id() == instance_id and replica.snapshot() == before, "NO_DUPLICATE_NODES_OR_FACT_WRITES")

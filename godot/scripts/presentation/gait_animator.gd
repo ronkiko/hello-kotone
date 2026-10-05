@@ -11,21 +11,21 @@ var idle_on_settle := true
 func configure(value: float) -> void:
 	cycle_pixels = maxf(value, 0.001)
 
-func reset(sprite: Sprite2D) -> void:
+func reset(sprite: AnimatedSprite2D) -> void:
 	walk_distance = 0.0
 	idle_elapsed = 0.0
 	facing = 0
 	walking = false
 	Appearance.pose(sprite, false, 0, 0)
 
-func update(sprite: Sprite2D, before: float, after: float, target: float, locomotion_intent: int, delta: float) -> void:
+func update(sprite: AnimatedSprite2D, before: float, after: float, target: float, locomotion_intent: int, delta: float) -> void:
 	var distance := absf(after - before)
 	if distance > 0.0001:
 		facing = -1 if after < before else 1
 		walking = true
 		idle_elapsed = 0.0
 		walk_distance = fmod(walk_distance + distance, cycle_pixels)
-		Appearance.pose(sprite, true, facing, int(walk_distance / cycle_pixels * Appearance.walk_frame_count(sprite)))
+		Appearance.pose(sprite, true, facing, int(walk_distance / cycle_pixels * Appearance.walk_frame_count(sprite, facing)))
 		return
 
 	var settled := is_equal_approx(after, target)
@@ -46,4 +46,4 @@ func update(sprite: Sprite2D, before: float, after: float, target: float, locomo
 		idle_elapsed = 0.0
 		Appearance.pose(sprite, false, 0, 0)
 	idle_elapsed += maxf(delta, 0.0)
-	Appearance.pose(sprite, false, 0, int(idle_elapsed / 0.3))
+	Appearance.pose(sprite, false, 0, Appearance.idle_frame(sprite, idle_elapsed))

@@ -1,112 +1,36 @@
 #!/usr/bin/env python3
-"""Pure-Python checks for character_assets.py (no ImageMagick/Godot required)."""
-
-from __future__ import annotations
-
-import importlib.util
+"""Parser/contract checks; no raster runtime dependency."""
 import json
 import sys
 import tempfile
 from pathlib import Path
-
-TOOLS = Path(__file__).resolve().parents[1]
-MODULE_PATH = TOOLS / "character_assets.py"
-
-spec = importlib.util.spec_from_file_location("character_assets_under_test", MODULE_PATH)
-if spec is None or spec.loader is None:
-    raise SystemExit("FAIL cannot import character_assets.py")
-module = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = module
-spec.loader.exec_module(module)
-
-
-checks = 0
-failures: list[str] = []
-
-
-def check(condition: bool, label: str) -> None:
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+import frame_tools as frames
+import character_assets as packages
+checks=0
+failures=[]
+def check(ok,label):
     global checks
-    checks += 1
-    if not condition:
-        failures.append(label)
-
-
-def expect_tool_error(fn, label: str) -> None:
-    try:
-        fn()
-    except module.ToolError:
-        check(True, label)
-    else:
-        check(False, label)
-
-
-contract = module.load_contract()
-check((contract.width, contract.height) == (256, 256), "frame contract")
-check((contract.pivot_x, contract.pivot_y) == (128, 236), "pivot contract")
-check(contract.target_height_px("kotone") == 172, "Kotone metric projection")
-check(contract.target_height_px("yuna") == 155, "Yuna metric projection")
-expect_tool_error(lambda: contract.target_height_px("unknown"), "unknown model rejected")
-
-with tempfile.TemporaryDirectory(prefix="character-assets-check-") as temp:
-    root = Path(temp)
-
-    source = root / "frames"
-    source.mkdir()
-    (source / "000.png").write_bytes(b"")
-    (source / "001.png").write_bytes(b"")
-    check([p.name for p in module.frame_files(source)] == ["000.png", "001.png"], "contiguous frame names")
-
-    (source / "001.png").rename(source / "002.png")
-    expect_tool_error(lambda: module.frame_files(source), "frame gap rejected")
-
-    plan = {
-        "schema": 1,
-        "character_model_id": "yuna",
-        "animation_id": "idle",
-        "source_body_height_px": 350.0,
-        "analysis": {
-            "method": "llm_reviewed_heuristic",
-            "confidence": 0.9,
-        },
-        "frames": [
-            {"file": "000.png", "source_root_px": [124.0, 380.0], "confidence": 0.9},
-            {"file": "001.png", "source_root_px": [124.5, 380.0], "confidence": 0.9},
-        ],
-    }
-    plan_path = root / "plan.json"
-    plan_path.write_text(json.dumps(plan), encoding="utf-8")
-    loaded = module.load_plan(plan_path, contract)
-    check(loaded["character_model_id"] == "yuna", "valid reviewed plan accepted")
-
-    invalid = json.loads(json.dumps(plan))
-    invalid["frames"][0]["scale"] = 0.9
-    plan_path.write_text(json.dumps(invalid), encoding="utf-8")
-    expect_tool_error(
-        lambda: module.load_plan(plan_path, contract),
-        "per-frame scale/unknown field rejected",
-    )
-
-    invalid = json.loads(json.dumps(plan))
-    invalid["source_cleanup"] = {"fuzz_percent": 5}
-    plan_path.write_text(json.dumps(invalid), encoding="utf-8")
-    expect_tool_error(
-        lambda: module.load_plan(plan_path, contract),
-        "fuzz without matte color rejected",
-    )
-
-    invalid = json.loads(json.dumps(plan))
-    invalid["analysis"]["method"] = "magic"
-    plan_path.write_text(json.dumps(invalid), encoding="utf-8")
-    expect_tool_error(
-        lambda: module.load_plan(plan_path, contract),
-        "unknown analysis method rejected",
-    )
-
-result = {
-    "suite": "character-assets-tool",
-    "checks": checks,
-    "failures": failures,
-    "result": "PASS" if not failures else "FAIL",
-}
-print(json.dumps(result))
-raise SystemExit(0 if not failures else 1)
+    checks+=1
+    if not ok: failures.append(label)
+def rejects(fn,label):
+    try: fn()
+    except frames.ToolError: check(True,label)
+    else: check(False,label)
+spec={'schema':1,'canvas_px':[320,240],'pivot_px':[71,201],'ground_y_px':210,'physical_height_cm':180,'pixels_per_cm':0.75}
+check(frames.frame_spec(spec)==spec,'arbitrary frame size/ground/pivot/projection accepted')
+for change in ({'schema':True},{'physical_height_cm':0},{'pixels_per_cm':float('nan')},{'pivot_px':[400,0]},{'canvas_px':[True,256]},{'ground_y_px':241},{'target_body_height_px':172}):
+    rejects(lambda: frames.frame_spec({**spec,**change}),'invalid prepared frame rejected')
+plan={'schema':1,'source_root_px':[128.5,460],'source_body_height_px':400,'analysis':{'method':'llm','confidence':.8}}
+check(frames.placement_plan(plan)==plan,'reviewed single pose plan accepted')
+for change in ({'source_root_px':[0,float('inf')]},{'source_body_height_px':True},{'analysis':{'method':'script_heuristic','confidence':.3}},{'scale':.5},{'character_model_id':'kotone'}):
+    rejects(lambda: frames.placement_plan({**plan,**change}),'invalid or unreviewed placement rejected')
+contract=packages.load_contract()
+check(contract.target_height_px('kotone')==172 and contract.target_height_px('yuna')==155,'MMO projection is a separate consumer')
+with tempfile.TemporaryDirectory() as temp:
+    p=Path(temp);source=p/'source.png';source.write_bytes(b'source')
+    rejects(lambda:frames.output_file(source,[source],True),'force cannot mutate source')
+    d=p/'frames';d.mkdir();(d/'000.png').touch();(d/'002.png').touch()
+    rejects(lambda:packages.frame_files(d),'package frame gap rejected')
+print(json.dumps({'suite':'character-assets-tool','checks':checks,'failures':failures,'result':'FAIL' if failures else 'PASS'}))
+raise SystemExit(bool(failures))

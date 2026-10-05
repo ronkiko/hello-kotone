@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "source_root_px": [
+    65,
+    128
+  ],
+  "source_body_height_px": 124,
+  "analysis": {
+    "method": "llm",
+    "author": "Codex visual source review",
+    "confidence": 0.86,
+    "notes": "Reviewed anatomical crown, pelvis axis and shoe contacts on source boards. Same anatomical scale across Kotone locomotion; hair extent excluded."
+  }
+}

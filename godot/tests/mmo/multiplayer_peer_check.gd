@@ -88,7 +88,7 @@ func inspect(command: Dictionary) -> Dictionary:
 	var shown: Dictionary = {}
 	for id in view.players:
 		var player: Dictionary = view.players[id]
-		var x: float = world.platform.sprite.position.x if id == client.player_id else world.platform.remote_players[id].position.x
+		var x: float = world.platform.character_root.position.x if id == client.player_id else world.platform.remote_players[id].position.x
 		check(is_equal_approx(x,world.platform.server_to_pixel(player.x)), "CONFIRMED_DISPLAY_" + player.nickname)
 		if id != client.player_id:
 			var remote: Node2D = world.platform.remote_players[id]

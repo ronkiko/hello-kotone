@@ -87,8 +87,8 @@ func real_wall() -> void:
 	check(input_receipts == 2, "LEFT_PRESS_STOP_ONLY_TWO_INPUT_REQUESTS")
 	check(own_events - before_events >= 50 and own_events - before_events <= 51, "SERVER_CADENCE_OWNS_LEFT_STEPS")
 	check(client.session_id == session, "LEFT_SESSION_UNCHANGED")
-	check(is_equal_approx(world.platform.sprite.position.x, world.platform.server_to_pixel(0)), "LEFT_RENDER_CONVERGED")
-	check(world.platform.sprite.texture == world.platform.IDLE, "LEFT_RELEASE_FRONT_IDLE")
+	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(0)), "LEFT_RENDER_CONVERGED")
+	check(world.platform.sprite.animation == &"idle", "LEFT_RELEASE_FRONT_IDLE")
 	await capture("left-wall")
 
 	before_events = own_events
@@ -98,19 +98,19 @@ func real_wall() -> void:
 	check(input_receipts == 4, "FULL_TRAVERSE_FOUR_INPUT_STATE_REQUESTS")
 	check(own_events - before_events >= 100 and own_events - before_events <= 101, "SERVER_CADENCE_OWNS_RIGHT_STEPS")
 	check(client.session_id == session, "RIGHT_SESSION_UNCHANGED")
-	check(is_equal_approx(world.platform.sprite.position.x, world.platform.server_to_pixel(100)), "RIGHT_RENDER_CONVERGED")
-	check(world.platform.sprite.texture == world.platform.IDLE, "RIGHT_RELEASE_FRONT_IDLE")
+	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(100)), "RIGHT_RENDER_CONVERGED")
+	check(world.platform.sprite.animation == &"idle", "RIGHT_RELEASE_FRONT_IDLE")
 	await capture("right-wall")
 
-	world.platform.sprite.position.x = -10000
+	world.platform.character_root.position.x = -10000
 	check(client.world_replica.local_player().x == 100, "SPRITE_TAMPER_NO_SERVER_WRITE")
 	world.platform._process(0)
-	check(world.platform.sprite.position.x == world.platform.trajectory.visual_x, "SPRITE_TAMPER_REPAIRED_FROM_LOCAL_MODEL")
+	check(world.platform.character_root.position.x == world.platform.trajectory.visual_x, "SPRITE_TAMPER_REPAIRED_FROM_LOCAL_MODEL")
 	world.refresh_button.pressed.emit()
 	await wait_state("READY")
 	await settle()
 	check(current_scene == world and client.world_replica.local_player().x == 100, "STATE_PRESERVES_SERVER_TRUTH")
-	check(is_equal_approx(world.platform.sprite.position.x, world.platform.server_to_pixel(100)), "STATE_RECONCILES_PRESENTATION")
+	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(100)), "STATE_RECONCILES_PRESENTATION")
 	await capture("reconciled")
 	evidence = {"confirmed_min":0,"confirmed_max":100,"input_state_requests":input_receipts,
 		"own_moved_events":own_events,"session_unchanged":client.session_id == session,

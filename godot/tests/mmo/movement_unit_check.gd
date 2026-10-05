@@ -79,33 +79,33 @@ func start() -> void:
 	var view := {"map":{"map_id":map.map_id,"content_version":1,"content_hash":map.content_hash},
 		"confirmed_local_x":50,"epoch":"e1","local_player_id":"p1",
 		"players":{"p1":{"player_id":"p1","nickname":"player1","zone_id":"city/apartment","x":50}}}
-	check(platform.project(map,view) and platform.sprite.position.x == 432, "CONFIRMED_BASELINE")
+	check(platform.project(map,view) and platform.character_root.position.x == 432, "CONFIRMED_BASELINE")
 	check(is_equal_approx(platform.motion_profile.nominal_speed,40.0), "WORLD_CADENCE_IS_LOCAL_PREDICTION_SPEED")
 	check(platform.set_local_intent(1), "LOCAL_HELD_RIGHT")
 	platform._process(.10)
-	check(is_equal_approx(platform.trajectory.model_x,436.0) and is_equal_approx(platform.sprite.position.x,436.0), "LOCAL_MOVES_BEFORE_SERVER_FACT")
+	check(is_equal_approx(platform.trajectory.model_x,436.0) and is_equal_approx(platform.character_root.position.x,436.0), "LOCAL_MOVES_BEFORE_SERVER_FACT")
 	check(view.confirmed_local_x == 50, "LOCAL_PREDICTION_NEVER_WRITES_CONFIRMED_X")
 	platform._process(.40)
-	check(platform.sprite.position.x > platform.server_to_pixel(51), "LOCAL_PREDICTION_NOT_ONE_STEP_LEASH")
+	check(platform.character_root.position.x > platform.server_to_pixel(51), "LOCAL_PREDICTION_NOT_ONE_STEP_LEASH")
 
 	# Matching authoritative facts update the ruler/replica outside this presenter but need no correction.
 	view.confirmed_local_x = 52
 	view.players.p1.x = 52
 	check(platform.project(map,view), "CONFIRMED_FACT_DOES_NOT_SNAP_RENDER")
-	var before_match := platform.sprite.position.x
+	var before_match := platform.character_root.position.x
 	platform._process(0)
-	check(platform.sprite.position.x == before_match, "MATCHING_SERVER_STREAM_NO_VISUAL_REWIND")
+	check(platform.character_root.position.x == before_match, "MATCHING_SERVER_STREAM_NO_VISUAL_REWIND")
 
 	# Server same-X fact is an authoritative hold: local prediction stops extending,
 	# target becomes confirmed X and render returns magnetically.
-	var before_correction := platform.sprite.position.x
+	var before_correction := platform.character_root.position.x
 	platform.set_authoritative_hold(true)
 	platform.reconcile_local_to_confirmed()
 	check(platform.trajectory.authoritative_hold and platform.trajectory.model_x == platform.server_to_pixel(52), "SERVER_HOLD_REBASES_TO_CONFIRMED")
 	platform._process(.02)
-	check(platform.sprite.position.x < before_correction and platform.sprite.position.x > platform.trajectory.model_x, "MAGNETIC_RECONCILIATION")
+	check(platform.character_root.position.x < before_correction and platform.character_root.position.x > platform.trajectory.model_x, "MAGNETIC_RECONCILIATION")
 	platform._process(.2)
-	check(is_equal_approx(platform.sprite.position.x,platform.trajectory.model_x), "CORRECTION_SETTLES_BOUNDED")
+	check(is_equal_approx(platform.character_root.position.x,platform.trajectory.model_x), "CORRECTION_SETTLES_BOUNDED")
 	var held_x := platform.trajectory.model_x
 	platform._process(1)
 	check(platform.trajectory.model_x == held_x, "HELD_WORLD_STOPS_LOCAL_PREDICTION_DESPITE_KEY_INTENT")
@@ -115,22 +115,22 @@ func start() -> void:
 	# Release stops local simulation immediately; final resting point converges to authoritative X.
 	platform.set_local_intent(0)
 	platform.reconcile_local_to_confirmed()
-	var released_before := platform.sprite.position.x
+	var released_before := platform.character_root.position.x
 	platform._process(.02)
-	check(platform.sprite.position.x != released_before, "STOP_RECONCILES_TO_SERVER")
+	check(platform.character_root.position.x != released_before, "STOP_RECONCILES_TO_SERVER")
 	platform._process(1)
-	check(is_equal_approx(platform.sprite.position.x,platform.server_to_pixel(52)), "STOP_FINAL_SERVER_X")
+	check(is_equal_approx(platform.character_root.position.x,platform.server_to_pixel(52)), "STOP_FINAL_SERVER_X")
 	platform._process(0)
-	check(platform.sprite.texture == platform.IDLE, "SETTLED_RELEASE_RETURNS_FRONT_IDLE")
+	check(platform.sprite.animation == &"idle", "SETTLED_RELEASE_RETURNS_FRONT_IDLE")
 
 	# Bounds remain client-side presentation limits, never authority writes.
 	platform.set_local_intent(1)
 	platform._process(100)
-	check(platform.sprite.position.x == 832 and platform.trajectory.model_x == 832, "LOCAL_PREDICTION_CLAMPS_MAP_BOUND")
+	check(platform.character_root.position.x == 832 and platform.trajectory.model_x == 832, "LOCAL_PREDICTION_CLAMPS_MAP_BOUND")
 	platform.set_local_intent(0)
-	platform.sprite.position.x = -99999
+	platform.character_root.position.x = -99999
 	platform._process(0)
-	check(platform.sprite.position.x == platform.trajectory.visual_x, "SPRITE_TAMPER_CANNOT_BECOME_MODEL")
+	check(platform.character_root.position.x == platform.trajectory.visual_x, "SPRITE_TAMPER_CANNOT_BECOME_MODEL")
 
 	viewport.queue_free()
 	adapter.queue_free()

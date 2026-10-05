@@ -1,11 +1,10 @@
 extends Node2D
 ## Presentation only: one remote identity and its last confirmed pixel target.
-const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
-const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
-const Kotone = preload("res://scenes/kotone.tscn")
+const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
-var sprite: Sprite2D
+var visual_layer := Node2D.new()
+var sprite: AnimatedSprite2D
 var identity := Label.new()
 var suspended := false
 var player_id := ""
@@ -19,13 +18,16 @@ var gait := GaitAnimator.new()
 
 func _ready() -> void:
 	gait.idle_on_settle = false
-	sprite = Kotone.instantiate()
-	sprite.set_script(null)
-	sprite.scale = Vector2(0.65, 0.65)
+	visual_layer.name = "CharacterVisualLayer"
+	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
+	add_child(visual_layer)
+	sprite = AnimatedSprite2D.new()
+	visual_layer.add_child(sprite)
+	Appearance.Library.install(sprite, "kotone")
+	Appearance.pose(sprite, false, 0, 0)
 	# Stable identity tint; labels remain readable even at the same server X.
 	sprite.modulate = Color.from_hsv(float(player_id.hash() & 255) / 255.0, 0.35, 1.0)
-	add_child(sprite)
-	identity.position = Vector2(-64, 24)
+	identity.position = Vector2(-64, -172 * Appearance.DISPLAY_SCALE - 18)
 	identity.size = Vector2(128, 18)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.add_theme_font_size_override("font_size", 11)
@@ -56,7 +58,7 @@ func _process(delta: float) -> void:
 	visual_x = clampf(move_toward(visual_x, target_x, motion_profile.speed_for_gap(gap) * maxf(delta, 0.0)), _min_x, _max_x)
 	# Sprite/node edits cannot change the confirmed target.
 	position.x = visual_x
-	sprite.position = Vector2.ZERO
+	sprite.position = Vector2(Appearance.Library.FrameContract.visual_origin_offset())
 	# Remote input is intentionally unknown. Actual displacement drives walk;
 	# Arrival freezes the last side pose without inventing remote input state.
 	gait.update(sprite, before, visual_x, target_x, 0, delta)

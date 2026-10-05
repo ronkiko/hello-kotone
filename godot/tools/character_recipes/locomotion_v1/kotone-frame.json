@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "canvas_px": [
+    256,
+    256
+  ],
+  "pivot_px": [
+    128.0,
+    236.0
+  ],
+  "ground_y_px": 236.0,
+  "physical_height_cm": 172.0,
+  "pixels_per_cm": 1
+}

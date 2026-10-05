@@ -57,117 +57,29 @@ future build pipeline may atlas canonical frames automatically without changing
 this directory contract.
 
 
-## Offline toolchain
+## Offline tools
 
-Use one entry point:
+See [atomic operations and agent protocol](../../tools/character_asset_llm_analysis.md).
+Use `frame_tools.py` directly for arbitrary source art; `character_assets.py`
+forwards its commands and additionally validates/builds this MMO package.
 
-```text
+The agent chooses the flow and coordinates. Raster primitives do not know model
+ids, canonical dimensions, ground, pivot, package folders or animation names.
+`prepare` receives physical height in cm and explicit px/cm projection. `place`
+uses a reviewed plan for one pose and performs a single uniform source transform.
+
+Current source/checksum/plan/operation evidence is in
+`tools/character_recipes/locomotion_v1`. Kotone has 6 frames per animation; Yuna
+has 16 idle and 8 walk frames. Yuna left is an offline source mirror, with
+x_left=width−1−x_right. Yuna idle discards alpha <=5% extraction residue offline.
+No runtime matte/geometry correction is applied.
+
+```
 python godot/tools/character_assets.py doctor
-
-python godot/tools/character_assets.py extract-grid \
-  --source references/yuna/v1/yuna_idle.png \
-  --output-dir /tmp/yuna-idle-raw \
-  --columns 8 --rows 2
-
-python godot/tools/character_assets.py inspect \
-  --model yuna \
-  --animation idle \
-  --source-dir /tmp/yuna-idle-raw \
-  --output-dir /tmp/yuna-idle-analysis
-
-# Optional: create a low-confidence automatic draft for review.
-python godot/tools/character_assets.py detect-plan \
-  --model yuna \
-  --animation idle \
-  --source-dir /tmp/yuna-idle-raw \
-  --output /tmp/yuna-idle-draft-plan.json
-
-# Give analysis-board.png + analysis-packet.json and optionally the draft plan
-# to an LLM or human reviewer. Reviewer returns/revises a v1 normalization plan.
-
-python godot/tools/character_assets.py normalize \
-  --plan /tmp/yuna-idle-plan.json \
-  --source-dir /tmp/yuna-idle-raw \
-  --output-dir godot/assets/characters/yuna/idle
-
-python godot/tools/character_assets.py validate yuna --frames-only
-
-python godot/tools/character_assets.py build-spriteframes \
-  --model yuna \
-  --animation idle=3.333333:true \
-  --animation walk_left=8:true \
-  --animation walk_right=8:true
-
-python godot/tools/character_assets.py validate yuna
+python godot/tools/character_assets.py validate kotone yuna
+python godot/tools/character_assets.py build-spriteframes --model kotone
+python godot/tools/character_assets.py build-spriteframes --model yuna
 ```
 
-Dependencies are deliberately narrow:
-
-- Python 3 standard library;
-- ImageMagick for raster crop/cleanup/scale/composite/diagnostics;
-- Godot 4 to serialize native `SpriteFrames.tres`.
-
-Do not add Pillow/OpenCV just to perform operations already covered by ImageMagick.
-
-### LLM-assisted analysis
-
-`inspect` creates:
-
-- `analysis-board.png` — source frames with coordinate grid overlays;
-- `analysis-packet.json` — exact source dimensions, diagnostic alpha bounds,
-  canonical target dimensions, and instructions for the reviewer.
-
-The LLM/human reviewer returns a plan matching:
-
-```text
-godot/tools/character_asset_normalization_plan.schema.json
-```
-
-Example:
-
-```json
-{
-  "schema": 1,
-  "character_model_id": "yuna",
-  "animation_id": "idle",
-  "source_body_height_px": 350.0,
-  "analysis": {
-    "method": "human_reviewed_llm",
-    "confidence": 0.95,
-    "notes": "Body scale measured from anatomical crown to ground root; hair excluded."
-  },
-  "frames": [
-    {"file": "000.png", "source_root_px": [124.0, 380.0], "confidence": 0.98},
-    {"file": "001.png", "source_root_px": [124.5, 380.0], "confidence": 0.96}
-  ]
-}
-```
-
-The important split is:
-
-- **LLM/human chooses semantics**: anatomical scale and source root points;
-- **ImageMagick applies pixels deterministically**;
-- **Godot builds the runtime resource**.
-
-The optional `detect-plan` command estimates a first draft from silhouette geometry
-(bottom-band contact center + median alpha silhouette height). It is intentionally
-marked `analysis.method = "script_heuristic"` and is **not accepted by
-`normalize` by default**. An LLM/human should review it and change the analysis
-method to a reviewed value. Explicit bypass exists only as
-`--accept-unreviewed-heuristic` for controlled experiments.
-
-The plan has one `source_body_height_px` for the whole animation. Per-frame scale
-is intentionally impossible. Each frame may have a different source root only to
-remove authored drift while preserving the same body scale.
-
-For old matte-backed source art the plan may additionally include:
-
-```json
-"source_cleanup": {
-  "transparent_color": "#466F4B",
-  "fuzz_percent": 6
-}
-```
-
-Cleanup belongs to offline source conversion. Canonical runtime PNGs must already
-be RGBA with transparent background.
+Godot import must precede SpriteFrames build. ImageMagick performs raster
+operations; Godot serializes native resources. Python stdlib only, no Pillow/OpenCV.

@@ -61,7 +61,7 @@ func on_state(value: String) -> void:
 	if value == "FAILED" and current_scene != null and current_scene.name == "World":
 		var platform: Node = current_scene.platform
 		check(platform._suspended and not current_scene.prediction.view().active, "FAILURE_FREEZES_AND_CLEARS_PREDICTION_SYNCHRONOUSLY")
-		var local_x: float = platform.sprite.position.x
+		var local_x: float = platform.character_root.position.x
 		var local_frame: int = platform.sprite.frame
 		var camera_x: float = platform.camera.position.x
 		var remote: Dictionary = {}
@@ -71,7 +71,7 @@ func on_state(value: String) -> void:
 		for i in range(1000):
 			platform._process(10)
 			for node in platform.remote_players.values(): node._process(10)
-		check(platform.sprite.position.x == local_x and platform.sprite.frame == local_frame and platform.camera.position.x == camera_x, "LOCAL_STALE_NOT_SIMULATED")
+		check(platform.character_root.position.x == local_x and platform.sprite.frame == local_frame and platform.camera.position.x == camera_x, "LOCAL_STALE_NOT_SIMULATED")
 		for id in remote:
 			var node: Node = platform.remote_players[id]
 			check(node.suspended and node.position.x == remote[id][0] and node.sprite.frame == remote[id][1], "REMOTE_STALE_NOT_SIMULATED")
@@ -92,7 +92,7 @@ func inspect(command: Dictionary) -> Dictionary:
 	var world: Control = current_scene
 	check(not world.platform._suspended and not world.prediction.view().active, "READY_PRESENTATION")
 	check(world.platform.remote_players.size() == view.players.size() - 1, "MEMBERSHIP_REPLACED")
-	check(world.platform.sprite.position.x == world.platform.server_to_pixel(view.confirmed_local_x), "CONFIRMED_PROJECTION")
+	check(world.platform.character_root.position.x == world.platform.server_to_pixel(view.confirmed_local_x), "CONFIRMED_PROJECTION")
 	if command.has("x"): check(view.confirmed_local_x == command.x,"EXPECTED_X")
 	if command.has("version"): check(view.map.content_version == command.version,"EXPECTED_MAP_VERSION")
 	var value := {"state":client.state,"realm":client.world_session.view(),"epoch":view.epoch,"revision":view.revision,"x":view.confirmed_local_x,"map":view.map,"map_source":client.map_source,"population":view.players.size(),"world_ready_count":ready_count}

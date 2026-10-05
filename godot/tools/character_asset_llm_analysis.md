@@ -1,86 +1,85 @@
-# Character asset LLM analysis protocol
+# Agent-coordinated frame preparation
 
-Use this protocol together with the files produced by:
+`frame_tools.py` provides independent, atomic raster operations. It has no
+Godot/model/package dependency, no fixed frame size or pivot, and no automatic
+end-to-end flow. `character_assets.py` forwards these same commands as a client
+entry point; only `doctor`, `validate`, `build-spriteframes` know the MMO profile.
 
-```text
-python godot/tools/character_assets.py inspect ...
+The agent chooses the source, operations and order. Inputs may be damaged sheets,
+new sheets with 512×512 cells, irregular pose layouts, or individual frames in
+formats ImageMagick can read. The tool does not discover an arbitrary silhouette
+or decide whether a source needs cleanup. Inspect it and choose explicit regions
+and cleanup parameters. Complex nonuniform backgrounds may need a reviewed mask
+or another offline operation; do not silently claim a color key segments them.
+
+## Atomic operations
+
+| Operation | Input and result |
+| --- | --- |
+| `split-grid` | Explicit columns/rows → lossless source cells; pad incomplete last cells. |
+| `extract` | One image and optional `--region X Y W H` → one pose; no scaling. |
+| `clean` | One pose and explicit matte/fuzz/alpha floor → transparent pose, unchanged dimensions. |
+| `resize` | One pose and explicit uniform factor → resized pose; coordinates scale with it. |
+| `mirror` | One pose → horizontal mirror; pixel center x maps to width−1−x. |
+| `prepare` | Canvas, ground, pivot, height in cm, px/cm → blank RGBA frame + specification. |
+| `inspect` | One pose → grid overlay + coordinate/alpha diagnostics JSON. |
+| `heuristic` | One pose → low-confidence silhouette suggestion; never applies it. |
+| `place` | One pose + prepared specification + reviewed single-pose plan → one RGBA frame. |
+| `render` | One image + background → preview suitable for visual inspection. |
+
+Every operation writes only explicit outputs and preserves source files, including
+with `--force`. Cleanup and placement are separate operations; neither runs the
+other. Avoid extra resize steps when `place` can scale directly from source.
+`prepare.ground_y_px` documents the floor line; `pivot_px` is the point to which
+`place` maps the source root. The caller decides their relation (humanoid standing
+profile uses pivot_y == ground_y).
+
+## Metric source of truth
+
+The prepared frame stores `physical_height_cm` and `pixels_per_cm` separately.
+The agent measures anatomical source height in pixels from body crown to ground
+reference; hair, hats, arms, padding and alpha bounds are not anatomical height.
+
+```
+target_body_height_px = physical_height_cm * pixels_per_cm
+uniform_scale = target_body_height_px / source_body_height_px
 ```
 
-Inputs:
+For related poses, choose one model scale in the original source units. Different
+source resolutions require corresponding source-height measurements, preserving
+the same physical height. Do not adjust scale per pose to erase natural posture.
 
-- `analysis-board.png`;
-- `analysis-packet.json`;
-- optionally the original extracted source frames.
+## Example: one 512×512 source pose
 
-- optionally a `detect-plan` heuristic draft produced by the tool.
-
-Your task is **analysis only**. Do not redraw, edit, upscale, clean, crop, or
-otherwise transform pixels.
-
-Return one JSON object compatible with:
-
-```text
-godot/tools/character_asset_normalization_plan.schema.json
+```
+python godot/tools/frame_tools.py extract --source pose.webp --output /tmp/raw.png
+python godot/tools/frame_tools.py inspect --source /tmp/raw.png --output /tmp/inspect.png
+python godot/tools/frame_tools.py heuristic --source /tmp/raw.png
+python godot/tools/frame_tools.py prepare --canvas 320 320 --pivot 160 290 \
+  --ground-y 290 --height-cm 180 --pixels-per-cm 1 --output /tmp/frame.json
+# Agent inspects the source and writes a reviewed plan with its own coordinates.
+python godot/tools/frame_tools.py place --source /tmp/raw.png \
+  --frame-spec /tmp/frame.json --plan /tmp/pose-plan.json --output /tmp/frame.png
+python godot/tools/frame_tools.py render --source /tmp/frame.png --output /tmp/preview.png
 ```
 
-If a heuristic draft is supplied, treat it only as a suggestion. Check every
-root against the images and replace `analysis.method = "script_heuristic"` with
-`"llm_reviewed_heuristic"` only after review.
-
-## Required semantic decisions
-
-1. Determine one `source_body_height_px` for the whole animation.
-   - This represents the anatomical model scale in the source.
-   - It is not alpha-bounding-box height.
-   - Ignore hair volume, hats, raised arms, loose clothing and effects.
-   - Do not choose a different scale for each frame.
-2. For every frame determine `source_root_px = [x,y]`.
-   - Root semantic: ground-contact center under the body.
-   - For a standing pose it is centered between the feet on the floor.
-   - For a walking pose it is the stable character/world root, not whichever foot
-     extends furthest.
-   - Use source image pixel coordinates with origin at top-left.
-3. If source art has a uniform matte/background, optionally propose
-   `source_cleanup.transparent_color` and conservative `fuzz_percent`.
-4. Include confidence and notes where ambiguous.
-
-## Invariants
-
-- Never derive target character height from the source art. Target height comes
-  from `physical_height_cm` in the project contract.
-- Never move the canonical target root. It is fixed by the project contract.
-- Never request non-uniform scaling.
-- Never compensate a pose by changing model scale.
-- Never use alpha bbox as authority; it is diagnostic evidence only.
-- If the source is ambiguous, say so in `notes` and lower confidence rather
-  than inventing precision.
-
-## Output example
+Plan format (`character_asset_normalization_plan.schema.json`):
 
 ```json
-{
-  "schema": 1,
-  "character_model_id": "yuna",
-  "animation_id": "idle",
-  "source_body_height_px": 350.0,
-  "analysis": {
-    "method": "llm",
-    "confidence": 0.94,
-    "notes": "Common anatomical scale estimated from neutral standing frames."
-  },
-  "frames": [
-    {
-      "file": "000.png",
-      "source_root_px": [124.0, 380.0],
-      "confidence": 0.98
-    },
-    {
-      "file": "001.png",
-      "source_root_px": [124.5, 380.0],
-      "confidence": 0.96
-    }
-  ]
-}
+{"schema": 1, "source_root_px": [256, 470], "source_body_height_px": 400,
+ "analysis": {"method": "llm", "confidence": 0.9,
+              "notes": "Body crown at y70, stable ground root at y470; hair excluded."}}
 ```
 
-Return JSON only when the plan is intended for direct tool consumption.
+`heuristic` output has `method=script_heuristic` and is deliberately rejected by
+`place`. Review source pixels and replace the suggestions with reviewed values;
+changing the label without visual review is not review. No LLM dependency exists
+in raster operations or runtime. Coordinates use top-left origin/pixel centers.
+
+## Current consumer: 7.11
+
+Kotone/Yuna are application data: 172/155 cm, 1 px/cm, canvas 256×256, pivot
+(128,236), ground y236. Source checksums, agent-chosen commands and individual
+reviewed plans live in `character_recipes/locomotion_v1/`. Recorded commands can
+be replayed deterministically; they are evidence of this conversion, not an
+algorithm that chooses flows for future art.

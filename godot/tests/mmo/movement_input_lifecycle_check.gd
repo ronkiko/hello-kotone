@@ -99,11 +99,11 @@ func start() -> void:
 	world.input_adapter.set_process(false)
 	world.input_adapter._set_locomotion_intent(1)
 	world.platform._process(.04)
-	check(world.platform.sprite.position.x > world.platform.server_to_pixel(50), "UNSENT_TAP_STARTS_LOCAL_PREDICTION")
+	check(world.platform.character_root.position.x > world.platform.server_to_pixel(50), "UNSENT_TAP_STARTS_LOCAL_PREDICTION")
 	world.input_adapter._set_locomotion_intent(0)
 	world.platform._process(.5)
 	world.platform._process(0)
-	check(client._scheduled.is_empty() and channel.sent.is_empty() and is_equal_approx(world.platform.sprite.position.x,world.platform.server_to_pixel(50)) and world.platform.sprite.texture == world.platform.IDLE, "CANCELLED_UNSENT_TAP_MAGNETS_TO_CONFIRMED_IDLE")
+	check(client._scheduled.is_empty() and channel.sent.is_empty() and is_equal_approx(world.platform.character_root.position.x,world.platform.server_to_pixel(50)) and world.platform.sprite.animation == &"idle", "CANCELLED_UNSENT_TAP_MAGNETS_TO_CONFIRMED_IDLE")
 	world.queue_free()
 	await process_frame
 	client.disconnect_world()

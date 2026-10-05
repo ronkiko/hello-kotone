@@ -43,7 +43,7 @@ func start() -> void:
 	await process_frame
 	await process_frame
 	var world: Control = current_scene
-	var start_px: float = world.platform.sprite.position.x
+	var start_px: float = world.platform.character_root.position.x
 	var confirmed: int = client.world_replica.local_player().x
 
 	# Satisfy the fresh-world release gate, then start locally immediately.
@@ -52,7 +52,7 @@ func start() -> void:
 	check(world.input_adapter.locomotion_intent == 1 and client.state == "MOVING", "HELD_INPUT_ADMITTED_LOCALLY")
 	await create_timer(.15).timeout
 	check(client.world_replica.local_player().x == confirmed and input_acks == 0, "SERVER_ACK_STILL_DELAYED")
-	check(world.platform.sprite.position.x > start_px and world.platform.trajectory.model_x > start_px,
+	check(world.platform.character_root.position.x > start_px and world.platform.trajectory.model_x > start_px,
 		"LOCAL_RENDER_MOVES_WITHOUT_SERVER_ACK")
 	check(client.world_replica.local_player().x == confirmed, "PREDICTION_NEVER_WRITES_REPLICA")
 
@@ -97,9 +97,9 @@ func start() -> void:
 
 	await create_timer(.5).timeout
 	check(world.input_adapter.locomotion_intent == 0 and world.platform.trajectory.intent == 0, "RELEASE_IS_STABLE_STOP")
-	check(is_equal_approx(world.platform.sprite.position.x, world.platform.server_to_pixel(client.world_replica.local_player().x)),
+	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(client.world_replica.local_player().x)),
 		"FINAL_RENDER_CONVERGES_TO_AUTHORITATIVE_X")
-	check(world.platform.sprite.texture == world.platform.IDLE, "FINAL_STOP_RETURNS_FRONT_IDLE")
+	check(world.platform.sprite.animation == &"idle", "FINAL_STOP_RETURNS_FRONT_IDLE")
 	check(client.state == "READY", "SESSION_STAYS_HEALTHY")
 	check(client.logout(), "LOGOUT")
 	while client.state != "DISCONNECTED": await process_frame

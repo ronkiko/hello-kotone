@@ -3,10 +3,6 @@ extends Node2D
 const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
-const Kotone = preload("res://scenes/kotone.tscn")
-const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
-const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
-const IDLE = preload("res://assets/kotone_v2_idle_front.png")
 const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
 const LocalTrajectory = preload("res://scripts/presentation/local_trajectory.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
@@ -18,7 +14,9 @@ const TILE_SIZE := 16
 var terrain := TileMapLayer.new()
 var camera := Camera2D.new()
 var ruler := Node2D.new()
-var sprite: Sprite2D
+var character_root := Node2D.new()
+var visual_layer := Node2D.new()
+var sprite: AnimatedSprite2D
 var local_label := Label.new()
 var _suspended := false
 var remote_players: Dictionary = {}
@@ -52,14 +50,18 @@ func _ready() -> void:
 	ruler.z_index = 3
 	ruler.draw.connect(_draw_ruler)
 	add_child(ruler)
-	sprite = Kotone.instantiate()
-	# The standalone prototype controller owns local movement; MMO does not use it.
-	sprite.set_script(null)
-	sprite.scale = Vector2(0.65, 0.65)
-	sprite.position.y = FLOOR_Y - 42.25
-	add_child(sprite)
-	sprite.z_index = 1
-	local_label.position.y = sprite.position.y - 54
+	character_root.name = "CharacterRoot"
+	character_root.position.y = FLOOR_Y
+	add_child(character_root)
+	visual_layer.name = "CharacterVisualLayer"
+	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
+	character_root.add_child(visual_layer)
+	sprite = AnimatedSprite2D.new()
+	visual_layer.add_child(sprite)
+	Appearance.Library.install(sprite, "kotone")
+	Appearance.pose(sprite, false, 0, 0)
+	character_root.z_index = 1
+	local_label.position.y = FLOOR_Y - 172 * Appearance.DISPLAY_SCALE - 18
 	local_label.size = Vector2(128, 18)
 	local_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	local_label.add_theme_font_size_override("font_size", 11)
@@ -120,7 +122,7 @@ func project(document: Dictionary, view: Dictionary, _display_x_unused: Variant 
 		for id in remote_players.keys():
 			_remove_remote(id)
 	_position_installed = true
-	sprite.position.x = trajectory.visual_x
+	character_root.position.x = trajectory.visual_x
 	_sync_players()
 	_reframe()
 	return true
@@ -168,7 +170,7 @@ func _sync_players() -> void:
 		if not remote_players.has(id):
 			var node := RemotePlayer.new()
 			node.player_id = id
-			node.position.y = FLOOR_Y - 42.25
+			node.position.y = FLOOR_Y
 			add_child(node)
 			remote_players[id] = node
 		remote_players[id].configure_motion(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
@@ -180,7 +182,7 @@ func _sync_players() -> void:
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0
 	var right := ORIGIN_X * 2.0 + world_length
-	camera.position.x = right / 2.0 if right < half_width * 2.0 else clampf(sprite.position.x, half_width, right - half_width)
+	camera.position.x = right / 2.0 if right < half_width * 2.0 else clampf(character_root.position.x, half_width, right - half_width)
 	_update_tiles()
 	queue_redraw()
 	ruler.queue_redraw()
@@ -194,8 +196,8 @@ func _process(delta: float) -> void:
 	if _suspended or _map.is_empty() or sprite == null:
 		return
 	var sample := trajectory.advance(delta)
-	# External Sprite2D edits cannot become a new target or a movement request.
-	sprite.position.x = trajectory.visual_x
+	# External root edits cannot become a new target or a movement request.
+	character_root.position.x = trajectory.visual_x
 	local_label.position.x = trajectory.visual_x - 64
 	gait.update(sprite, sample.before, sample.after, sample.target, sample.intent, delta)
 	_reframe()
