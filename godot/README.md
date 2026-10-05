@@ -70,7 +70,10 @@ spritesheets are no longer the target runtime format.
 
 Minimum locomotion package animations are `idle_left`, `idle_right`,
 `walk_left`, and `walk_right`. Last movement direction selects the stopped pose;
-initial/Creator pose is `idle_right`. Both idle directions are prepared PNG
+initial/Creator pose is `idle_right`. Local intent owns local facing; remote
+presentation derives facing from observed displacement and settles into the
+matching directional idle once its displayed target is reached. This is visual
+velocity state, not inferred remote input. Both idle directions are prepared PNG
 frames. Runtime does not mirror art or substitute a missing view. Asymmetric
 models require independently authored directional sources. Current symmetric
 Yuna uses explicit offline mirror operations recorded in the recipe; Kotone
