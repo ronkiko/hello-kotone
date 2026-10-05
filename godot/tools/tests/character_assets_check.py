@@ -28,6 +28,9 @@ for change in ({'source_root_px':[0,float('inf')]},{'source_body_height_px':True
     rejects(lambda: frames.placement_plan({**plan,**change}),'invalid or unreviewed placement rejected')
 contract=packages.load_contract()
 check(contract.target_height_px('kotone')==172 and contract.target_height_px('yuna')==155,'MMO projection is a separate consumer')
+check(packages.animation_spec_names(list(packages.DEFAULT_ANIMATION_SPECS))==list(packages.REQUIRED_ANIMATIONS),'default build specs cover required directional animations')
+rejects(lambda:packages.animation_spec_names(['idle_left=1:true','idle_right=1:true','walk_left=8:true']),'incomplete SpriteFrames build spec rejected')
+rejects(lambda:packages.animation_spec_names(['idle_left=1:true','idle_left=2:true','idle_right=1:true','walk_left=8:true','walk_right=8:true']),'duplicate SpriteFrames build spec rejected')
 
 recipe=packages.REPO_ROOT/'godot/tools/character_recipes/locomotion_v1/commands.json'
 manifest=json.loads(recipe.read_text())
