@@ -34,14 +34,18 @@ static func sprite_frames_path(character_model_id: String) -> String:
 static func has_required_animations(frames: SpriteFrames) -> bool:
 	if frames == null:
 		return false
-	for animation in REQUIRED_ANIMATIONS:
-		if not frames.has_animation(animation):
+	for required in REQUIRED_ANIMATIONS:
+		if not frames.has_animation(required):
 			return false
-		if frames.get_frame_count(animation) <= 0 or frames.get_animation_speed(animation) <= 0:
+	for animation in frames.get_animation_names():
+		if not valid_model_id(String(animation)):
+			return false
+		if frames.get_frame_count(animation) <= 0 or frames.get_animation_speed(animation) <= 0.0:
 			return false
 		for index in range(frames.get_frame_count(animation)):
 			var texture := frames.get_frame_texture(animation, index)
-			if texture == null or texture.get_size() != Vector2(FrameContract.frame_size()): return false
+			if texture == null or texture.get_size() != Vector2(FrameContract.frame_size()):
+				return false
 	return true
 
 static func load_frames(character_model_id: String) -> SpriteFrames:
@@ -54,14 +58,8 @@ static func load_frames(character_model_id: String) -> SpriteFrames:
 		return null
 	for animation in frames.get_animation_names():
 		var animation_name := String(animation)
-		if not valid_model_id(animation_name):
-			return null
-		if frames.get_frame_count(animation) <= 0 or frames.get_animation_speed(animation) <= 0.0:
-			return null
 		for index in range(frames.get_frame_count(animation)):
 			var texture := frames.get_frame_texture(animation, index)
-			if texture == null or texture.get_size() != Vector2(FrameContract.frame_size()):
-				return null
 			if not texture.resource_path.begins_with(package_root(character_model_id) + "/" + animation_name + "/"):
 				return null
 	return frames
