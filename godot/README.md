@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.7.10
+## Current MMO client — v3.main.7.11 presentation corrective
 
 Current public protocol is **v7**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
@@ -42,6 +42,10 @@ plaintext fallback. Local development accepts only literal loopback and dev acco
 `dev1`–`dev3`. Passwords, handoff/session secrets stay in RAM and never become UI
 status text or preferences. Creator, own avatar and remote avatars share the same
 local Kotone/Yuna semantic appearance mapping with canonical `character_model_id`; physics remains server-authoritative.
+
+7.10 established semantic character-model selection. 7.11 is the separate
+presentation corrective that normalizes Kotone/Yuna assets and migrates the
+runtime to the canonical frame/SpriteFrames path.
 
 Raster humanoid art has a client-side machine contract:
 `assets/mmo/character_sprite_frame_contract_v1.json`, loaded by
