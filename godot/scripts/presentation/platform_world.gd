@@ -61,7 +61,7 @@ func _ready() -> void:
 	Appearance.Library.install(sprite, "kotone")
 	Appearance.pose(sprite, false, 0, 0)
 	character_root.z_index = 1
-	local_label.position.y = FLOOR_Y - 172 * Appearance.DISPLAY_SCALE - 18
+	local_label.position.y = FLOOR_Y - Appearance.display_height_px("kotone") - 18
 	local_label.size = Vector2(128, 18)
 	local_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	local_label.add_theme_font_size_override("font_size", 11)
@@ -162,7 +162,9 @@ func _sync_players() -> void:
 		if not players.has(id) or id == local_id:
 			_remove_remote(id)
 	if players.has(local_id) and players[local_id].has("character"):
-		Appearance.install(sprite, players[local_id].character.appearance_payload)
+		var local_appearance: Dictionary = players[local_id].character.appearance_payload
+		Appearance.install(sprite, local_appearance)
+		local_label.position.y = FLOOR_Y - Appearance.display_height_px(local_appearance.character_model_id) - 18
 	local_label.text = "%s (you)" % players[local_id].nickname if players.has(local_id) else ""
 	for id in players:
 		if id == local_id:
@@ -176,7 +178,7 @@ func _sync_players() -> void:
 		remote_players[id].configure_motion(_movement.step_units, _movement.min_move_interval_ms, _map.units_per_meter, PIXELS_PER_METER)
 		remote_players[id].suspended = _suspended
 		if players[id].has("character"):
-			Appearance.install(remote_players[id].sprite, players[id].character.appearance_payload)
+			remote_players[id].install_appearance(players[id].character.appearance_payload)
 		remote_players[id].project(players[id].nickname, server_to_pixel(players[id].x), ORIGIN_X, ORIGIN_X + world_length)
 
 func _reframe() -> void:
