@@ -55,7 +55,10 @@ static func validate(value: Dictionary) -> bool:
 		if not model is Dictionary:
 			return false
 		var height: Variant = model.get("nominal_standing_height_px")
-		if not height is int or height <= 0 or height >= 236:
+		if not (height is int or height is float):
+			return false
+		var height_px := int(height)
+		if float(height_px) != float(height) or height_px <= 0 or height_px >= 236:
 			return false
 	return true
 
