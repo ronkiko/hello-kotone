@@ -75,8 +75,15 @@ python godot/tools/character_assets.py inspect \
   --source-dir /tmp/yuna-idle-raw \
   --output-dir /tmp/yuna-idle-analysis
 
-# Give analysis-board.png + analysis-packet.json to an LLM or human reviewer.
-# Reviewer returns Character Asset Normalization Plan v1 JSON.
+# Optional: create a low-confidence automatic draft for review.
+python godot/tools/character_assets.py detect-plan \
+  --model yuna \
+  --animation idle \
+  --source-dir /tmp/yuna-idle-raw \
+  --output /tmp/yuna-idle-draft-plan.json
+
+# Give analysis-board.png + analysis-packet.json and optionally the draft plan
+# to an LLM or human reviewer. Reviewer returns/revises a v1 normalization plan.
 
 python godot/tools/character_assets.py normalize \
   --plan /tmp/yuna-idle-plan.json \
@@ -141,6 +148,13 @@ The important split is:
 - **LLM/human chooses semantics**: anatomical scale and source root points;
 - **ImageMagick applies pixels deterministically**;
 - **Godot builds the runtime resource**.
+
+The optional `detect-plan` command estimates a first draft from silhouette geometry
+(bottom-band contact center + median alpha silhouette height). It is intentionally
+marked `analysis.method = "script_heuristic"` and is **not accepted by
+`normalize` by default**. An LLM/human should review it and change the analysis
+method to a reviewed value. Explicit bypass exists only as
+`--accept-unreviewed-heuristic` for controlled experiments.
 
 The plan has one `source_body_height_px` for the whole animation. Per-frame scale
 is intentionally impossible. Each frame may have a different source root only to
