@@ -119,8 +119,3 @@ static func canonical_height_px(character_model_id: String) -> int:
 		return 0
 	return height_cm * px_per_cm
 
-static func sheet_geometry_matches(image: Image, columns: int, rows: int) -> bool:
-	if image == null or columns <= 0 or rows <= 0:
-		return false
-	var size := frame_size()
-	return image.get_width() == size.x * columns and image.get_height() == size.y * rows
