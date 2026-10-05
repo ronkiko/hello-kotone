@@ -1,5 +1,5 @@
 extends RefCounted
-## One bounded, non-blocking TCP stream. Call poll() from the render loop.
+## Bounded TCP/TLS stream; Beta validates certificates and never falls back. Call poll() from the render loop.
 
 signal connected
 signal frame_received(frame: PackedByteArray)
@@ -11,6 +11,11 @@ var connect_timeout_ms := 5000
 var write_timeout_ms := 5000
 var frame_timeout_ms := 10000
 var _peer := StreamPeerTCP.new()
+var _tls: StreamPeerTLS
+var _stream: StreamPeer
+var _tls_required := false
+var _host := ""
+var _trusted_ca: X509Certificate
 var _closed := true
 var _connecting := false
 var _resolver := IP.RESOLVER_INVALID_ID
@@ -22,8 +27,18 @@ var _receive := PackedByteArray()
 var _send := PackedByteArray()
 var _send_offset := 0
 
-func open(host: String, port: int) -> void:
+func open(host: String, port: int, profile: String = "trusted_local_dev", trusted_ca: X509Certificate = null) -> void:
 	close()
+	if profile not in ["trusted_local_dev", "internet_beta"]:
+		failed.emit("SECURITY_PROFILE_INVALID")
+		return
+	if profile == "trusted_local_dev" and not (host.is_valid_ip_address() and (host == "::1" or host.begins_with("127."))):
+		failed.emit("INSECURE_REMOTE_FORBIDDEN")
+		return
+	_tls_required = profile == "internet_beta"
+	_host = host
+	_trusted_ca = trusted_ca
+	_stream = _peer
 	_closed = false
 	_connecting = true
 	_port = port
@@ -46,6 +61,11 @@ func close() -> void:
 	if _resolver != IP.RESOLVER_INVALID_ID:
 		IP.erase_resolve_item(_resolver)
 		_resolver = IP.RESOLVER_INVALID_ID
+	if _tls != null:
+		_tls.disconnect_from_stream()
+		_tls = null
+	_stream = null
+	_trusted_ca = null
 	_peer.disconnect_from_host()
 	_receive.clear()
 	_send.clear()
@@ -87,6 +107,19 @@ func poll() -> void:
 	if peer_state != StreamPeerTCP.STATUS_CONNECTED or poll_error != OK:
 		_fail("CONNECT_FAILED" if _connecting else ("TRUNCATED_FRAME" if not _receive.is_empty() else "DISCONNECTED"))
 		return
+	if _tls_required:
+		if _tls == null:
+			_tls = StreamPeerTLS.new()
+			if _tls.connect_to_stream(_peer, _host, TLSOptions.client(_trusted_ca)) != OK:
+				_fail("TLS_FAILED")
+				return
+			_stream = _tls
+		_tls.poll()
+		if _tls.get_status() == StreamPeerTLS.STATUS_HANDSHAKING:
+			return
+		if _tls.get_status() != StreamPeerTLS.STATUS_CONNECTED:
+			_fail("TLS_FAILED")
+			return
 	if _connecting:
 		_connecting = false
 		_peer.set_no_delay(true)
@@ -97,7 +130,7 @@ func poll() -> void:
 		if now >= _write_deadline:
 			_fail("WRITE_TIMEOUT")
 			return
-		var sent := _peer.put_partial_data(_send.slice(_send_offset))
+		var sent := _stream.put_partial_data(_send.slice(_send_offset))
 		if sent[0] != OK:
 			_fail("WRITE_FAILED")
 			return
@@ -109,8 +142,8 @@ func poll() -> void:
 		_fail("FRAME_TIMEOUT")
 		return
 	var budget := READ_BUDGET
-	while not _closed and budget > 0 and _peer.get_available_bytes() > 0:
-		var received := _peer.get_partial_data(mini(4096, mini(budget, _peer.get_available_bytes())))
+	while not _closed and budget > 0 and _stream.get_available_bytes() > 0:
+		var received := _stream.get_partial_data(mini(4096, mini(budget, _stream.get_available_bytes())))
 		if received[0] != OK:
 			_fail("READ_FAILED")
 			return

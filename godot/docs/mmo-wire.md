@@ -101,3 +101,21 @@ explicit reconnect clears both and starts fresh Login/ticket/Host enter.
 Host session_rules stays separate from Runtime/card world rules and capabilities.
 The removed world_id alias is replaced by identity.realm_id. Restart all services
 and Godot together when upgrading v5 to v6.
+
+
+## Beta TLS transport — v3.main.7.08
+
+The shared channel now supports `open(host, port, "internet_beta", trusted_ca)`
+using StreamPeerTLS and TLSOptions.client. A null CA uses platform trust; an
+explicit CA must be provisioned by the operator. The original hostname is
+validated before connected/send. There is no unsafe TLS option or plaintext
+fallback. DNS, TCP and TLS share the absolute connect deadline. Retain Beta mode
+for all advertised Login/Lobby/Game endpoints. Explicit trusted_local_dev mode
+allows plaintext only to literal loopback IPs.
+
+This patch prepares transport security; the existing v6 application flow is
+migrated to v7 account/realm/character screens in 7.09. Native TLS acceptance:
+from the neighboring ai_research repository with supported Python, run
+`python3 v3/game/op/check-beta-godot.py --project ../hello-kotone/godot`.
+It covers all three public services, untrusted CA, hostname mismatch, no downgrade,
+remote insecure rejection and explicit local TCP.
