@@ -6,12 +6,14 @@ Only validate/build-spriteframes use this application's model/frame contract.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from frame_tools import ToolError, run, find_imagemagick, png_geometry, alpha_bbox
@@ -23,7 +25,9 @@ FRAME_RE = re.compile(r"^(\d{3})\.png$")
 RESOURCE_PNG_RE = re.compile(r'path="(res://[^"]+\.png)"')
 
 GODOT_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = GODOT_ROOT.parent
 ASSET_ROOT = GODOT_ROOT / "assets" / "characters"
+FRAME_TOOLS_PATH = GODOT_ROOT / "tools" / "frame_tools.py"
 CONTRACT_PATH = GODOT_ROOT / "assets" / "mmo" / "character_sprite_frame_contract_v1.json"
 PLAN_SCHEMA_PATH = GODOT_ROOT / "tools" / "character_asset_normalization_plan.schema.json"
 LLM_PROTOCOL_PATH = GODOT_ROOT / "tools" / "character_asset_llm_analysis.md"
@@ -134,6 +138,153 @@ def ensure_empty_output(directory: Path, force: bool) -> None:
 
 def res_path(path: Path) -> str:
     return "res://" + path.resolve().relative_to(GODOT_ROOT.resolve()).as_posix()
+
+
+def _repo_relative_path(value: str, label: str) -> Path:
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ToolError(f"{label} must be a repository-relative path")
+    resolved = (REPO_ROOT / path).resolve()
+    try:
+        resolved.relative_to(REPO_ROOT.resolve())
+    except ValueError as exc:
+        raise ToolError(f"{label} escapes repository root") from exc
+    return resolved
+
+
+def _recipe_root(path: Path) -> Path:
+    root = path.resolve()
+    if not root.is_dir():
+        raise ToolError(f"{root}: recipe directory does not exist")
+    try:
+        root.relative_to(REPO_ROOT.resolve())
+    except ValueError as exc:
+        raise ToolError("recipe must live inside the repository") from exc
+    return root
+
+
+def _expand_recipe_command(command: list, values: dict[str, str]) -> list[str]:
+    if not isinstance(command, list) or not command:
+        raise ToolError("recipe command must be a non-empty array")
+    expanded: list[str] = []
+    for item in command:
+        if not isinstance(item, str):
+            raise ToolError("recipe command arguments must be strings")
+        value = item
+        for token, replacement in values.items():
+            value = value.replace(token, replacement)
+        if "{" in value or "}" in value:
+            raise ToolError(f"unknown recipe placeholder in {item!r}")
+        expanded.append(value)
+    if expanded[0] not in frame_tools.OPERATIONS:
+        raise ToolError(f"recipe operation is not an atomic frame tool: {expanded[0]!r}")
+    return expanded
+
+
+def command_replay_recipe(args: argparse.Namespace) -> None:
+    recipe = _recipe_root(args.recipe)
+    manifest_path = recipe / "commands.json"
+    if not manifest_path.is_file():
+        raise ToolError(f"{manifest_path}: recipe manifest is missing")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(manifest, dict)
+        or type(manifest.get("schema")) is not int
+        or manifest.get("schema") != 1
+        or not isinstance(manifest.get("sources"), list)
+        or not isinstance(manifest.get("commands"), list)
+    ):
+        raise ToolError("invalid recipe manifest")
+
+    verified_sources = 0
+    for source in manifest["sources"]:
+        if not isinstance(source, dict):
+            raise ToolError("recipe source entry must be an object")
+        raw_path = source.get("path")
+        expected = source.get("sha256")
+        if not isinstance(raw_path, str) or not re.fullmatch(r"[0-9a-f]{64}", str(expected)):
+            raise ToolError("recipe source requires relative path and lowercase sha256")
+        path = _repo_relative_path(raw_path, "source path")
+        if not path.is_file():
+            raise ToolError(f"{path}: committed recipe source is missing")
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected:
+            raise ToolError(f"{raw_path}: source sha256 mismatch")
+        verified_sources += 1
+
+    with tempfile.TemporaryDirectory(prefix="character-recipe-") as temp:
+        temp_root = Path(temp)
+        work = temp_root / "work"
+        output = temp_root / "output"
+        work.mkdir()
+        output.mkdir()
+        values = {
+            "{repo}": str(REPO_ROOT.resolve()),
+            "{work}": str(work),
+            "{recipe}": str(recipe),
+            "{output}": str(output),
+        }
+        operations = 0
+        for raw in manifest["commands"]:
+            command = _expand_recipe_command(raw, values)
+            process = subprocess.run(
+                [sys.executable, str(FRAME_TOOLS_PATH), *command],
+                cwd=REPO_ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if process.returncode:
+                raise ToolError(
+                    f"recipe operation {operations} failed: {' '.join(command)}\n"
+                    f"{process.stderr.strip() or process.stdout.strip()}"
+                )
+            operations += 1
+
+        generated = sorted(output.rglob("*.png"))
+        if not generated:
+            raise ToolError("recipe generated no canonical PNG frames")
+        relative = [path.relative_to(output) for path in generated]
+        models = sorted({path.parts[0] for path in relative if len(path.parts) >= 3})
+        if not models:
+            raise ToolError("recipe output has no model/animation/frame hierarchy")
+
+        expected_paths: list[Path] = []
+        for model in models:
+            model_root = ASSET_ROOT / model
+            if not model_root.is_dir():
+                raise ToolError(f"{model_root}: canonical model package is missing")
+            expected_paths.extend(
+                path.relative_to(ASSET_ROOT)
+                for path in sorted(model_root.rglob("*.png"))
+            )
+        if relative != sorted(expected_paths):
+            raise ToolError(
+                "recipe output set differs from canonical package: "
+                f"generated={len(relative)} canonical={len(expected_paths)}"
+            )
+
+        identical = 0
+        for rel, produced in zip(relative, generated):
+            canonical = ASSET_ROOT / rel
+            if hashlib.sha256(produced.read_bytes()).digest() != hashlib.sha256(canonical.read_bytes()).digest():
+                raise ToolError(f"{rel}: replay output differs from committed canonical frame")
+            identical += 1
+
+    print(
+        json.dumps(
+            {
+                "result": "PASS",
+                "recipe": str(recipe.relative_to(REPO_ROOT)),
+                "sources_verified": verified_sources,
+                "operations": operations,
+                "frames_reproduced_byte_identical": identical,
+                "models": models,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 def command_doctor(args: argparse.Namespace) -> None:
@@ -316,6 +467,13 @@ def main(argv: list[str]) -> int:
     doctor = sub.add_parser("doctor")
     doctor.add_argument("--godot")
     doctor.set_defaults(func=command_doctor)
+    replay = sub.add_parser(
+        "replay-recipe",
+        help="replay a committed agent recipe and compare output with canonical frames",
+    )
+    replay.add_argument("recipe", type=Path)
+    replay.set_defaults(func=command_replay_recipe)
+
     validate = sub.add_parser("validate", help="validate the installed MMO character packages")
     validate.add_argument("models", nargs="*")
     validate.add_argument("--frames-only", action="store_true")
