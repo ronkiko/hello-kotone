@@ -39,7 +39,16 @@
       "additionalProperties": false,
       "properties": {
         "author": {"type": "string"},
-        "method": {"enum": ["human", "llm", "human_reviewed_llm"]},
+        "method": {
+          "enum": [
+            "script_heuristic",
+            "llm",
+            "human",
+            "llm_reviewed_heuristic",
+            "human_reviewed_heuristic",
+            "human_reviewed_llm"
+          ]
+        },
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         "notes": {"type": "string"}
       }
