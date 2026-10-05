@@ -291,6 +291,29 @@ def load_plan(path: Path, contract: Contract) -> dict:
             or not 0 <= float(fuzz) <= 25
         ):
             raise ToolError(f"{path}: fuzz_percent must be in [0,25]")
+        if "transparent_color" not in cleanup:
+            raise ToolError(f"{path}: fuzz_percent requires transparent_color")
+
+    analysis = value.get("analysis", {})
+    if not isinstance(analysis, dict):
+        raise ToolError(f"{path}: analysis must be an object")
+    if set(analysis) - {"author", "method", "confidence", "notes"}:
+        raise ToolError(f"{path}: unknown analysis fields")
+    if "method" in analysis and analysis["method"] not in {
+        "human",
+        "llm",
+        "human_reviewed_llm",
+    }:
+        raise ToolError(f"{path}: invalid analysis.method")
+    if "confidence" in analysis:
+        confidence = analysis["confidence"]
+        if (
+            not isinstance(confidence, (int, float))
+            or isinstance(confidence, bool)
+            or not math.isfinite(float(confidence))
+            or not 0 <= float(confidence) <= 1
+        ):
+            raise ToolError(f"{path}: analysis.confidence must be in [0,1]")
 
     frames = value.get("frames")
     if not isinstance(frames, list) or not frames:
@@ -324,6 +347,7 @@ def load_plan(path: Path, contract: Contract) -> dict:
             if (
                 not isinstance(confidence, (int, float))
                 or isinstance(confidence, bool)
+                or not math.isfinite(float(confidence))
                 or not 0 <= float(confidence) <= 1
             ):
                 raise ToolError(f"{path}: {name} confidence must be in [0,1]")
@@ -569,6 +593,12 @@ def command_normalize(args: argparse.Namespace) -> None:
 
     for item, source in zip(plan["frames"], source_frames):
         root_x, root_y = (float(value) for value in item["source_root_px"])
+        source_width, source_height_px = identify_geometry(im, source)
+        if not 0 <= root_x <= source_width - 1 or not 0 <= root_y <= source_height_px - 1:
+            raise ToolError(
+                f"{source}: source_root_px {(root_x, root_y)} is outside "
+                f"{source_width}x{source_height_px}"
+            )
         destination = output / source.name
         command: list[str] = [*im.convert, str(source), "-alpha", "on"]
         color = cleanup.get("transparent_color")
