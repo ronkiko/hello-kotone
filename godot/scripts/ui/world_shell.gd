@@ -10,8 +10,8 @@ var platform: Node2D
 const LOGIN_SCENE := "res://scenes/mmo/login.tscn"
 @onready var identity: Label = $Layout/Column/Identity
 @onready var status_label: Label = $Layout/Column/Status
-@onready var leave_button: Button = $Layout/Column/Leave
-@onready var refresh_button: Button = $Layout/Column/Refresh
+@onready var leave_button: Button = $Layout/Column/Actions/Leave
+@onready var refresh_button: Button = $Layout/Column/Actions/Refresh
 @onready var position_label: Label = $Layout/Column/Position
 var _transition_pending := false
 
@@ -19,8 +19,10 @@ func _ready() -> void:
 	leave_button.pressed.connect(_leave_world)
 	var signout := Button.new()
 	signout.text = "Sign out account"
+	signout.custom_minimum_size.y = 22
+	signout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	signout.pressed.connect(Preworld.signout)
-	$Layout/Column.add_child(signout)
+	$Layout/Column/Actions.add_child(signout)
 	refresh_button.pressed.connect(MmoClient.request_state)
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)

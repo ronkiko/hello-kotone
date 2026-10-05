@@ -42,7 +42,28 @@ func _find_button(node: Node, text: String) -> Button:
 func press(text: String) -> void:
 	var node := button(text)
 	check(node != null and not node.disabled, "button " + text)
-	if node != null and not node.disabled: node.pressed.emit()
+	if node != null and not node.disabled:
+		var ancestor: Node = node.get_parent()
+		while ancestor != null:
+			if ancestor is ScrollContainer: ancestor.ensure_control_visible(node)
+			ancestor = ancestor.get_parent()
+		await process_frame
+		await process_frame
+		var point := node.get_global_rect().get_center()
+		check(root.get_visible_rect().has_point(point), "reachable by mouse " + text)
+		var down := InputEventMouseButton.new()
+		down.position = point
+		down.button_index = MOUSE_BUTTON_LEFT
+		down.pressed = true
+		down.global_position = point
+		root.push_input(down, true)
+		await process_frame
+		var up := InputEventMouseButton.new()
+		up.position = point
+		up.button_index = MOUSE_BUTTON_LEFT
+		up.pressed = false
+		up.global_position = point
+		root.push_input(up, true)
 	await process_frame
 
 func screenshot(label: String) -> void:
