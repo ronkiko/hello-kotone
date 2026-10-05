@@ -450,16 +450,9 @@ def command_validate(args: argparse.Namespace) -> None:
     print(json.dumps({"result": "PASS", "models": reports}, indent=2))
 
 
-def command_build_spriteframes(args: argparse.Namespace) -> None:
-    contract = load_contract()
-    model_id = validate_id(args.model, "character_model_id", MODEL_RE)
-    contract.target_height_px(model_id)
-    root = ASSET_ROOT / model_id
-    if not root.is_dir():
-        raise ToolError(f"{root}: model package is missing")
-
-    specs = args.animation or list(MODEL_ANIMATION_SPECS.get(model_id, DEFAULT_ANIMATION_SPECS))
+def animation_spec_names(specs: list[str] | tuple[str, ...]) -> list[str]:
     seen: set[str] = set()
+    names: list[str] = []
     for spec in specs:
         match = re.fullmatch(
             r"([a-z0-9][a-z0-9_-]{0,63})=([0-9]+(?:\.[0-9]+)?):(true|false)",
@@ -473,6 +466,23 @@ def command_build_spriteframes(args: argparse.Namespace) -> None:
         if name in seen:
             raise ToolError(f"duplicate animation spec: {name}")
         seen.add(name)
+        names.append(name)
+    missing = sorted(set(REQUIRED_ANIMATIONS) - seen)
+    if missing:
+        raise ToolError(f"missing required animation specs: {missing}")
+    return names
+
+
+def command_build_spriteframes(args: argparse.Namespace) -> None:
+    contract = load_contract()
+    model_id = validate_id(args.model, "character_model_id", MODEL_RE)
+    contract.target_height_px(model_id)
+    root = ASSET_ROOT / model_id
+    if not root.is_dir():
+        raise ToolError(f"{root}: model package is missing")
+
+    specs = args.animation or list(MODEL_ANIMATION_SPECS.get(model_id, DEFAULT_ANIMATION_SPECS))
+    for name in animation_spec_names(specs):
         frame_files(root / name)
 
     godot = find_godot(args.godot)
