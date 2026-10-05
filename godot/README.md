@@ -43,6 +43,15 @@ plaintext fallback. Local development accepts only literal loopback and dev acco
 status text or preferences. Creator, own avatar and remote avatars share the same
 local Kotone/Yuna semantic appearance mapping with canonical `character_model_id`; physics remains server-authoritative.
 
+Raster humanoid art now has a client-side machine contract:
+`assets/mmo/character_sprite_frame_contract_v1.json`, loaded by
+`scripts/presentation/character_sprite_frame_contract.gd`. Canonical frame is
+256×256, ground-contact pivot is (128,236), baseline is y=236. Current target
+presentation heights are Kotone=192 px and Yuna=176 px. These are art/presentation
+values only; world position and physics never come from bitmap bounds. Existing
+pre-contract sheets remain source material until normalized; do not add new
+state-specific scale compensation for their arbitrary dimensions.
+
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
 fencing and bounded heartbeat remain active. Unknown outcomes never replay input or
 mutations; character mutation receipts reconcile only on explicit human action.
