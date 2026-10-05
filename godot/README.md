@@ -68,8 +68,13 @@ metadata lives in the native Godot `SpriteFrames` resource
 `assets/characters/<character_model_id>/sprite_frames.tres`; manually-authored
 spritesheets are no longer the target runtime format.
 
-Minimum locomotion package animations are `idle`, `walk_left`, and
-`walk_right`. The canonical offline entry point is:
+Minimum locomotion package animations are `idle_left`, `idle_right`,
+`walk_left`, and `walk_right`. Last movement direction selects the stopped pose;
+initial/Creator pose is `idle_right`. Both idle directions are prepared PNG
+frames. Runtime does not mirror art or substitute a missing view. Asymmetric
+models require independently authored directional sources. Current symmetric
+Yuna uses explicit offline mirror operations recorded in the recipe; Kotone
+retains front-facing art in both idle slots. The canonical offline entry point is:
 
 ```text
 python godot/tools/character_assets.py doctor
@@ -85,7 +90,7 @@ The raster operations are independent tools in `tools/frame_tools.py`:
 validator/native Godot builder and deterministic committed-recipe replay. See
 `tools/character_asset_llm_analysis.md`.
 
-Kotone/Yuna locomotion is converted: 36 canonical PNG frames and two native
+Kotone/Yuna locomotion is converted: 44 canonical PNG frames and two native
 SpriteFrames resources. Creator, own and remote visuals have unit sprite scale
 under the same 0.48 display transform; character roots are anchored at the floor.
 Original locomotion sheets live outside the Godot runtime asset tree under

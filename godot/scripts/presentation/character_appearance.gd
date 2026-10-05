@@ -29,6 +29,9 @@ static func catalog_model_supported(character_model_id: String, model: Dictionar
 			if not option in local[key]: return false
 	return true
 
+static func idle_animation(facing: int) -> StringName:
+	return &"idle_left" if facing < 0 else &"idle_right"
+
 static func walk_animation(facing: int) -> StringName:
 	return &"walk_left" if facing < 0 else &"walk_right"
 
@@ -40,17 +43,18 @@ static func pose(sprite: AnimatedSprite2D, walking: bool, facing: int, index: in
 	# Gait owns progression from displacement. Native playback stays paused so a
 	# blocked/stale world cannot advance legs independently of rendered movement.
 	sprite.pause()
-	sprite.animation = walk_animation(facing) if walking else &"idle"
+	sprite.animation = walk_animation(facing) if walking else idle_animation(facing)
 	sprite.frame = posmod(index, sprite.sprite_frames.get_frame_count(sprite.animation))
 
-static func idle_frame(sprite: AnimatedSprite2D, elapsed: float) -> int:
+static func idle_frame(sprite: AnimatedSprite2D, elapsed: float, facing: int = 1) -> int:
 	var frames := sprite.sprite_frames
-	var count := frames.get_frame_count(&"idle")
+	var animation := idle_animation(facing)
+	var count := frames.get_frame_count(animation)
 	var total := 0.0
-	for i in range(count): total += frames.get_frame_duration(&"idle", i)
-	var cursor := fmod(maxf(elapsed, 0.0) * frames.get_animation_speed(&"idle"), total)
+	for i in range(count): total += frames.get_frame_duration(animation, i)
+	var cursor := fmod(maxf(elapsed, 0.0) * frames.get_animation_speed(animation), total)
 	for i in range(count):
-		cursor -= frames.get_frame_duration(&"idle", i)
+		cursor -= frames.get_frame_duration(animation, i)
 		if cursor < 0.0: return i
 	return 0
 

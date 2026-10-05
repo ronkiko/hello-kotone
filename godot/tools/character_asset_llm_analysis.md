@@ -77,6 +77,18 @@ Plan format (`character_asset_normalization_plan.schema.json`):
 changing the label without visual review is not review. No LLM dependency exists
 in raster operations or runtime. Coordinates use top-left origin/pixel centers.
 
+## Directional views and asymmetric models
+
+The MMO package requires prepared `idle_left`, `idle_right`, `walk_left`, and
+`walk_right` frames. Runtime chooses names only; it cannot mirror or synthesize
+a missing view. Independent asymmetric models need source art for both sides.
+The agent reviews each view and normalizes them to the same physical height,
+ground, and pivot. Mirroring is an explicit authoring decision permitted only
+for art reviewed as symmetric; it is recorded as atomic offline recipe steps.
+Mirror source poses before placement and reflect source-root coordinates with
+x' = width-1-x; do not flip a final canvas and displace its normalized pivot.
+See `character_recipes/locomotion_v1/README.md` for current-model decisions.
+
 ## Current consumer: 7.11
 
 Kotone/Yuna are application data: 172/155 cm, 1 px/cm, canvas 256×256, pivot

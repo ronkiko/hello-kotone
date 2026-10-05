@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "source_root_px": [
+    90,
+    371
+  ],
+  "source_body_height_px": 344,
+  "analysis": {
+    "method": "llm",
+    "author": "Codex visual source review",
+    "confidence": 0.86,
+    "notes": "Reviewed crown under hair, body axis and soles. Idle source translation varies between cells; root removes authored drift. Walk uses stable pelvis axis rather than swinging foot. Body height is anatomical, not alpha bounds. Pose variation is retained. Discard alpha <= 5% red/white extraction residue before resampling; no opaque clothing removed. Current Yuna is treated as symmetric by author decision. Left idle uses an explicit offline source mirror; root x maps to 247-x before placement, preserving canonical pivot. Future asymmetric models require independent left source art."
+  }
+}

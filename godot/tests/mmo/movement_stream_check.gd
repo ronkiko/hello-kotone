@@ -88,7 +88,7 @@ func real_wall() -> void:
 	check(own_events - before_events >= 50 and own_events - before_events <= 51, "SERVER_CADENCE_OWNS_LEFT_STEPS")
 	check(client.session_id == session, "LEFT_SESSION_UNCHANGED")
 	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(0)), "LEFT_RENDER_CONVERGED")
-	check(world.platform.sprite.animation == &"idle", "LEFT_RELEASE_FRONT_IDLE")
+	check(world.platform.sprite.animation == &"idle_left", "LEFT_RELEASE_DIRECTIONAL_IDLE")
 	await capture("left-wall")
 
 	before_events = own_events
@@ -99,7 +99,7 @@ func real_wall() -> void:
 	check(own_events - before_events >= 100 and own_events - before_events <= 101, "SERVER_CADENCE_OWNS_RIGHT_STEPS")
 	check(client.session_id == session, "RIGHT_SESSION_UNCHANGED")
 	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(100)), "RIGHT_RENDER_CONVERGED")
-	check(world.platform.sprite.animation == &"idle", "RIGHT_RELEASE_FRONT_IDLE")
+	check(world.platform.sprite.animation == &"idle_right", "RIGHT_RELEASE_DIRECTIONAL_IDLE")
 	await capture("right-wall")
 
 	world.platform.character_root.position.x = -10000

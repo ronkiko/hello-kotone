@@ -33,10 +33,10 @@ CONTRACT_PATH = GODOT_ROOT / "assets" / "mmo" / "character_sprite_frame_contract
 PLAN_SCHEMA_PATH = GODOT_ROOT / "tools" / "character_asset_normalization_plan.schema.json"
 LLM_PROTOCOL_PATH = GODOT_ROOT / "tools" / "character_asset_llm_analysis.md"
 SPRITEFRAMES_BUILDER = "res://tools/build_character_spriteframes.gd"
-REQUIRED_ANIMATIONS = ("idle", "walk_left", "walk_right")
-DEFAULT_ANIMATION_SPECS = ("idle=3.333333:true", "walk_left=8:true", "walk_right=8:true")
+REQUIRED_ANIMATIONS = ("idle_left", "idle_right", "walk_left", "walk_right")
+DEFAULT_ANIMATION_SPECS = ("idle_left=3.333333:true", "idle_right=3.333333:true", "walk_left=8:true", "walk_right=8:true")
 MODEL_ANIMATION_SPECS = {
-    "yuna": ("idle=0.5:true", "walk_left=8:true", "walk_right=8:true"),
+    "yuna": ("idle_left=0.5:true", "idle_right=0.5:true", "walk_left=8:true", "walk_right=8:true"),
 }
 
 

@@ -33,8 +33,11 @@ func run() -> void:
 	check(Library.sprite_frames_path("yuna") == "res://assets/characters/yuna/sprite_frames.tres", "canonical SpriteFrames path")
 
 	var frames := _frames()
-	check(Library.has_required_animations(frames), "idle and directional walk animations required")
+	check(Library.has_required_animations(frames), "both directional idle and walk animations required")
 
+	var one_sided := _frames()
+	one_sided.remove_animation(&"idle_left")
+	check(not Library.has_required_animations(one_sided), "missing left idle is rejected without runtime mirror fallback")
 	var incomplete := SpriteFrames.new()
 	check(not Library.has_required_animations(incomplete), "incomplete animation resource rejected")
 

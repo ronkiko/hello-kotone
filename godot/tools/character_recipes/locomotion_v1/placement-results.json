@@ -20,7 +20,7 @@
       183
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/000.png"
+    "output": "assets/characters/kotone/idle_right/000.png"
   },
   {
     "result": "PASS",
@@ -43,30 +43,7 @@
       183
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/001.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 1.3870967741935485,
-    "source_root_px": [
-      65,
-      128
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 172.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 172.0,
-    "alpha_bbox_diagnostic": [
-      97,
-      58,
-      62,
-      183
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/002.png"
+    "output": "assets/characters/kotone/idle_left/000.png"
   },
   {
     "result": "PASS",
@@ -89,7 +66,30 @@
       183
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/003.png"
+    "output": "assets/characters/kotone/idle_right/001.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      98,
+      58,
+      61,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_left/001.png"
   },
   {
     "result": "PASS",
@@ -112,7 +112,7 @@
       183
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/004.png"
+    "output": "assets/characters/kotone/idle_right/002.png"
   },
   {
     "result": "PASS",
@@ -135,7 +135,145 @@
       183
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/kotone/idle/005.png"
+    "output": "assets/characters/kotone/idle_left/002.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      98,
+      58,
+      61,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_right/003.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      98,
+      58,
+      61,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_left/003.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      97,
+      58,
+      62,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_right/004.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      97,
+      58,
+      62,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_left/004.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      97,
+      58,
+      62,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_right/005.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 1.3870967741935485,
+    "source_root_px": [
+      65,
+      128
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 172.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 172.0,
+    "alpha_bbox_diagnostic": [
+      97,
+      58,
+      62,
+      183
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/kotone/idle_left/005.png"
   },
   {
     "result": "PASS",
@@ -434,7 +572,30 @@
       161
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/000.png"
+    "output": "assets/characters/yuna/idle_right/000.png"
+  },
+  {
+    "result": "PASS",
+    "uniform_scale": 0.45058139534883723,
+    "source_root_px": [
+      81,
+      372
+    ],
+    "target_root_px": [
+      128.0,
+      236.0
+    ],
+    "physical_height_cm": 155.0,
+    "pixels_per_cm": 1.0,
+    "target_body_height_px": 155.0,
+    "alpha_bbox_diagnostic": [
+      105,
+      78,
+      53,
+      161
+    ],
+    "edge_touch_warning": false,
+    "output": "assets/characters/yuna/idle_left/000.png"
   },
   {
     "result": "PASS",
@@ -457,59 +618,13 @@
       161
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/001.png"
+    "output": "assets/characters/yuna/idle_right/001.png"
   },
   {
     "result": "PASS",
     "uniform_scale": 0.45058139534883723,
     "source_root_px": [
-      149,
-      373
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      97,
-      77,
-      57,
-      162
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/002.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      140,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      101,
-      78,
-      51,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/003.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      131,
+      90,
       371
     ],
     "target_root_px": [
@@ -520,266 +635,13 @@
     "pixels_per_cm": 1.0,
     "target_body_height_px": 155.0,
     "alpha_bbox_diagnostic": [
-      98,
-      79,
-      57,
-      160
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/004.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      123,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      100,
+      106,
       78,
       52,
       161
     ],
     "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/005.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      115,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      100,
-      78,
-      56,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/006.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      105,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      99,
-      78,
-      55,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/007.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      164,
-      373
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      96,
-      76,
-      57,
-      163
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/008.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      155,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      96,
-      78,
-      54,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/009.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      146,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      95,
-      78,
-      56,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/010.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      137,
-      373
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      94,
-      77,
-      61,
-      162
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/011.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      128,
-      371
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      99,
-      78,
-      54,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/012.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      120,
-      373
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      98,
-      76,
-      54,
-      163
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/013.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      111,
-      371
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      100,
-      77,
-      58,
-      162
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/014.png"
-  },
-  {
-    "result": "PASS",
-    "uniform_scale": 0.45058139534883723,
-    "source_root_px": [
-      102,
-      372
-    ],
-    "target_root_px": [
-      128.0,
-      236.0
-    ],
-    "physical_height_cm": 155.0,
-    "pixels_per_cm": 1.0,
-    "target_body_height_px": 155.0,
-    "alpha_bbox_diagnostic": [
-      98,
-      78,
-      54,
-      161
-    ],
-    "edge_touch_warning": false,
-    "output": "assets/characters/yuna/idle/015.png"
+    "output": "assets/characters/yuna/idle_left/001.png"
   },
   {
     "result": "PASS",

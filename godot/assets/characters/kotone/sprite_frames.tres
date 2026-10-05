@@ -1,67 +1,96 @@
 [gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/000.png" id="1_xpc1c"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/001.png" id="2_aamg2"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/002.png" id="3_qaucv"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/003.png" id="4_7aqc8"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/004.png" id="5_s71lg"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle/005.png" id="6_t2vg5"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/000.png" id="7_dm6ug"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/001.png" id="8_22old"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/002.png" id="9_alc37"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/003.png" id="10_ikdf8"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/004.png" id="11_l17q6"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/005.png" id="12_trchj"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/000.png" id="13_jkp6n"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/001.png" id="14_ho6q3"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/002.png" id="15_3cdc3"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/003.png" id="16_skj4n"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/004.png" id="17_vl4rs"]
-[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/005.png" id="18_johlh"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/000.png" id="1_dm6ug"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/001.png" id="2_22old"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/002.png" id="3_alc37"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/003.png" id="4_ikdf8"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/004.png" id="5_l17q6"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_left/005.png" id="6_trchj"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/000.png" id="7_jkp6n"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/001.png" id="8_ho6q3"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/002.png" id="9_3cdc3"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/003.png" id="10_skj4n"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/004.png" id="11_vl4rs"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/idle_right/005.png" id="12_johlh"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/000.png" id="13_lfuoi"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/001.png" id="14_7fd03"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/002.png" id="15_odn7t"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/003.png" id="16_cpynb"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/004.png" id="17_mlksv"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_left/005.png" id="18_w8qs3"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/000.png" id="19_y7waj"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/001.png" id="20_eg2k8"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/002.png" id="21_nohe5"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/003.png" id="22_cxjxc"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/004.png" id="23_1owxi"]
+[ext_resource type="Texture2D" path="res://assets/characters/kotone/walk_right/005.png" id="24_hita8"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_xpc1c")
+"texture": ExtResource("1_dm6ug")
 }, {
 "duration": 1.0,
-"texture": ExtResource("2_aamg2")
+"texture": ExtResource("2_22old")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_qaucv")
+"texture": ExtResource("3_alc37")
 }, {
 "duration": 1.0,
-"texture": ExtResource("4_7aqc8")
+"texture": ExtResource("4_ikdf8")
 }, {
 "duration": 1.0,
-"texture": ExtResource("5_s71lg")
+"texture": ExtResource("5_l17q6")
 }, {
 "duration": 1.0,
-"texture": ExtResource("6_t2vg5")
+"texture": ExtResource("6_trchj")
 }],
 "loop": 1,
-"name": &"idle",
+"name": &"idle_left",
 "speed": 3.333333
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_dm6ug")
+"texture": ExtResource("7_jkp6n")
 }, {
 "duration": 1.0,
-"texture": ExtResource("8_22old")
+"texture": ExtResource("8_ho6q3")
 }, {
 "duration": 1.0,
-"texture": ExtResource("9_alc37")
+"texture": ExtResource("9_3cdc3")
 }, {
 "duration": 1.0,
-"texture": ExtResource("10_ikdf8")
+"texture": ExtResource("10_skj4n")
 }, {
 "duration": 1.0,
-"texture": ExtResource("11_l17q6")
+"texture": ExtResource("11_vl4rs")
 }, {
 "duration": 1.0,
-"texture": ExtResource("12_trchj")
+"texture": ExtResource("12_johlh")
+}],
+"loop": 1,
+"name": &"idle_right",
+"speed": 3.333333
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_lfuoi")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_7fd03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_odn7t")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_cpynb")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_mlksv")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_w8qs3")
 }],
 "loop": 1,
 "name": &"walk_left",
@@ -69,22 +98,22 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("13_jkp6n")
+"texture": ExtResource("19_y7waj")
 }, {
 "duration": 1.0,
-"texture": ExtResource("14_ho6q3")
+"texture": ExtResource("20_eg2k8")
 }, {
 "duration": 1.0,
-"texture": ExtResource("15_3cdc3")
+"texture": ExtResource("21_nohe5")
 }, {
 "duration": 1.0,
-"texture": ExtResource("16_skj4n")
+"texture": ExtResource("22_cxjxc")
 }, {
 "duration": 1.0,
-"texture": ExtResource("17_vl4rs")
+"texture": ExtResource("23_1owxi")
 }, {
 "duration": 1.0,
-"texture": ExtResource("18_johlh")
+"texture": ExtResource("24_hita8")
 }],
 "loop": 1,
 "name": &"walk_right",

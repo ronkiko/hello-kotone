@@ -8,7 +8,7 @@ extends RefCounted
 const FrameContract = preload("res://scripts/presentation/character_sprite_frame_contract.gd")
 const PACKAGE_ROOT := "res://assets/characters"
 const RESOURCE_NAME := "sprite_frames.tres"
-const REQUIRED_ANIMATIONS := [&"idle", &"walk_left", &"walk_right"]
+const REQUIRED_ANIMATIONS := [&"idle_left", &"idle_right", &"walk_left", &"walk_right"]
 
 static func valid_model_id(character_model_id: String) -> bool:
 	if character_model_id.is_empty() or character_model_id.length() > 64:
@@ -64,7 +64,7 @@ static func configure_sprite(sprite: AnimatedSprite2D, frames: SpriteFrames) -> 
 		return false
 	sprite.pause()
 	sprite.sprite_frames = frames
-	sprite.animation = &"idle"
+	sprite.animation = &"idle_right"
 	sprite.frame = 0
 	sprite.centered = false
 	sprite.position = Vector2(FrameContract.visual_origin_offset())

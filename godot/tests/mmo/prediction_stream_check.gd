@@ -99,7 +99,7 @@ func start() -> void:
 	check(world.input_adapter.locomotion_intent == 0 and world.platform.trajectory.intent == 0, "RELEASE_IS_STABLE_STOP")
 	check(is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(client.world_replica.local_player().x)),
 		"FINAL_RENDER_CONVERGES_TO_AUTHORITATIVE_X")
-	check(world.platform.sprite.animation == &"idle", "FINAL_STOP_RETURNS_FRONT_IDLE")
+	check(world.platform.sprite.animation == &"idle_right", "FINAL_STOP_RETURNS_DIRECTIONAL_IDLE")
 	check(client.state == "READY", "SESSION_STAYS_HEALTHY")
 	check(client.logout(), "LOGOUT")
 	while client.state != "DISCONNECTED": await process_frame

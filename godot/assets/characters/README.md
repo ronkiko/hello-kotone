@@ -8,7 +8,11 @@ character animation.
 ```text
 characters/
   <character_model_id>/
-    idle/
+    idle_left/
+      000.png
+      001.png
+      ...
+    idle_right/
       000.png
       001.png
       ...
@@ -68,9 +72,13 @@ ids, canonical dimensions, ground, pivot, package folders or animation names.
 `prepare` receives physical height in cm and explicit px/cm projection. `place`
 uses a reviewed plan for one pose and performs a single uniform source transform.
 
+Required animations are `idle_left`, `idle_right`, `walk_left`, `walk_right`.
+Runtime selects prepared directions without mirroring or missing-view fallback.
+Asymmetric models must supply independent directional source poses.
+
 Current source/checksum/plan/operation evidence is in
 `tools/character_recipes/locomotion_v1`. Kotone has 6 frames per animation; Yuna
-has 2 calm idle and 8 walk frames; its idle profile is 0.5 fps. Yuna left is an offline source mirror, with
+has 2 calm frames in each idle direction and 8 in each walk direction; its idle profile is 0.5 fps. Both Yuna left animations are explicit offline source mirrors, with
 x_left=width−1−x_right. Yuna idle discards alpha <=5% extraction residue offline.
 No runtime matte/geometry correction is applied.
 

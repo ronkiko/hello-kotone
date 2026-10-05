@@ -27,16 +27,16 @@ func run() -> void:
 	var sprite := AnimatedSprite2D.new()
 	root.add_child(sprite)
 	check(Appearance.install(sprite, yuna), "Yuna installed")
-	check(sprite.animation == &"idle" and sprite.sprite_frames.get_frame_count(&"idle") == 2, "canonical Yuna calm idle frames")
-	check(is_equal_approx(sprite.sprite_frames.get_animation_speed(&"idle"), 0.5), "Yuna idle uses slow calm cycle")
+	check(sprite.animation == &"idle_right" and sprite.sprite_frames.get_frame_count(&"idle_right") == 2, "canonical Yuna calm idle frames")
+	check(is_equal_approx(sprite.sprite_frames.get_animation_speed(&"idle_right"), 0.5), "Yuna idle uses slow calm cycle")
 	var gait := Gait.new()
 	gait.configure(10)
 	gait.update(sprite, 0, -3, -5, -1, 0.1)
 	check(sprite.animation == &"walk_left" and not sprite.flip_h and sprite.sprite_frames.get_frame_count(&"walk_left") == 8, "Yuna left walk uses offline mirrored frames")
 	gait.update(sprite, -3, -3, -3, 0, 0.1)
-	check(sprite.animation == &"idle" and not sprite.flip_h, "Yuna release returns idle")
+	check(sprite.animation == &"idle_left" and not sprite.flip_h, "Yuna left release selects prepared left idle")
 	check(Appearance.install(sprite, kotone), "Kotone installed")
-	check(sprite.animation == &"idle" and sprite.sprite_frames.get_frame_count(&"idle") == 6, "model switch installs native package")
+	check(sprite.animation == &"idle_right" and sprite.sprite_frames.get_frame_count(&"idle_right") == 6, "model switch installs native package")
 	var options := {"signal_id": ["steady", "pulse"]}
 	var catalog := {"game_card_id": "independent", "catalog_version": 2, "appearance_schema_version": 2,
 		"character_models": {"beacon": {"options": options, "default_payload": {"character_model_id": "beacon", "signal_id": "steady"}}},

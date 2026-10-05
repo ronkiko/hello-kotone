@@ -121,7 +121,7 @@ func start() -> void:
 	platform._process(1)
 	check(is_equal_approx(platform.character_root.position.x,platform.server_to_pixel(52)), "STOP_FINAL_SERVER_X")
 	platform._process(0)
-	check(platform.sprite.animation == &"idle", "SETTLED_RELEASE_RETURNS_FRONT_IDLE")
+	check(platform.sprite.animation == &"idle_right", "SETTLED_RELEASE_RETURNS_DIRECTIONAL_IDLE")
 
 	# Bounds remain client-side presentation limits, never authority writes.
 	platform.set_local_intent(1)

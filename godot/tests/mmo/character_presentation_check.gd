@@ -54,10 +54,43 @@ func run() -> void:
 		gait.update(own,3,3,5,1,.5)
 		check(own.frame == frame and not own.is_playing(), model + " blocked body freezes gait")
 		gait.update(own,3,3,3,0,.1)
-		check(own.animation == &"idle" and platform.character_root.position == position, model + " release preserves root")
-		for index in range(own.sprite_frames.get_frame_count(&"idle")):
-			Appearance.pose(own,false,0,index)
-			check(own.position == Vector2(-128,-236) and own.scale == Vector2.ONE, model + " idle preserves anchor")
+		check(own.animation == &"idle_right" and platform.character_root.position == position, model + " release preserves root")
+		for direction in [-1, 1]:
+			gait.reset(own)
+			gait.update(own, 0, direction * 3, direction * 3, direction, .1)
+			gait.update(own, direction * 3, direction * 2, direction * 2, 0, .1)
+			gait.update(own, direction * 2, direction * 2, direction * 2, 0, .1)
+			check(own.animation == Appearance.idle_animation(direction) and gait.facing == direction, model + " release correction preserves last intended direction")
+			check(not own.flip_h and not own.flip_v, model + " directional idle uses prepared textures without mirroring")
+			for index in range(own.sprite_frames.get_frame_count(Appearance.idle_animation(direction))):
+				Appearance.pose(own, false, direction, index)
+				check(own.position == Vector2(-128,-236) and own.scale == Vector2.ONE and platform.character_root.position == position, model + " directional idle preserves anchor")
+			var remote_gait := Gait.new()
+			remote_gait.idle_on_settle = false
+			remote_gait.reset(other)
+			remote_gait.update(other, 0, direction * 3, direction * 3, 0, .1)
+			remote_gait.update(other, direction * 3, direction * 3, direction * 3, 0, .1)
+			check(other.animation == Appearance.walk_animation(direction) and not other.flip_h, model + " remote arrival retains observed side without inventing release")
+	# Independent, asymmetric resources prove direction selection never synthesizes pixels.
+	var distinct := SpriteFrames.new()
+	distinct.remove_animation(&"default")
+	for direction in [-1, 1]:
+		var animation := Appearance.idle_animation(direction)
+		distinct.add_animation(animation)
+		distinct.set_animation_speed(animation, 1)
+		var image := Image.create(256, 256, false, Image.FORMAT_RGBA8)
+		image.fill(Color.RED if direction < 0 else Color.BLUE)
+		var texture := ImageTexture.create_from_image(image)
+		distinct.add_frame(animation, texture)
+		if direction < 0: distinct.add_frame(animation, texture)
+	var asymmetric := AnimatedSprite2D.new()
+	asymmetric.sprite_frames = distinct
+	for direction in [-1, 1]:
+		Appearance.pose(asymmetric, false, direction, Appearance.idle_frame(asymmetric, 1.1, direction))
+		var color := asymmetric.sprite_frames.get_frame_texture(asymmetric.animation, asymmetric.frame).get_image().get_pixel(0, 0)
+		check(color == (Color.RED if direction < 0 else Color.BLUE) and not asymmetric.flip_h, "asymmetric idle selects its authored direction texture")
+		check(asymmetric.frame == (1 if direction < 0 else 0), "each directional idle uses its own frame timing")
+	asymmetric.free()
 	check(Appearance.Library.FrameContract.canonical_height_px("kotone") == 172 and Appearance.Library.FrameContract.canonical_height_px("yuna") == 155, "metric dimensions 172/155")
 	shell.queue_free()
 	platform.queue_free()

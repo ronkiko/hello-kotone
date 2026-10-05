@@ -145,9 +145,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/000.json",
+      "{recipe}/kotone/idle_right/000.json",
       "--output",
-      "{output}/kotone/idle/000.png"
+      "{output}/kotone/idle_right/000.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/000.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/000.json",
+      "--output",
+      "{output}/kotone/idle_left/000.png"
     ],
     [
       "place",
@@ -156,9 +167,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/001.json",
+      "{recipe}/kotone/idle_right/001.json",
       "--output",
-      "{output}/kotone/idle/001.png"
+      "{output}/kotone/idle_right/001.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/001.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/001.json",
+      "--output",
+      "{output}/kotone/idle_left/001.png"
     ],
     [
       "place",
@@ -167,9 +189,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/002.json",
+      "{recipe}/kotone/idle_right/002.json",
       "--output",
-      "{output}/kotone/idle/002.png"
+      "{output}/kotone/idle_right/002.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/002.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/002.json",
+      "--output",
+      "{output}/kotone/idle_left/002.png"
     ],
     [
       "place",
@@ -178,9 +211,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/003.json",
+      "{recipe}/kotone/idle_right/003.json",
       "--output",
-      "{output}/kotone/idle/003.png"
+      "{output}/kotone/idle_right/003.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/003.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/003.json",
+      "--output",
+      "{output}/kotone/idle_left/003.png"
     ],
     [
       "place",
@@ -189,9 +233,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/004.json",
+      "{recipe}/kotone/idle_right/004.json",
       "--output",
-      "{output}/kotone/idle/004.png"
+      "{output}/kotone/idle_right/004.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/004.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/004.json",
+      "--output",
+      "{output}/kotone/idle_left/004.png"
     ],
     [
       "place",
@@ -200,9 +255,20 @@
       "--frame-spec",
       "{work}/kotone-frame.json",
       "--plan",
-      "{recipe}/kotone/idle/005.json",
+      "{recipe}/kotone/idle_right/005.json",
       "--output",
-      "{output}/kotone/idle/005.png"
+      "{output}/kotone/idle_right/005.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/kotone-idle/005.png",
+      "--frame-spec",
+      "{work}/kotone-frame.json",
+      "--plan",
+      "{recipe}/kotone/idle_left/005.json",
+      "--output",
+      "{output}/kotone/idle_left/005.png"
     ],
     [
       "place",
@@ -352,9 +418,27 @@
       "--frame-spec",
       "{work}/yuna-frame.json",
       "--plan",
-      "{recipe}/yuna/idle/000.json",
+      "{recipe}/yuna/idle_right/000.json",
       "--output",
-      "{output}/yuna/idle/000.png"
+      "{output}/yuna/idle_right/000.png"
+    ],
+    [
+      "mirror",
+      "--source",
+      "{work}/clean-idle/000.png",
+      "--output",
+      "{work}/mirrored-idle/000.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/mirrored-idle/000.png",
+      "--frame-spec",
+      "{work}/yuna-frame.json",
+      "--plan",
+      "{recipe}/yuna/idle_left/000.json",
+      "--output",
+      "{output}/yuna/idle_left/000.png"
     ],
     [
       "clean",
@@ -372,9 +456,27 @@
       "--frame-spec",
       "{work}/yuna-frame.json",
       "--plan",
-      "{recipe}/yuna/idle/001.json",
+      "{recipe}/yuna/idle_right/001.json",
       "--output",
-      "{output}/yuna/idle/001.png"
+      "{output}/yuna/idle_right/001.png"
+    ],
+    [
+      "mirror",
+      "--source",
+      "{work}/clean-idle/001.png",
+      "--output",
+      "{work}/mirrored-idle/001.png"
+    ],
+    [
+      "place",
+      "--source",
+      "{work}/mirrored-idle/001.png",
+      "--frame-spec",
+      "{work}/yuna-frame.json",
+      "--plan",
+      "{recipe}/yuna/idle_left/001.json",
+      "--output",
+      "{output}/yuna/idle_left/001.png"
     ],
     [
       "place",
