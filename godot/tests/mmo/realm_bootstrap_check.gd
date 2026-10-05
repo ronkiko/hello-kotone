@@ -18,8 +18,8 @@ func bootstrap(epoch: String = "e1") -> Dictionary:
 	return {"identity": identity(epoch), "capabilities": ["input", "logout", "map", "state", "world_rules"]}
 
 func character() -> Dictionary:
-	return {"game_card_id": "hello-kotone", "realm_id": "local", "character_id": "p1", "display_name": "player1", "appearance_schema_version": 1,
-		"appearance_payload": {"archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "chestnut"}}
+	return {"game_card_id": "hello-kotone", "realm_id": "local", "character_id": "p1", "display_name": "player1", "appearance_schema_version": 2,
+		"appearance_payload": {"character_model_id": "kotone", "archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "chestnut"}}
 
 func baseline(epoch: String = "e1") -> Dictionary:
 	return {"epoch": epoch, "revision": 1,

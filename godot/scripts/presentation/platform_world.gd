@@ -101,6 +101,7 @@ func project(document: Dictionary, view: Dictionary, _display_x_unused: Variant 
 		var player: Variant = players[id]
 		if not Protocol.player(player) or player.player_id != id or player.zone_id != document.map_id or not Protocol.integer(player.x, document.min_x, document.max_x):
 			return false
+		if player.has("character") and not Appearance.supported(player.character.appearance_payload): return false
 	var initial: bool = not _position_installed or _map.is_empty() or _map.content_hash != document.content_hash or _view.get("epoch") != view.get("epoch") or _view.get("local_player_id") != view.get("local_player_id")
 	motion_profile.configure(_movement.step_units, _movement.min_move_interval_ms, document.units_per_meter, PIXELS_PER_METER)
 	trajectory.configure(motion_profile, ORIGIN_X, ORIGIN_X + float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER)

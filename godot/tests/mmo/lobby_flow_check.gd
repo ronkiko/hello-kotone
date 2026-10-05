@@ -107,12 +107,44 @@ func _run() -> void:
 	check(pre.roster.characters.is_empty(), "fresh account has empty roster")
 	await press("Create character")
 	check(pre.state == "CREATOR", "creator scene")
-	shell.creator_name_edit.text = "Silver Kotone" if role == 1 else "Black Kotone"
+	check(shell.creator_stage == "MODEL" and shell.creator_payload.is_empty(), "separate local model stage")
+	check(pre.roster.characters.is_empty() and client.session_id.is_empty(), "model stage has no durable or Game authority")
+	var character_model_id := "kotone" if role == 1 else "yuna"
+	var model_button: Button = shell.model_buttons[character_model_id]
+	var hover := InputEventMouseMotion.new()
+	hover.position = model_button.get_global_rect().get_center()
+	hover.global_position = hover.position
+	root.push_input(hover, true)
+	await process_frame
+	check(shell.hovered_model == character_model_id, "mouse hover highlights candidate")
+	await create_timer(0.3).timeout
+	check(shell.model_previews[character_model_id].frame > 0, "hover runs authored preview animation")
+	await screenshot("models")
+	await press(character_model_id.capitalize())
+	check(shell.model_selected == character_model_id and model_button.button_pressed, "explicit selected model")
+	check(shell.creator_payload == pre.catalog.character_models[character_model_id].default_payload, "model specific defaults")
+	await press("Customize")
+	check(shell.creator_stage == "FINE", "confirm enters fine tuning")
+	check(not shell.creator_choices.has("hair_style_id") if role == 2 else shell.creator_choices.has("hair_style_id"), "only model scoped fine options")
+	# Back is entirely local and preserves same-model edits; switching resets them.
+	shell.creator_payload.hair_color_id = "black"
+	await press("Back to models")
+	check(pre.roster.characters.is_empty(), "Back never mutates Registry")
+	var alternate := "yuna" if role == 1 else "kotone"
+	await press(alternate.capitalize())
+	check(shell.creator_payload == pre.catalog.character_models[alternate].default_payload, "switch resets incompatible options")
+	await press(character_model_id.capitalize())
+	# Keyboard focus uses the same candidate preview as pointer hover.
+	shell.model_buttons[character_model_id].grab_focus()
+	await process_frame
+	check(shell.hovered_model == character_model_id, "keyboard focus highlights candidate")
+	await press("Customize")
+	shell.creator_name_edit.text = "Silver Kotone" if role == 1 else "Black Yuna"
 	shell.creator_name_edit.text_changed.emit(shell.creator_name_edit.text)
-	var wanted := {"face_style_id": "bright" if role == 1 else "soft", "hair_style_id": "short" if role == 1 else "long", "hair_color_id": "silver" if role == 1 else "black"}
+	var wanted := {"face_style_id": "bright" if role == 1 else "soft", "hair_color_id": "silver" if role == 1 else "black"}
 	for key in wanted:
 		var option: OptionButton = shell.creator_choices[key]
-		var index: int = pre.catalog.options[key].find(wanted[key])
+		var index: int = pre.catalog.character_models[character_model_id].options[key].find(wanted[key])
 		option.select(index)
 		option.item_selected.emit(index)
 	check(shell.preview.get_node("SemanticAppearance").payload == shell.creator_payload, "local semantic preview")
@@ -137,8 +169,10 @@ func _run() -> void:
 		if id != record.character_id: remote_id = id
 	if not await wait_until(func(): return world.platform.remote_players.has(remote_id), "remote renderer"): quit(1); return
 	var remote: Dictionary = client.world_replica.view().players[remote_id]
-	check(remote.character.appearance_payload.hair_color_id != chosen.hair_color_id, "remote distinct semantic appearance")
+	check(remote.character.appearance_payload.character_model_id != chosen.character_model_id, "remote distinct semantic appearance")
 	check(world.platform.remote_players[remote_id].sprite.get_node("SemanticAppearance").payload == remote.character.appearance_payload, "remote applies authoritative appearance")
+	check(world.platform.remote_players[remote_id].sprite.get_meta("character_model_id") == remote.character.appearance_payload.character_model_id, "remote presenter model")
+	check(world.platform.sprite.get_meta("character_model_id") == chosen.character_model_id, "own presenter model")
 	check(world.platform.sprite.get_node("SemanticAppearance").payload == chosen, "own renderer applies appearance")
 	check(not world.platform.sprite.material == world.platform.remote_players[remote_id].sprite.material, "independent appearance materials")
 	var initial: int = client.world_replica.local_player().x
@@ -154,6 +188,7 @@ func _run() -> void:
 	var before: int = client.world_replica.local_player().x
 	check(client.set_input("right"), "held input sent")
 	if not await wait_until(func(): return client.world_replica.local_player().get("x", before) > before, "authoritative movement"): quit(1); return
+	check(client.world_replica.local_player().character.appearance_payload == chosen, "moved preserves authoritative model")
 	# Leave while input is held: drain -> stop ACK -> logout actual flush -> roster.
 	await press("Leave world")
 	if not await wait_until(func(): return pre.state == "LOBBY" and current_scene.scene_file_path.ends_with("login.tscn"), "Leave returns same Lobby"): quit(1); return
@@ -162,7 +197,15 @@ func _run() -> void:
 	await screenshot("returned-lobby")
 	await press("1. " + record.display_name)
 	if not await wait_until(func(): return not pre.selection.is_empty(), "fresh post-flush selection"): quit(1); return
+	await press("Enter world")
+	if not await wait_until(func(): return client.state == "READY" and current_scene.scene_file_path.ends_with("world.tscn"), "both models re-enter World"): quit(1); return
+	check(client.world_replica.local_player().character.appearance_payload == chosen, "re-entry keeps durable model")
+	check(client._server_input_seq == 0 and client._server_input == "stop", "re-entry never replays input")
 	if role == 1:
+		await press("Leave world")
+		if not await wait_until(func(): return pre.state == "LOBBY" and current_scene.scene_file_path.ends_with("login.tscn"), "second safe Lobby return"): quit(1); return
+		await press("1. " + record.display_name)
+		if not await wait_until(func(): return not pre.selection.is_empty(), "select after second return"): quit(1); return
 		await press("Delete character…")
 		var dialog: ConfirmationDialog
 		for child in current_scene.get_children():
@@ -175,9 +218,6 @@ func _run() -> void:
 		check(pre.state == "REALMS" and pre.realm.is_empty() and pre.selection.is_empty() and pre._binding.is_empty(), "Back revokes realm authority")
 		await press("Sign out")
 	else:
-		await press("Enter world")
-		if not await wait_until(func(): return client.state == "READY" and current_scene.scene_file_path.ends_with("world.tscn"), "re-enter World"): quit(1); return
-		check(client._server_input_seq == 0 and client._server_input == "stop", "no input replay on re-entry")
 		await press("Sign out account")
 		if not await wait_until(func(): return pre.state == "LOGIN" and current_scene.scene_file_path.ends_with("login.tscn"), "account logout from World flushes first"): quit(1); return
 	check(pre.state == "LOGIN" and pre.account_id == "" and client.session_id == "" and pre._binding.is_empty(), "account logout clears all authority")

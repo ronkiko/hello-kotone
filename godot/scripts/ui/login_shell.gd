@@ -2,7 +2,6 @@ extends Control
 ## Human pre-world shell; only safe public labels enter the UI.
 const WORLD_SCENE := "res://scenes/mmo/world.tscn"
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const Kotone = preload("res://scenes/kotone.tscn")
 const ERRORS := {
 	"PENDING_OPERATION_LIMIT": "Reconcile a pending character operation before starting another.",
 	"AUTH_FAILED": "Sign-in failed. Check your account and password.",
@@ -35,6 +34,12 @@ var creator_name_edit: LineEdit
 var creator_choices := {}
 var creator_name := ""
 var creator_payload := {}
+var creator_stage := "MODEL"
+var model_buttons := {}
+var model_previews := {}
+var model_selected := ""
+var hovered_model := ""
+var preview_elapsed := 0.0
 var preview: Sprite2D
 var _page := ""
 var _transition_pending := false
@@ -180,7 +185,7 @@ func _lobby_page() -> void:
 	if not Preworld.selection.is_empty():
 		var record: Dictionary = Preworld.selection.character
 		_label("Selected: " + record.display_name)
-		_preview(Preworld.catalog.default_payload if record.appearance_payload.is_empty() else record.appearance_payload)
+		_preview(record.appearance_payload)
 		_button("Enter world", Preworld.enter_world, Preworld.availability.get("status") == "online")
 		_button("Delete character…", _confirm_delete, not Preworld.mutation_pending)
 	_button("Create character", _open_creator, not Preworld.catalog.is_empty() and Preworld.roster.get("characters", []).size() < Preworld.roster.get("slot_limit", 0) and not Preworld.mutation_pending)
@@ -200,12 +205,103 @@ func _confirm_delete() -> void:
 	dialog.popup_centered()
 
 func _open_creator() -> void:
-	creator_payload = Preworld.catalog.default_payload.duplicate(true)
+	creator_payload = {}
+	creator_stage = "MODEL"
+	model_selected = ""
+	hovered_model = ""
 	creator_name = ""
 	Preworld.show_creator()
 
+func _rebuild_creator() -> void:
+	_page = ""
+	_render()
+
+func _model_page() -> void:
+	_label("Choose a character model", 16)
+	var row := HBoxContainer.new()
+	column.add_child(row)
+	model_buttons = {}
+	model_previews = {}
+	for character_model_id in Preworld.catalog.character_models:
+		var stand := VBoxContainer.new()
+		row.add_child(stand)
+		_preview(Preworld.catalog.character_models[character_model_id].default_payload, stand)
+		model_previews[character_model_id] = preview
+		var frame: Control = stand.get_child(0)
+		frame.mouse_entered.connect(_hover_model.bind(character_model_id))
+		frame.mouse_exited.connect(_unhover_model.bind(character_model_id))
+		frame.gui_input.connect(func(event: InputEvent):
+			if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+				_choose_model(character_model_id))
+		var choice := Button.new()
+		choice.text = character_model_id.capitalize()
+		choice.toggle_mode = true
+		choice.button_pressed = character_model_id == model_selected
+		choice.disabled = not Appearance.catalog_model_supported(character_model_id, Preworld.catalog.character_models[character_model_id])
+		choice.custom_minimum_size = Vector2(110, 28)
+		stand.add_child(choice)
+		model_buttons[character_model_id] = choice
+		choice.pressed.connect(_choose_model.bind(character_model_id))
+		choice.mouse_entered.connect(_hover_model.bind(character_model_id))
+		choice.focus_entered.connect(_hover_model.bind(character_model_id))
+		choice.mouse_exited.connect(_unhover_model.bind(character_model_id))
+		choice.focus_exited.connect(_unhover_model.bind(character_model_id))
+		if choice.disabled:
+			var message := Label.new()
+			message.text = "Client content update required"
+			stand.add_child(message)
+	_label("Select a model, then customize its appearance.")
+	_button("Customize", _confirm_model, not model_selected.is_empty())
+	_button("Back to characters", Preworld.refresh_roster)
+
+func _choose_model(character_model_id: String) -> void:
+	if not Appearance.catalog_model_supported(character_model_id, Preworld.catalog.character_models[character_model_id]): return
+	if model_selected != character_model_id:
+		model_selected = character_model_id
+		creator_payload = Preworld.catalog.character_models[character_model_id].default_payload.duplicate(true)
+	for key in model_buttons:
+		model_buttons[key].button_pressed = key == model_selected
+	_hover_model(character_model_id)
+	var customize: Button
+	for child in column.get_children():
+		if child is Button and child.text == "Customize": customize = child
+	if customize != null: customize.disabled = false
+
+func _hover_model(character_model_id: String) -> void:
+	hovered_model = character_model_id
+	preview_elapsed = 0.0
+	for key in model_previews:
+		model_previews[key].modulate = Color.WHITE if key == character_model_id or key == model_selected else Color("a0abb8")
+
+func _unhover_model(character_model_id: String) -> void:
+	if hovered_model == character_model_id: hovered_model = ""
+	for key in model_previews:
+		model_previews[key].modulate = Color.WHITE if key == hovered_model or key == model_selected else Color("a0abb8")
+
+func _confirm_model() -> void:
+	if model_selected.is_empty() or not Appearance.supported(creator_payload): return
+	creator_stage = "FINE"
+	_rebuild_creator()
+
+func _back_to_models() -> void:
+	creator_stage = "MODEL"
+	_rebuild_creator()
+
+func _process(delta: float) -> void:
+	preview_elapsed += maxf(delta, 0.0)
+	if _page == "CREATOR" and creator_stage == "MODEL":
+		for key in model_previews:
+			var active: bool = key == hovered_model or key == model_selected
+			# Both pointer and keyboard focus use the same card-local gesture.
+			Appearance.pose(model_previews[key], false, 0, int(preview_elapsed / 0.12) if active and preview_elapsed < 1.8 else 0)
+	elif is_instance_valid(preview) and _page in ["CREATOR", "LOBBY"]:
+		Appearance.pose(preview, false, 0, int(preview_elapsed / 0.3))
+
 func _creator_page() -> void:
-	_label("Create a character", 16)
+	if creator_stage == "MODEL":
+		_model_page()
+		return
+	_label("Fine appearance · " + model_selected.capitalize(), 16)
 	creator_name_edit = _field("Name", creator_name)
 	creator_name_edit.max_length = 64
 	creator_name_edit.text_changed.connect(func(text: String): creator_name = text)
@@ -215,8 +311,8 @@ func _creator_page() -> void:
 	choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(choices)
 	creator_choices = {}
-	for key in Preworld.catalog.options:
-		var options: Array = Preworld.catalog.options[key]
+	for key in Preworld.catalog.character_models[model_selected].options:
+		var options: Array = Preworld.catalog.character_models[model_selected].options[key]
 		if options.size() == 1: continue
 		var option_row := HBoxContainer.new()
 		choices.add_child(option_row)
@@ -235,21 +331,21 @@ func _creator_page() -> void:
 			Appearance.install(preview, creator_payload))
 	_preview(creator_payload, row)
 	_button("Create", func(): Preworld.create_character(creator_name, creator_payload), Appearance.supported(creator_payload))
-	_button("Back to characters", Preworld.refresh_roster)
+	_button("Back to models", _back_to_models)
 
 func _preview(payload: Dictionary, parent: Node = null) -> void:
 	var frame := SubViewportContainer.new()
-	frame.custom_minimum_size = Vector2(110, 88)
+	frame.custom_minimum_size = Vector2(110, 100)
 	(column if parent == null else parent).add_child(frame)
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(110, 88)
+	viewport.size = Vector2i(110, 100)
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	frame.add_child(viewport)
-	preview = Kotone.instantiate()
-	preview.set_script(null)
-	preview.position = Vector2(55, 43)
-	preview.scale = Vector2(0.64, 0.64)
+	preview = Sprite2D.new()
+	preview.position = Vector2(55, 49)
+	preview.set_meta("presentation_scale", 0.64)
+	preview.set_meta("character_model_id", payload.get("character_model_id", ""))
 	viewport.add_child(preview)
 	Appearance.install(preview, payload)
 

@@ -1,5 +1,6 @@
 extends Node
 ## Account/realm/lifecycle authority. No spatial fields or gameplay simulation.
+const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Peer = preload("res://scripts/mmo/public_peer.gd")
 signal changed
@@ -151,6 +152,9 @@ func select_character(id: String) -> void:
 	if not _owned(reply.data.character) or reply.data.character.character_id != id:
 		_failure("Lobby", "CHARACTER_MISMATCH")
 		return
+	if not Appearance.supported(reply.data.character.appearance_payload):
+		_failure("Lobby", "APPEARANCE_INCOMPATIBLE")
+		return
 	selection = reply.data.duplicate(true)
 	_state("LOBBY")
 
@@ -206,8 +210,6 @@ func _run_mutation() -> void:
 func enter_world() -> void:
 	if state != "LOBBY" or selection.is_empty() or availability.get("status") != "online": return
 	var selected: Dictionary = selection.character.duplicate(true)
-	if selected.appearance_payload.is_empty() and catalog.get("legacy_empty_policy") == "default":
-		selected.appearance_payload = catalog.default_payload.duplicate(true)
 	selection = {}
 	var reply := await _operation("world_enter", {})
 	if reply.is_empty(): return

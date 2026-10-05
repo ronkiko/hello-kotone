@@ -37,8 +37,8 @@ func result(op: String, data: Dictionary) -> Dictionary:
 	return {"protocol_version": 7, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
 
 func record() -> Dictionary:
-	return {"game_card_id": "hello-kotone", "realm_id": "test", "account_id": "account-one", "character_id": "char-one", "display_name": "Alice Kotone", "slot": 1, "lifecycle_state": "active", "character_schema_version": 1, "appearance_schema_version": 1,
-		"appearance_payload": {"archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "silver"}, "initial_spawn_profile": "default", "created_at_ms": 1, "updated_at_ms": 1}
+	return {"game_card_id": "hello-kotone", "realm_id": "test", "account_id": "account-one", "character_id": "char-one", "display_name": "Alice Kotone", "slot": 1, "lifecycle_state": "active", "character_schema_version": 1, "appearance_schema_version": 2,
+		"appearance_payload": {"character_model_id": "kotone", "archetype_id": "resident", "body_variant_id": "standard", "face_style_id": "soft", "hair_style_id": "short", "hair_color_id": "silver"}, "initial_spawn_profile": "default", "created_at_ms": 1, "updated_at_ms": 1}
 
 func _initialize() -> void:
 	run.call_deferred()
@@ -84,7 +84,14 @@ func run() -> void:
 	await pre.select_character("char-one")
 	check(pre.state == "LOBBY" and pre.selection.is_empty() and pre.error.code == "DURABILITY_UNSAFE", "unsafe Registry barrier never gives World selection")
 	scope()
-	pre.catalog = {"appearance_schema_version": 1}
+	peer.connected_ok = true
+	var unknown := record()
+	unknown.appearance_payload.character_model_id = "uninstalled"
+	peer.reply = result("character_select", {"character": unknown, "character_generation": 1})
+	await pre.select_character("char-one")
+	check(pre.state == "FAILED" and pre.selection.is_empty() and pre.error.code == "APPEARANCE_INCOMPATIBLE", "server-valid unknown local presenter has no admission fallback")
+	scope()
+	pre.catalog = {"appearance_schema_version": 2}
 	pre.state = "CREATOR"
 	peer.reply = {}
 	await pre.create_character("Alice Kotone", record().appearance_payload)

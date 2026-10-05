@@ -27,10 +27,10 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.7.09
+## Current MMO client — v3.main.7.10
 
 Current public protocol is **v7**. The startup shell supports Account Login →
-Realm Directory → Realm Lobby → Character Creator/Selection → World, with two
+Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
 one-time handoffs. `Preworld` owns account/Lobby authority; `MmoClient` owns only
 the selected-character Game visit. Leave World stops held input, waits for logout
 and confirmed save/Registry completion, then returns to the same realm roster.
@@ -41,7 +41,7 @@ Secure server uses certificate-verified native TLS for Login/Lobby/Game without
 plaintext fallback. Local development accepts only literal loopback and dev accounts
 `dev1`–`dev3`. Passwords, handoff/session secrets stay in RAM and never become UI
 status text or preferences. Creator, own avatar and remote avatars share the same
-local semantic appearance mapping; physics remains server-authoritative.
+local Kotone/Yuna semantic appearance mapping with canonical `character_model_id`; physics remains server-authoritative.
 
 Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
 fencing and bounded heartbeat remain active. Unknown outcomes never replay input or

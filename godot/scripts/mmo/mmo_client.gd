@@ -10,6 +10,7 @@ signal input_rejected(code: String)
 signal world_ready
 signal disconnected
 
+const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
@@ -450,7 +451,7 @@ func _exit_tree() -> void:
 
 func _production_player(player: Dictionary) -> bool:
 	var character: Variant = player.get("character")
-	return Protocol.presentation(character) and character.game_card_id == _expected_identity.get("game_card_id") and character.realm_id == _expected_identity.get("realm_id") \
+	return Protocol.presentation(character) and Appearance.supported(character.appearance_payload) and character.game_card_id == _expected_identity.get("game_card_id") and character.realm_id == _expected_identity.get("realm_id") \
 		and character.character_id == player.player_id and character.display_name == player.nickname
 
 func _production_snapshot(snapshot: Dictionary) -> bool:

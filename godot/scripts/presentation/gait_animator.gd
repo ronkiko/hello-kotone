@@ -1,8 +1,6 @@
 extends RefCounted
 ## Sprite gait driven by actual rendered displacement plus explicit local locomotion intent.
-const IDLE = preload("res://assets/kotone_v2_idle_front.png")
-const WALK_LEFT = preload("res://assets/kotone_v2_walking_left.png")
-const WALK_RIGHT = preload("res://assets/kotone_v2_walking_right.png")
+const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 var cycle_pixels := 1.0
 var walk_distance := 0.0
 var idle_elapsed := 0.0
@@ -18,8 +16,7 @@ func reset(sprite: Sprite2D) -> void:
 	idle_elapsed = 0.0
 	facing = 0
 	walking = false
-	sprite.texture = IDLE
-	sprite.frame = 0
+	Appearance.pose(sprite, false, 0, 0)
 
 func update(sprite: Sprite2D, before: float, after: float, target: float, locomotion_intent: int, delta: float) -> void:
 	var distance := absf(after - before)
@@ -27,9 +24,8 @@ func update(sprite: Sprite2D, before: float, after: float, target: float, locomo
 		facing = -1 if after < before else 1
 		walking = true
 		idle_elapsed = 0.0
-		sprite.texture = WALK_LEFT if facing < 0 else WALK_RIGHT
 		walk_distance = fmod(walk_distance + distance, cycle_pixels)
-		sprite.frame = int(walk_distance / cycle_pixels * sprite.hframes) % sprite.hframes
+		Appearance.pose(sprite, true, facing, int(walk_distance / cycle_pixels * Appearance.walk_frame_count(sprite)))
 		return
 
 	var settled := is_equal_approx(after, target)
@@ -44,10 +40,10 @@ func update(sprite: Sprite2D, before: float, after: float, target: float, locomo
 		return # Remote release is unknown; freeze the last side pose.
 
 	# Local release + completed reconciliation has an exact semantic meaning: idle.
-	if facing != 0 or sprite.texture != IDLE:
+	if facing != 0 or walking:
 		facing = 0
 		walking = false
 		idle_elapsed = 0.0
-		sprite.texture = IDLE
+		Appearance.pose(sprite, false, 0, 0)
 	idle_elapsed += maxf(delta, 0.0)
-	sprite.frame = int(idle_elapsed / 0.3) % sprite.hframes
+	Appearance.pose(sprite, false, 0, int(idle_elapsed / 0.3))

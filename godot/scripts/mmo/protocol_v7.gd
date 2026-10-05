@@ -252,7 +252,7 @@ static func appearance(value: Variant) -> bool:
 static func presentation(value: Variant) -> bool:
 	return fields(value, ["game_card_id", "realm_id", "character_id", "display_name", "appearance_schema_version", "appearance_payload"]) \
 		and token(value.game_card_id) and token(value.realm_id) and token(value.character_id) and display_name(value.display_name) \
-		and integer(value.appearance_schema_version, 1, 1) and appearance(value.appearance_payload)
+		and integer(value.appearance_schema_version, 2, 2) and appearance(value.appearance_payload)
 
 static func character_record(value: Variant) -> bool:
 	if not fields(value, ["game_card_id", "realm_id", "account_id", "character_id", "slot", "display_name", "lifecycle_state", "character_schema_version", "appearance_schema_version", "appearance_payload", "initial_spawn_profile", "created_at_ms", "updated_at_ms"]): return false
@@ -260,7 +260,7 @@ static func character_record(value: Variant) -> bool:
 		if not token(value[key]): return false
 	return value.account_id != value.character_id and integer(value.slot, 1, 16) and display_name(value.display_name) \
 		and value.lifecycle_state == "active" and integer(value.character_schema_version, 1, 1) \
-		and integer(value.appearance_schema_version, 1, 1) and appearance(value.appearance_payload) \
+		and integer(value.appearance_schema_version, 2, 2) and appearance(value.appearance_payload) \
 		and integer(value.created_at_ms, 1) and integer(value.updated_at_ms, value.created_at_ms)
 
 static func roster_result(value: Variant) -> bool:
@@ -277,20 +277,26 @@ static func roster_result(value: Variant) -> bool:
 		previous = record.slot
 	return true
 
+static func identifiers(value: Variant, limit: int) -> bool:
+	if not value is Array or value.is_empty() or value.size() > limit: return false
+	var seen := {}
+	for item in value:
+		if not token(item) or seen.has(item): return false
+		seen[item] = true
+	return true
+
 static func catalog(value: Variant) -> bool:
-	if not fields(value, ["game_card_id", "catalog_version", "appearance_schema_version", "options", "default_payload", "initial_spawn_profiles", "default_spawn_profile", "legacy_empty_policy"]) \
-		or not token(value.game_card_id) or not integer(value.catalog_version, 1, 1) or not integer(value.appearance_schema_version, 1, 1) \
-		or not value.options is Dictionary or value.options.size() < 1 or value.options.size() > 16 or not appearance(value.default_payload) \
-		or value.default_payload.size() != value.options.size() or value.legacy_empty_policy != "default": return false
-	for key in value.options:
-		var allowed: Variant = value.options[key]
-		if not token(key) or not allowed is Array or allowed.is_empty() or allowed.size() > 32: return false
-		var seen := {}
-		for option in allowed:
-			if not token(option) or seen.has(option): return false
-			seen[option] = true
-		if not value.default_payload.get(key) in allowed: return false
-	if not value.initial_spawn_profiles is Array or value.initial_spawn_profiles.is_empty() or value.initial_spawn_profiles.size() > 16: return false
-	for profile in value.initial_spawn_profiles:
-		if not token(profile): return false
-	return value.default_spawn_profile in value.initial_spawn_profiles and JSON.stringify(value).to_utf8_buffer().size() <= 8192
+	if not fields(value, ["game_card_id", "catalog_version", "appearance_schema_version", "character_models", "default_character_model_id", "initial_spawn_profiles", "default_spawn_profile"]) \
+		or not token(value.game_card_id) or not integer(value.catalog_version, 2, 2) or not integer(value.appearance_schema_version, 2, 2) \
+		or not value.character_models is Dictionary or value.character_models.is_empty() or value.character_models.size() > 16: return false
+	for character_model_id in value.character_models:
+		var model: Variant = value.character_models[character_model_id]
+		if not token(character_model_id) or not fields(model, ["options", "default_payload"]) \
+			or not model.options is Dictionary or model.options.is_empty() or model.options.size() > 15 \
+			or model.options.has("character_model_id") or not appearance(model.default_payload) \
+			or model.default_payload.size() != model.options.size() + 1 or model.default_payload.get("character_model_id") != character_model_id: return false
+		for key in model.options:
+			if not token(key) or not identifiers(model.options[key], 32) or not model.default_payload.get(key) in model.options[key]: return false
+	return token(value.default_character_model_id) and value.character_models.has(value.default_character_model_id) \
+		and identifiers(value.initial_spawn_profiles, 16) and token(value.default_spawn_profile) \
+		and value.default_spawn_profile in value.initial_spawn_profiles and JSON.stringify(value).to_utf8_buffer().size() <= 8192
