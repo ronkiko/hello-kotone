@@ -32,6 +32,7 @@ check(contract.target_height_px('kotone')==172 and contract.target_height_px('yu
 recipe=packages.REPO_ROOT/'godot/tools/character_recipes/locomotion_v1/commands.json'
 manifest=json.loads(recipe.read_text())
 check(manifest.get('schema')==1 and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
+check(packages._tracked_repo_file(recipe),'recipe manifest is tracked by git')
 for source_entry in manifest['sources']:
     source_path=packages._repo_relative_path(source_entry['path'],'source path')
     check(source_path.is_file(),source_entry['id']+' source is committed')
@@ -42,7 +43,12 @@ check(packages._expand_recipe_command(['place','--source','{repo}/references/a.p
 rejects(lambda:packages._expand_recipe_command(['place','--source','{mystery}/a.png'],{}),'unknown recipe placeholder rejected')
 rejects(lambda:packages._repo_relative_path('../outside.png','source path'),'recipe source traversal rejected')
 with tempfile.TemporaryDirectory() as temp:
-    p=Path(temp);source=p/'source.png';source.write_bytes(b'source')
+    p=Path(temp)
+    packages._assert_temporary_recipe_output(['place','--output',str(p/'out.png')],p)
+    check(True,'temporary recipe output accepted')
+    rejects(lambda:packages._assert_temporary_recipe_output(['place','--output',str(packages.REPO_ROOT/'bad.png')],p),'recipe output cannot write into repository')
+    rejects(lambda:packages._assert_temporary_recipe_output(['place','--force','--output',str(p/'out.png')],p),'recipe replay forbids force')
+    source=p/'source.png';source.write_bytes(b'source')
     rejects(lambda:frames.output_file(source,[source],True),'force cannot mutate source')
     d=p/'frames';d.mkdir();(d/'000.png').touch();(d/'002.png').touch()
     rejects(lambda:packages.frame_files(d),'package frame gap rejected')
