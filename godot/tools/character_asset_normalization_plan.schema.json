@@ -17,7 +17,22 @@
     "source_body_height_px": {
       "type": "number",
       "exclusiveMinimum": 0,
-      "description": "One common source body height for this animation. Runtime target height comes from physical_height_cm; do not vary scale per frame."
+      "description": "One common anatomical source scale for this animation. Never vary scale per frame."
+    },
+    "source_cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transparent_color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "fuzz_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 25
+        }
+      }
     },
     "analysis": {
       "type": "object",
