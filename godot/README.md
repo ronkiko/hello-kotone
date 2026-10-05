@@ -66,11 +66,15 @@ metadata lives in the native Godot `SpriteFrames` resource
 spritesheets are no longer the target runtime format.
 
 Minimum locomotion package animations are `idle`, `walk_left`, and
-`walk_right`. Validate a populated package with:
+`walk_right`. The canonical offline entry point is:
 
 ```text
-python godot/tools/validate_character_frames.py kotone yuna
+python godot/tools/character_assets.py doctor
+python godot/tools/character_assets.py validate kotone yuna
 ```
+
+The same tool provides `extract-grid`, LLM/human `inspect`, deterministic
+ImageMagick `normalize`, and native Godot `build-spriteframes`.
 
 Existing pre-contract sheets remain source/reference material until their frames
 are extracted and normalized; do not add new state-specific scale compensation
