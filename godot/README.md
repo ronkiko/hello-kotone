@@ -118,3 +118,10 @@ superseded by the current flow:
 - [Human movement](docs/human-movement.md)
 - [Prediction/reconciliation](docs/prediction-reconciliation.md)
 - [Multiplayer presentation](docs/multiplayer-presentation.md)
+
+Series 7 final cleanup (7.14): obsolete Series 5 nickname/ticket process harnesses
+were removed. The canonical real-process runner is `ai_research/v3/game/op/check-client-lobby.py`;
+it executes current v7 TLS scenes, all maintained domain suites, raster tool checks
+and recipe replay. Historical acceptance evidence stays in the shared roadmap.
+The two Yuna art references preserved in c429a4a remain tracked source references
+outside the Godot runtime asset tree.

@@ -40,7 +40,7 @@ var _expected_identity := {}
 var _expected_character := {}
 var _leave_requested := false
 var _channel: RefCounted
-var _ticket := ""
+var _world_handoff := ""
 var _nickname := ""
 var _pending: Dictionary = {}
 var _scheduled: Dictionary = {}
@@ -71,7 +71,7 @@ func enter_character(handoff: Dictionary, character: Dictionary, profile: String
 	_expected_character = character.duplicate(true)
 	_security_profile = profile
 	_trusted_ca = ca
-	_ticket = handoff.world_handoff
+	_world_handoff = handoff.world_handoff
 	_nickname = character.display_name
 	_open(handoff.game.host, handoff.game.port, "CONNECTING_GAME")
 	return state != "FAILED"
@@ -304,8 +304,8 @@ func _on_frame(frame: PackedByteArray) -> void:
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 			_set_state("ENTERING_WORLD")
 			if state == "ENTERING_WORLD":
-				_schedule("enter", {"world_handoff": _ticket})
-				_ticket = ""
+				_schedule("enter", {"world_handoff": _world_handoff})
+				_world_handoff = ""
 		"ping":
 			# Transport liveness only: no replica/scene/state_changed/world_ready.
 			response_received.emit(op, data.duplicate(true))
@@ -409,7 +409,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_connection_generation += 1
 	if _channel != null:
 		_channel.close()
-	_ticket = ""
+	_world_handoff = ""
 	_trusted_ca = null
 	_expected_identity = {}
 	_expected_character = {}
