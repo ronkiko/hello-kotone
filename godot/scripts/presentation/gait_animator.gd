@@ -6,7 +6,6 @@ var walk_distance := 0.0
 var idle_elapsed := 0.0
 var facing := 1
 var walking := false
-var idle_on_settle := true
 var observed_direction_without_intent := false
 
 func configure(value: float) -> void:
@@ -40,10 +39,6 @@ func update(sprite: AnimatedSprite2D, before: float, after: float, target: float
 	if locomotion_intent != 0 or not settled:
 		walking = locomotion_intent != 0
 		return
-
-	if not idle_on_settle:
-		walking = false
-		return # Explicit opt-out for presentations that must freeze their last pose.
 
 	# Local release + completed reconciliation has an exact semantic meaning: idle.
 	if walking:
