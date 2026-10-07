@@ -252,6 +252,25 @@ def _expand_recipe_command(command: list, values: dict[str, str]) -> list[str]:
     return expanded
 
 
+def recipe_animation_names(value: object) -> list[str]:
+    if (not isinstance(value, list) or not value
+            or any(not isinstance(name, str) or ANIMATION_RE.fullmatch(name) is None for name in value)
+            or value != sorted(set(value))):
+        raise ToolError("recipe animations must be nonempty, sorted unique animation IDs")
+    return value
+
+
+def recipe_frame_paths(models: list[str], animations: list[str]) -> list[Path]:
+    expected = []
+    for model in models:
+        for animation in animations:
+            for path in frame_files(ASSET_ROOT / model / animation):
+                if not _tracked_repo_file(path):
+                    raise ToolError(f"{path}: canonical recipe frame is not tracked by git")
+                expected.append(path.relative_to(ASSET_ROOT))
+    return sorted(expected)
+
+
 def command_replay_recipe(args: argparse.Namespace) -> None:
     recipe = _recipe_root(args.recipe)
     manifest_path = recipe / "commands.json"
@@ -261,12 +280,13 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
     if (
         not isinstance(manifest, dict)
         or type(manifest.get("schema")) is not int
-        or manifest.get("schema") != 1
+        or manifest.get("schema") != 2
         or not isinstance(manifest.get("models"), list)
         or not isinstance(manifest.get("sources"), list)
         or not isinstance(manifest.get("commands"), list)
     ):
         raise ToolError("invalid recipe manifest")
+    animations = recipe_animation_names(manifest.get("animations"))
     models = manifest["models"]
     if (
         not models
@@ -342,16 +362,8 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
         if any(len(path.parts) < 3 for path in relative):
             raise ToolError("recipe output has no model/animation/frame hierarchy")
 
-        expected_paths: list[Path] = []
-        for model in models:
-            model_root = ASSET_ROOT / model
-            if not model_root.is_dir():
-                raise ToolError(f"{model_root}: canonical model package is missing")
-            expected_paths.extend(
-                path.relative_to(ASSET_ROOT)
-                for path in sorted(model_root.rglob("*.png"))
-            )
-        if relative != sorted(expected_paths):
+        expected_paths = recipe_frame_paths(models, animations)
+        if relative != expected_paths:
             raise ToolError(
                 "recipe output set differs from canonical package: "
                 f"generated={len(relative)} canonical={len(expected_paths)}"
@@ -373,6 +385,7 @@ def command_replay_recipe(args: argparse.Namespace) -> None:
                 "operations": operations,
                 "frames_reproduced_byte_identical": identical,
                 "models": models,
+                "animations": animations,
             },
             sort_keys=True,
         )

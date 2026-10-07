@@ -1,5 +1,6 @@
 {
-  "schema": 1,
+  "schema": 2,
+  "animations": ["idle_left", "idle_right", "walk_left", "walk_right"],
   "purpose": "Recorded agent-chosen operations, not an automatic source-format/normalization algorithm",
   "sources": [
     {

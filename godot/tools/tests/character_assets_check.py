@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import frame_tools as frames
 import character_assets as packages
@@ -34,8 +35,11 @@ rejects(lambda:packages.animation_spec_names(['idle_left=1:true','idle_left=2:tr
 
 recipe=packages.REPO_ROOT/'godot/tools/character_recipes/locomotion_v1/commands.json'
 manifest=json.loads(recipe.read_text())
-check(manifest.get('schema')==1 and manifest.get('models')==sorted(contract.models) and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
-check(sum(1 for model in manifest['models'] for _ in (packages.ASSET_ROOT/model).rglob('*.png'))==44,'recipe contract covers all 44 canonical frames')
+check(manifest.get('schema')==2 and manifest.get('models')==sorted(contract.models) and len(manifest.get('sources',[]))==5,'locomotion recipe manifest loads')
+check(packages.recipe_animation_names(manifest.get('animations'))==sorted(packages.REQUIRED_ANIMATIONS),'locomotion recipe explicitly owns all required directional animations')
+check(len(packages.recipe_frame_paths(manifest['models'],manifest['animations']))==44,'recipe contract covers all 44 scoped locomotion frames')
+for invalid in (None,[],['idle_right','idle_right'],['walk_right','idle_left'],['../outside'],[True]):
+    rejects(lambda:packages.recipe_animation_names(invalid),'invalid or implicit recipe animation scope rejected')
 check(packages._tracked_repo_file(recipe),'recipe manifest is tracked by git')
 for source_entry in manifest['sources']:
     source_path=packages._repo_relative_path(source_entry['path'],'source path')
@@ -48,6 +52,19 @@ rejects(lambda:packages._expand_recipe_command(['place','--source','{mystery}/a.
 rejects(lambda:packages._repo_relative_path('../outside.png','source path'),'recipe source traversal rejected')
 with tempfile.TemporaryDirectory() as temp:
     p=Path(temp)
+    assets=p/'assets'
+    (assets/'model/idle_right').mkdir(parents=True)
+    (assets/'model/stumble_right').mkdir()
+    (assets/'model/idle_right/000.png').touch()
+    (assets/'model/stumble_right/000.png').touch()
+    with patch.object(packages,'ASSET_ROOT',assets),patch.object(packages,'_tracked_repo_file',return_value=True):
+        check(packages.recipe_frame_paths(['model'],['idle_right'])==[Path('model/idle_right/000.png')],'recipe scope excludes separately authored reaction frames')
+        rejects(lambda:packages.recipe_frame_paths(['model'],['walk_right']),'missing scoped animation rejected')
+        (assets/'model/idle_right/000.png').unlink()
+        rejects(lambda:packages.recipe_frame_paths(['model'],['idle_right']),'missing scoped frames rejected')
+        (assets/'model/idle_right/000.png').touch()
+    with patch.object(packages,'ASSET_ROOT',assets),patch.object(packages,'_tracked_repo_file',return_value=False):
+        rejects(lambda:packages.recipe_frame_paths(['model'],['idle_right']),'untracked scoped canonical frame rejected')
     packages._assert_temporary_recipe_output(['place','--output',str(p/'out.png')],p)
     check(True,'temporary recipe output accepted')
     rejects(lambda:packages._assert_temporary_recipe_output(['place','--output',str(packages.REPO_ROOT/'bad.png')],p),'recipe output cannot write into repository')

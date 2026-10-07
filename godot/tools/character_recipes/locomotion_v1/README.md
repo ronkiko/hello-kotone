@@ -1,5 +1,12 @@
 # Directional idle authoring decisions
 
+Recipe manifest schema 2 explicitly declares the animation scope. This recipe
+replays all 44 frames of `idle_left`, `idle_right`, `walk_left`, and `walk_right`
+for Kotone/Yuna. Additional reaction animations have their own authoring scope;
+they do not extend this locomotion recipe. Replay still requires the complete
+scoped canonical frame set, tracked inputs/outputs and byte-identical results.
+The old implicit whole-model manifest schema 1 is rejected without fallback.
+
 Every runtime package supplies `idle_left`, `idle_right`, `walk_left`, and
 `walk_right` as prepared canonical PNG frames. Runtime selects the animation;
 it does not infer symmetry, mirror pixels, or substitute a missing direction.
