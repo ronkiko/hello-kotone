@@ -28,7 +28,9 @@ var _first_cell := -1000000
 var _bound_nodes: Array[StaticBody2D] = []
 var _local_player_id := ""
 var _last_applied_control_seq := 0
-var _control_history: Array[Dictionary] = []
+var _prediction_tick := -1
+var _last_authoritative_tick := -1
+var _prediction_history: Array[Dictionary] = []
 var _pending_owner_motion: Dictionary = {}
 var _pending_snapshot_motion: Dictionary = {}
 var _prediction_fenced := false
@@ -37,7 +39,8 @@ var _predicted_contacts: Array[String] = []
 var _blend_remaining := 0.0
 var _blend_start_offset_x := 0.0
 var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulation_tick": -1,
-	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0}
+	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
+	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 
 func _ready() -> void:
 	var atlas := TileSetAtlasSource.new()
@@ -114,7 +117,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	if not players is Dictionary or not players.has(view.get("local_player_id")) or players.size() > 64: return false
 	for id in players:
 		if not Protocol.player(players[id]) or players[id].player_id != id or players[id].zone_id != document.map_id: return false
-	var map_changed := _map.get("map_id", "") != document.map_id or _map.get("content_hash", "") != document.content_hash
+	var map_changed: bool = _map.get("map_id", "") != document.map_id or _map.get("content_hash", "") != document.content_hash
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
 	if map_changed:
@@ -126,7 +129,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 		_local_player_id = view.local_player_id
 		_position_installed = true
 		_prediction_fenced = false
-		_control_history.clear()
+		_prediction_history.clear()
 		var initial_motion: Dictionary = local.motion.duplicate(true)
 		initial_motion["contacts"] = local.contacts.duplicate()
 		_apply_authoritative_motion(initial_motion, true)
@@ -142,7 +145,9 @@ func set_suspended(value: bool) -> void:
 	_suspended = value
 	if value:
 		_pending_owner_motion.clear()
-		_control_history.clear()
+		_prediction_history.clear()
+		_prediction_tick = -1
+		_last_authoritative_tick = -1
 		_blend_remaining = 0.0
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
@@ -211,16 +216,21 @@ func _physics_process(delta: float) -> void:
 		if not _suspended and not _prediction_fenced:
 			_apply_authoritative_motion(owner_motion, false)
 	if _suspended or _prediction_fenced or not _position_installed or _movement.is_empty(): return
+	if _prediction_tick < 0: return
 	var control: Dictionary = MmoClient.prediction_control_state()
-	if int(control.control_seq) > _last_applied_control_seq:
-		_control_history.append({"control_seq": control.control_seq, "drive": control.drive,
-			"facing": control.facing, "at_ms": Time.get_ticks_msec()})
-		_prediction_metrics.history_peak = maxi(_prediction_metrics.history_peak, _control_history.size())
-		var too_old := not _control_history.is_empty() and Time.get_ticks_msec() - int(_control_history[0].at_ms) > 2000
-		if _control_history.size() > 40 or too_old:
-			_fence_prediction()
-			return
+	var too_old := not _prediction_history.is_empty() and Time.get_ticks_msec() - int(_prediction_history[0].at_ms) > 2000
+	if _prediction_history.size() >= 40 or too_old:
+		_fence_prediction()
+		return
+	# Snapshot anchors the logical timeline; every local physics interval consumes
+	# one tick even while the same wire control remains acknowledged and held.
+	_prediction_tick += 1
 	_integrate_control(control, delta)
+	_prediction_history.append({"simulation_tick": _prediction_tick,
+		"drive": control.drive, "facing": control.facing, "at_ms": Time.get_ticks_msec(),
+		"position_mm": _pixel_to_server_mm(character_root.position.x),
+		"contacts": _predicted_contacts.duplicate()})
+	_prediction_metrics.history_peak = maxi(_prediction_metrics.history_peak, _prediction_history.size())
 	_reframe()
 
 func _process(delta: float) -> void:
@@ -264,25 +274,41 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 
 func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if character_root == null or _movement.is_empty(): return
-	_prediction_metrics.last_simulation_tick = int(motion.get("simulation_tick", -1))
+	var tick := int(motion.simulation_tick)
+	if not force_snap and (tick < _last_authoritative_tick or int(motion.last_applied_control_seq) < _last_applied_control_seq):
+		_fence_prediction()
+		return
+	_prediction_metrics.last_simulation_tick = tick
+	var before_body_x := character_root.position.x
 	var before_render_x := character_root.position.x + visual_layer.position.x
-	var error_mm := abs(_pixel_to_server_mm(character_root.position.x) - int(motion.position_mm))
-	if not force_snap:
-		_prediction_metrics.samples += 1
-		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
-	var contact_disagreement := not force_snap and motion.contacts != _predicted_contacts
+	var contacts_at_tick: Array = _predicted_contacts
 	var replay: Array[Dictionary] = []
 	if not force_snap:
-		for entry in _control_history:
-			if int(entry.control_seq) > int(motion.last_applied_control_seq): replay.append(entry)
-	_control_history = replay
+		for entry in _prediction_history:
+			if int(entry.simulation_tick) == tick: contacts_at_tick = entry.contacts
+			if int(entry.simulation_tick) > tick: replay.append(entry)
+	_prediction_history = replay
+	_prediction_tick = tick if force_snap else maxi(_prediction_tick, tick)
+	_last_authoritative_tick = tick
 	_last_applied_control_seq = int(motion.last_applied_control_seq)
+	_prediction_metrics.last_applied_control_seq = _last_applied_control_seq
+	_prediction_metrics.last_replayed_ticks = replay.size()
+	var contact_disagreement: bool = not force_snap and motion.contacts != contacts_at_tick
 	character_root.position.x = server_to_pixel(int(motion.position_mm))
 	character_root.velocity = Vector2(float(motion.velocity_mm_s) * PIXELS_PER_METER / 1000.0, 0.0)
 	_predicted_contacts.clear()
-	for entry in _control_history:
+	for contact in motion.contacts: _predicted_contacts.append(str(contact))
+	for entry in _prediction_history:
 		_integrate_control(entry, 1.0 / float(_movement.physics_hz))
-	var can_blend := not force_snap and error_mm <= 250 and not contact_disagreement
+		entry.position_mm = _pixel_to_server_mm(character_root.position.x)
+		entry.contacts = _predicted_contacts.duplicate()
+	# Compare the old and reconciled present, not present vs an older server pose.
+	var error_mm := absi(_pixel_to_server_mm(before_body_x) - _pixel_to_server_mm(character_root.position.x))
+	var render_error_mm := absi(_pixel_to_server_mm(before_render_x) - _pixel_to_server_mm(character_root.position.x))
+	if not force_snap:
+		_prediction_metrics.samples += 1
+		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
+	var can_blend: bool = not force_snap and error_mm <= 250 and render_error_mm <= 250 and not contact_disagreement
 	if can_blend:
 		visual_layer.position.x = before_render_x - character_root.position.x
 		_blend_start_offset_x = visual_layer.position.x
@@ -301,7 +327,8 @@ func _pixel_to_server_mm(pixel_x: float) -> int:
 func _fence_prediction() -> void:
 	if _prediction_fenced: return
 	_prediction_fenced = true
-	_control_history.clear()
+	_prediction_history.clear()
+	_prediction_tick = -1
 	_pending_owner_motion.clear()
 	_prediction_metrics.fences += 1
 	if _resync_requested: return

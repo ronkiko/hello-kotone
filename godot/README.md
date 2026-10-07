@@ -113,9 +113,15 @@ from the validated `world_rules.engage_ms` value.
 
 Confirmed server motion remains the only gameplay authority. The local owner is a
 Godot `CharacterBody2D` predicted at 60 Hz from the same complete semantic control
-state sent to Game. Its bounded history retains at most 40 physics states and 2 s;
-motion samples discard states through `last_applied_control_seq`, rebase position
-and velocity, and replay only unconfirmed states. Corrections up to 250 mm blend
+state sent to Game. Its bounded history retains at most 40 physics intervals and 2 s,
+including intervals under an acknowledged held control. A snapshot anchors the
+logical prediction tick; each local physics step advances it once. Motion samples
+discard intervals through `simulation_tick`, rebase position and velocity, and
+replay later intervals in order. `last_applied_control_seq` remains a separate
+network fence; prediction never allocates a speculative wire sequence. Short
+coalesced states occupy only their actual local intervals. Correction/contact
+comparison uses the corresponding timeline state, and diagnostics measure correction
+of the reconciled present. Corrections up to 250 mm blend
 the visual child over 100 ms. Contact disagreement and larger corrections rebase
 immediately. Godot physics interpolation is enabled for the owner; initial and
 authoritative discontinuity rebases reset interpolation. World-edge collision
