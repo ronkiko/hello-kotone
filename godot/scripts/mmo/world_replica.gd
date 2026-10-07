@@ -2,9 +2,11 @@ extends RefCounted
 ## Pure public-data reducer. Never holds sockets, scene nodes or renderer objects.
 
 signal changed
-signal local_moved(event: Dictionary, previous_x: int)
+signal motion_received(event: Dictionary)
+var _frame_seq := 0
+var _zone_generation := 1
 
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const WorldSession = preload("res://scripts/mmo/world_session.gd")
 var world_session := WorldSession.new()
 var _snapshot: Dictionary = {}
@@ -21,7 +23,7 @@ func view() -> Dictionary:
 		"resync_required": _status == "STALE", "reconnect_required": _reconnect_required,
 		"epoch": _snapshot.get("epoch", ""), "revision": _snapshot.get("revision", 0),
 		"map": _snapshot.get("map", {}).duplicate(true), "players": _players.duplicate(true),
-		"local_player_id": _local_id, "confirmed_local_x": _players.get(_local_id, {}).get("x", null)}
+		"local_player_id": _local_id, "confirmed_local_position_mm": _players.get(_local_id, {}).get("motion", {}).get("position_mm", null)}
 
 func snapshot() -> Dictionary:
 	return _snapshot.duplicate(true)
@@ -30,6 +32,8 @@ func local_player() -> Dictionary:
 	return _players.get(_local_id, {}).duplicate(true)
 
 func clear() -> void:
+	_frame_seq = 0
+	_zone_generation = 1
 	world_session.clear()
 	_snapshot = {}
 	_players = {}
@@ -68,7 +72,7 @@ func install_map(value: Dictionary) -> bool:
 		if value[key] != reference[key]:
 			return _reject("MAP_MISMATCH")
 	for player in _players.values():
-		if not Protocol.integer(player.x, value.min_x, value.max_x):
+		if not _inside_map(player, value):
 			return _reject("OUTSIDE_MAP")
 	_map = value.duplicate(true)
 	return true
@@ -93,8 +97,7 @@ func replace_snapshot(value: Dictionary) -> bool:
 	if value.revision < _snapshot.revision:
 		return _reject("SNAPSHOT_ROLLBACK")
 	# All facts through this boundary precede state on the ordered TCP stream.
-	if value.revision > _snapshot.revision:
-		return _reject("SNAPSHOT_GAP")
+
 	_commit(value)
 	return true
 
@@ -107,12 +110,26 @@ func apply_event(value: Dictionary) -> bool:
 		return _reject("WRONG_EPOCH")
 	if value.zone_id != _snapshot.map.map_id:
 		return _reject("WRONG_ZONE")
-	if value.revision <= _snapshot.revision:
-		return _reject("DUPLICATE_EVENT")
-	if value.revision != _snapshot.revision + 1:
-		return _reject("REVISION_GAP")
+	if value.event == "motion_frame":
+		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision:
+			return _reject("STALE_MOTION_FRAME")
+		var incoming := {}
+		for item in value.data.players:
+			incoming[item.player_id] = item
+			if not _players.has(item.player_id) or _players[item.player_id].character != item.character or _players[item.player_id].nickname != item.nickname \
+				or item.motion.simulation_tick < _players[item.player_id].motion.simulation_tick:
+				return _reject("MOTION_IDENTITY_CHANGED")
+		if incoming.size() != _players.size(): return _reject("MOTION_MEMBERSHIP_CHANGED")
+		var next: Dictionary = _snapshot.duplicate(true)
+		next.players = value.data.players.duplicate(true)
+		next.revision = value.revision
+		if not _valid_snapshot(next, _local_id, _nickname): return _reject("INVALID_MOTION")
+		_frame_seq = value.data.frame_seq
+		_commit(next, _status == "STALE")
+		motion_received.emit(value.duplicate(true))
+		return true
+	if value.revision <= _snapshot.revision: return _reject("STALE_LIFECYCLE")
 	var players: Dictionary = _players.duplicate(true)
-	var previous_local_x: int = _players.get(_local_id, {}).get("x", 0)
 	var id: String = value.data.player_id if value.event == "left" else value.data.player.player_id
 	if value.event == "joined":
 		if players.has(id):
@@ -141,8 +158,6 @@ func apply_event(value: Dictionary) -> bool:
 	# until the correlated snapshot arrives. Nothing is buffered/replayed.
 	var resync_pending := _status == "STALE"
 	_commit(next, resync_pending)
-	if value.event == "moved" and id == _local_id:
-		local_moved.emit(value.duplicate(true), previous_local_x)
 	return true
 
 func invalidate(reason: String) -> void:
@@ -154,7 +169,7 @@ func _valid_snapshot(value: Dictionary, local_id: String, nickname: String) -> b
 		return false
 	var local_found := false
 	for player in value.players:
-		if not _map.is_empty() and not Protocol.integer(player.x, _map.min_x, _map.max_x):
+		if not _map.is_empty() and not _inside_map(player, _map):
 			return false
 		if player.player_id == local_id:
 			if player.nickname != nickname:
@@ -179,3 +194,8 @@ func _reject(reason: String) -> bool:
 	_reconnect_required = true
 	changed.emit()
 	return false
+
+func _inside_map(player: Dictionary, document: Dictionary) -> bool:
+	var position: int = player.motion.position_mm
+	return float(position) >= float(document.min_x) * 1000.0 / float(document.units_per_meter) + 200.0 \
+		and float(position) <= float(document.max_x) * 1000.0 / float(document.units_per_meter) - 200.0

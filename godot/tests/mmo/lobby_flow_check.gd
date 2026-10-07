@@ -1,6 +1,6 @@
 extends SceneTree
 ## Two actual Godot scene consumers. Python starts services, never plays for us.
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 var client: Node
 var pre: Node
@@ -82,15 +82,15 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var prefix := "directional-" + side
 	var other_role := 3 - role
 	var renderer: Node = world.platform.remote_players[remote_id]
-	world.input_adapter.set_process(false)
+	world.input_adapter.set_physics_process(false)
 	mark(prefix + "-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-ready%d" % other_role)), side + " both windows ready"): return false
-	var start_x: int = client.world_replica.local_player().x
-	world.input_adapter._set_locomotion_intent(direction)
-	if not await wait_until(func(): return direction * (client.world_replica.local_player().get("x", start_x) - start_x) >= 4, side + " authoritative displacement"): return false
-	world.input_adapter._set_locomotion_intent(0)
-	if not await wait_until(func(): return client._server_input == "stop" and client.state == "READY", side + " acknowledged stop"): return false
-	var final_x: int = client.world_replica.local_player().x
+	var start_x: int = client.world_replica.local_player().motion.position_mm
+	client.set_control(direction, direction)
+	if not await wait_until(func(): return direction * (client.world_replica.local_player().motion.get("position_mm", start_x) - start_x) >= 400, side + " authoritative displacement"): return false
+	client.set_control(0, direction)
+	if not await wait_until(func(): return client._server_input.drive == 0 and client.state == "READY" and client.world_replica.local_player().motion.velocity_mm_s == 0, side + " acknowledged stop"): return false
+	var final_x: int = client.world_replica.local_player().motion.position_mm
 	var marker_path := sync.path_join(prefix + "-stop%d" % role)
 	var marker := FileAccess.open(marker_path + ".tmp", FileAccess.WRITE)
 	marker.store_string(str(final_x))
@@ -100,9 +100,9 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	if not await wait_until(func(): return FileAccess.file_exists(peer_stop), side + " peer stopped"): return false
 	var peer_x := int(FileAccess.get_file_as_string(peer_stop))
 	var expected := Appearance.idle_animation(direction)
-	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("x", -99999) == peer_x and is_equal_approx(renderer.visual_x, renderer.target_x) and renderer.sprite.animation == expected, side + " remote settled directional idle"): return false
+	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("position_mm", -99999) == peer_x and is_equal_approx(renderer.visual_x, renderer.target_x) and renderer.sprite.animation == expected, side + " remote settled directional idle"): return false
 	if not await wait_until(func(): return world.platform.sprite.animation == expected and is_equal_approx(world.platform.character_root.position.x, world.platform.server_to_pixel(final_x)), side + " own settled directional idle"): return false
-	check(renderer.gait.facing == direction and not renderer.gait.walking, side + " remote retains observed direction at rest")
+	check(client.world_replica.view().players[remote_id].motion.facing == direction and client.world_replica.view().players[remote_id].motion.velocity_mm_s == 0, side + " authoritative shared facing at rest")
 	check(not renderer.sprite.flip_h and not renderer.sprite.flip_v and renderer.sprite.scale == Vector2.ONE and renderer.sprite.position == Vector2(-128, -236), side + " remote uses authored direction with canonical anchor")
 	var first_frame: int = renderer.sprite.frame
 	var target_x: float = renderer.target_x
@@ -219,11 +219,12 @@ func _run() -> void:
 	check(world.platform.sprite.get_meta("character_model_id") == chosen.character_model_id, "own presenter model")
 	check(world.platform.sprite.get_node("SemanticAppearance").payload == chosen, "own renderer applies appearance")
 	check(not world.platform.sprite.material == world.platform.remote_players[remote_id].sprite.material, "independent appearance materials")
-	var initial: int = client.world_replica.local_player().x
-	check(client.set_input("right" if role == 1 else "left"), "separate visible avatars")
-	if not await wait_until(func(): return abs(client.world_replica.local_player().get("x", initial) - initial) >= 6, "separated authoritative positions"): quit(1); return
-	client.set_input("stop")
-	if not await wait_until(func(): return client._server_input == "stop" and client.state == "READY", "stop before appearance screenshot"): quit(1); return
+	world.input_adapter.set_physics_process(false)
+	var initial: int = client.world_replica.local_player().motion.position_mm
+	check(client.set_control(-1 if role == 1 else 1, -1 if role == 1 else 1), "separate visible avatars")
+	if not await wait_until(func(): return abs(client.world_replica.local_player().motion.get("position_mm", initial) - initial) >= 600, "separated authoritative positions"): quit(1); return
+	client.set_control(0, client._desired_input.facing)
+	if not await wait_until(func(): return client._server_input.drive == 0 and client.state == "READY" and client.world_replica.local_player().motion.velocity_mm_s == 0, "stop before appearance screenshot"): quit(1); return
 	mark("position%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("position%d" % (3-role))), "both avatars positioned"): quit(1); return
 	await screenshot("multiplayer")
@@ -231,15 +232,15 @@ func _run() -> void:
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("observed%d" % (3-role))), "peer observations complete"): quit(1); return
 	for direction in [-1, 1]:
 		if not await verify_remote_idle(world, remote_id, direction): quit(1); return
-	world.input_adapter.set_process(true)
-	var before: int = client.world_replica.local_player().x
-	check(client.set_input("right"), "held input sent")
-	if not await wait_until(func(): return client.world_replica.local_player().get("x", before) > before, "authoritative movement"): quit(1); return
+	world.input_adapter.set_physics_process(false)
+	var before: int = client.world_replica.local_player().motion.position_mm
+	check(client.set_control(1, 1), "held input sent")
+	if not await wait_until(func(): return client.world_replica.local_player().motion.get("position_mm", before) > before, "authoritative movement"): quit(1); return
 	check(client.world_replica.local_player().character.appearance_payload == chosen, "moved preserves authoritative model")
 	# Leave while input is held: drain -> stop ACK -> logout actual flush -> roster.
 	await press("Leave world")
 	if not await wait_until(func(): return pre.state == "LOBBY" and current_scene.scene_file_path.ends_with("login.tscn"), "Leave returns same Lobby"): quit(1); return
-	check(client.session_id == "" and client._desired_input == "stop" and client._server_input_seq == 0, "world authority/input cleared")
+	check(client.session_id == "" and client._desired_input.drive == 0 and client._server_input_seq == 0, "world authority/input cleared")
 	check(pre.roster.characters[0].character_id == record.character_id and pre.selection.is_empty(), "same roster fresh selection required")
 	await screenshot("returned-lobby")
 	await press("1. " + record.display_name)
@@ -247,7 +248,7 @@ func _run() -> void:
 	await press("Enter world")
 	if not await wait_until(func(): return client.state == "READY" and current_scene.scene_file_path.ends_with("world.tscn"), "both models re-enter World"): quit(1); return
 	check(client.world_replica.local_player().character.appearance_payload == chosen, "re-entry keeps durable model")
-	check(client._server_input_seq == 0 and client._server_input == "stop", "re-entry never replays input")
+	check(client._server_input_seq == 0 and client._server_input.drive == 0, "re-entry never replays input")
 	if role == 1:
 		await press("Leave world")
 		if not await wait_until(func(): return pre.state == "LOBBY" and current_scene.scene_file_path.ends_with("login.tscn"), "second safe Lobby return"): quit(1); return

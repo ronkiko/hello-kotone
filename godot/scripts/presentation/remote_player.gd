@@ -1,71 +1,31 @@
 extends Node2D
-## Presentation only: one remote identity and its last confirmed pixel target.
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const MotionProfile = preload("res://scripts/presentation/player_motion.gd")
-const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
-var visual_layer := Node2D.new()
-var sprite: AnimatedSprite2D
-var identity := Label.new()
-var suspended := false
 var player_id := ""
-var target_x := 0.0
-var visual_x := 0.0
-var _min_x := 0.0
-var _max_x := 0.0
-var _installed := false
-var motion_profile := MotionProfile.new()
-var gait := GaitAnimator.new()
+var sprite := AnimatedSprite2D.new()
+var visual_layer := Node2D.new()
+var identity := Label.new()
+var visual_x: float:
+	get: return position.x
+var target_x: float:
+	get: return position.x
+var suspended := false
 
 func _ready() -> void:
-	gait.observed_direction_without_intent = true
-	visual_layer.name = "CharacterVisualLayer"
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
 	add_child(visual_layer)
-	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
-	Appearance.Library.install(sprite, "kotone")
-	Appearance.pose(sprite, false, 0, 0)
-	# Stable identity tint; labels remain readable even at the same server X.
-	sprite.modulate = Color.from_hsv(float(player_id.hash() & 255) / 255.0, 0.35, 1.0)
-	identity.position = Vector2(-64, -Appearance.display_height_px("kotone") - 18)
+	identity.position.x = -64
 	identity.size = Vector2(128, 18)
 	identity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	identity.add_theme_font_size_override("font_size", 11)
-	identity.add_theme_color_override("font_outline_color", Color.BLACK)
-	identity.add_theme_constant_override("outline_size", 3)
 	add_child(identity)
 
-func install_appearance(value: Dictionary) -> bool:
-	if not Appearance.install(sprite, value):
-		return false
-	identity.position.y = -Appearance.display_height_px(value.character_model_id) - 18
-	return true
-
-func configure_motion(step_units: int, interval_ms: int, units_per_meter: int, pixels_per_meter: float) -> void:
-	motion_profile.configure(step_units, interval_ms, units_per_meter, pixels_per_meter)
-	gait.configure(motion_profile.cycle_pixels)
-
-func project(nickname: String, x: float, low: float, high: float) -> void:
-	identity.text = nickname
-	_min_x = low
-	_max_x = high
-	target_x = clampf(x, low, high)
-	if not _installed:
-		visual_x = target_x
-		gait.reset(sprite)
-		_installed = true
-	position.x = visual_x
-
-func _process(delta: float) -> void:
-	if suspended or not _installed or sprite == null or motion_profile.nominal_speed <= 0.0:
-		return
-	var before := visual_x
-	var gap := absf(target_x - visual_x)
-	visual_x = clampf(move_toward(visual_x, target_x, motion_profile.speed_for_gap(gap) * maxf(delta, 0.0)), _min_x, _max_x)
-	# Sprite/node edits cannot change the confirmed target.
-	position.x = visual_x
-	sprite.position = Vector2(Appearance.Library.FrameContract.visual_origin_offset())
-	# Remote input is intentionally unknown. Actual displacement supplies facing;
-	# reaching the displayed target means zero visual velocity, so use directional
-	# idle without claiming anything about the remote player's held input.
-	gait.update(sprite, before, visual_x, target_x, 0, delta)
+func project(player: Dictionary, confirmed_pixel: float) -> void:
+	position.x = confirmed_pixel
+	identity.text = player.nickname
+	Appearance.install(sprite, player.character.appearance_payload)
+	identity.position.y = -Appearance.display_height_px(player.character.appearance_payload.character_model_id) - 18
+	var motion: Dictionary = player.motion
+	var animation := ("walk_" if motion.velocity_mm_s != 0 else "idle_") + ("left" if motion.facing < 0 else "right")
+	if suspended: sprite.pause()
+	else: sprite.play(animation)

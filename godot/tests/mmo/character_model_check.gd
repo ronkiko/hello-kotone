@@ -1,6 +1,6 @@
 extends SceneTree
 ## Hostile catalog, client content incompatibility and card-local presentation.
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const Gait = preload("res://scripts/presentation/gait_animator.gd")
 var checks := 0

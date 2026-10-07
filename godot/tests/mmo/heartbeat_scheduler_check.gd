@@ -1,5 +1,5 @@
 extends SceneTree
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 var checks := 0
 var failures: Array[String] = []
 class FakeChannel extends RefCounted:
@@ -15,7 +15,7 @@ func check(ok: bool, label: String) -> void:
 	if not ok: failures.append(label)
 
 func response(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version":7,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
+	return {"protocol_version":8,"type":"response","request_id":"r1","op":op,"status":"ok","data":data,"error":null}
 
 func _initialize() -> void:
 	start.call_deferred()
@@ -42,7 +42,7 @@ func start() -> void:
 	check(channel.sent.size() == 1 and channel.sent[0].op == "ping" and client.state == "READY", "IDLE_PING_FREE_SLOT")
 	var before: Dictionary = client._pending.duplicate()
 	for i in range(1000): client._process(0)
-	check(channel.sent.size() == 1 and client._pending == before and client.set_input("right"),"PING_COALESCES_LATEST_INPUT_WITHOUT_BACKLOG")
+	check(channel.sent.size() == 1 and client._pending == before and client.set_control(1, 1),"PING_COALESCES_LATEST_INPUT_WITHOUT_BACKLOG")
 	client._on_frame(JSON.stringify(response("ping",{"pong":true})).to_utf8_buffer())
 	check(client.state == "READY" and client._pending.is_empty(),"PONG_RELEASES_SLOT")
 	client._next_request_at = 0
@@ -50,18 +50,18 @@ func start() -> void:
 	client.state = "READY"
 	client._scheduled = {}
 	client._pending = {}
-	client._server_input = "stop"
-	client._desired_input = "stop"
-	check(client.set_input("right"),"HUMAN_INPUT_SCHEDULED")
+	client._server_input = {"drive":0,"facing":1}
+	client._desired_input = {"drive":0,"facing":1}
+	check(client.set_control(1, 1),"HUMAN_INPUT_SCHEDULED")
 	client._process(0)
-	check(channel.sent.size() == 2 and channel.sent[1].op == "input" and channel.sent[1].payload.direction == "right", "INPUT_HAS_PRIORITY_OVER_DUE_PING")
+	check(channel.sent.size() == 2 and channel.sent[1].op == "control_set" and channel.sent[1].payload.drive == 1, "INPUT_HAS_PRIORITY_OVER_DUE_PING")
 	client._scheduled = {}
 	client._pending = {}
 	client.state = "READY"
 	client._next_request_at = 0
 	client._last_request_at = Time.get_ticks_msec()
-	client._desired_input = "stop"
-	client._server_input = "stop"
+	client._desired_input = {"drive":0,"facing":1}
+	client._server_input = {"drive":0,"facing":1}
 	client._process(0)
 	check(channel.sent.size() == 2,"ORDINARY_REQUEST_ACTIVITY_DEFERS_PING")
 	for state in ["RESYNCING","MOVING","LOGGING_OUT","FAILED","DISCONNECTED","CONNECTING_GAME"]:

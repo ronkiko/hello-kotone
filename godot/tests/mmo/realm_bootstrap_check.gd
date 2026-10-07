@@ -1,6 +1,6 @@
 extends SceneTree
 ## v7 selected-character realm-before-zone boundary, adversarial content and restart checks.
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
 const Fixtures = preload("res://tests/mmo/replica_check.gd")
 var checks := 0
@@ -15,7 +15,7 @@ func identity(epoch: String = "e1") -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "local", "realm_instance_id": epoch}
 
 func bootstrap(epoch: String = "e1") -> Dictionary:
-	return {"identity": identity(epoch), "capabilities": ["input", "logout", "map", "state", "world_rules"]}
+	return {"identity": identity(epoch), "capabilities": ["control_set", "logout", "map", "state", "world_rules"]}
 
 func character() -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "local", "character_id": "p1", "display_name": "player1", "appearance_schema_version": 2,
@@ -24,13 +24,13 @@ func character() -> Dictionary:
 func baseline(epoch: String = "e1") -> Dictionary:
 	return {"epoch": epoch, "revision": 1,
 		"map": {"map_id": Fixtures.MAP.map_id, "content_version": Fixtures.MAP.content_version, "content_hash": Fixtures.MAP.content_hash},
-		"players": [{"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 50, "character": character()}]}
+		"players": [Fixtures.player()]}
 
 func entry(epoch: String = "e1") -> Dictionary:
 	return {"session_id": "s1", "player_id": "p1", "bootstrap": bootstrap(epoch), "snapshot": baseline(epoch)}
 
 func reply(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version": 7, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
+	return {"protocol_version": 8, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
 
 func deliver(op: String, data: Dictionary) -> void:
 	client._pending = {"op": op, "request_id": "r1", "payload": {}}
@@ -55,10 +55,10 @@ func run() -> void:
 			committed.append(client.world_session.view()))
 	var replica := Replica.new()
 	check(not replica.start(baseline(), "p1", "player1") and replica.snapshot().is_empty(), "UNBOUND_ZONE_REJECTED")
-	for bad in [{}, {"identity": identity(), "capabilities": ["input", "input"]}, {"identity": identity(), "capabilities": [true]}, {"identity": identity(), "capabilities": ["x".repeat(129)]}, {"identity": identity(), "capabilities": ["future\n"]}, {"identity": {"game_card_id": "hello-kotone", "realm_id": "local\n", "realm_instance_id": "e1"}, "capabilities": []}, {"identity": identity(), "capabilities": ["input"], "session_rules": {}}]:
+	for bad in [{}, {"identity": identity(), "capabilities": ["control_set", "control_set"]}, {"identity": identity(), "capabilities": [true]}, {"identity": identity(), "capabilities": ["x".repeat(129)]}, {"identity": identity(), "capabilities": ["future\n"]}, {"identity": {"game_card_id": "hello-kotone", "realm_id": "local\n", "realm_instance_id": "e1"}, "capabilities": []}, {"identity": identity(), "capabilities": ["control_set"], "session_rules": {}}]:
 		check(not Protocol.bootstrap(bad), "STRICT_BOOTSTRAP")
 	check(Protocol.bootstrap({"identity": identity(), "capabilities": []}), "GENERIC_EMPTY_CAPABILITIES")
-	check(Protocol.response(reply("enter", entry())), "VALID_V7_ENTER")
+	check(Protocol.response(reply("enter", entry())), "VALID_V8_ENTER")
 	var old_version := reply("enter", entry())
 	old_version.protocol_version = 5
 	check(not Protocol.response(old_version), "V5_BREAKING_SHAPE_REJECTED")
@@ -69,7 +69,7 @@ func run() -> void:
 			"missing": bad.erase("bootstrap")
 			"instance": bad.bootstrap.identity.realm_instance_id = "e2"
 			"card": bad.bootstrap.identity.game_card_id = "test-minimal"
-			"capability": bad.bootstrap.capabilities.erase("input")
+			"capability": bad.bootstrap.capabilities.erase("control_set")
 			"host_policy": bad.bootstrap.idle_timeout_ms = 600
 		deliver("enter", bad)
 		check(client.state == "FAILED" and client.world_replica.snapshot().is_empty() and committed.is_empty(), "NO_ZONE_BEFORE_VALID_BIND_" + mode)
@@ -81,7 +81,7 @@ func run() -> void:
 	var exposed: Dictionary = client.world_session.view()
 	exposed.identity.realm_id = "mutated"
 	exposed.capabilities.clear()
-	check(client.world_session.view().identity == identity() and client.world_session.supports("input"), "DETACHED_REALM_VALUES")
+	check(client.world_session.view().identity == identity() and client.world_session.supports("control_set"), "DETACHED_REALM_VALUES")
 	for op in ["map", "world_rules"]:
 		for field in ["game_card_id", "realm_id", "realm_instance_id"]:
 			reset()
@@ -89,7 +89,7 @@ func run() -> void:
 			var before: Dictionary = client.world_replica.snapshot()
 			var scope := identity()
 			scope[field] = "different"
-			var data := {"identity": scope, "map": Fixtures.MAP} if op == "map" else {"identity": scope, "movement": {"step_units": 1, "min_move_interval_ms": 200}}
+			var data := {"identity": scope, "map": Fixtures.MAP} if op == "map" else {"identity": scope, "movement": {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,"top_speed_mm_s":3000,"mass_g":70000,"width_mm":400,"drive_force_mN":560000,"brake_force_mN":560000}}
 			deliver(op, data)
 			check(client.state == "FAILED" and client.last_error.code == "REALM_IDENTITY_MISMATCH", "SCOPED_REPLY_REJECTED_" + op + "_" + field)
 			check(client.world_replica.snapshot() == before and client.map_document.is_empty() and client.world_rules.is_empty(), "NO_FOREIGN_PRESENTATION_" + op + "_" + field)
@@ -105,13 +105,13 @@ func run() -> void:
 	reset()
 	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
-	client._on_frame(JSON.stringify({"protocol_version": 7, "type": "event", "event": "moved", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": {"player_id": "p1", "nickname": "player1", "zone_id": "city/apartment", "x": 51, "character": character()}}}).to_utf8_buffer())
-	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_x == 50 and client.world_replica.view().stale_reason == "WRONG_EPOCH", "OLD_FACT_REJECTED_BEFORE_PROJECTION")
+	client._on_frame(JSON.stringify({"protocol_version": 8, "type": "event", "event": "joined", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": Fixtures.player("p2", "Bob", 50400)}}).to_utf8_buffer())
+	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_position_mm == 50000 and client.world_replica.view().stale_reason == "WRONG_EPOCH", "OLD_FACT_REJECTED_BEFORE_PROJECTION")
 	reset()
 	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
 	deliver("state", {"snapshot": baseline("e1")})
-	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_x == 50, "OLD_STATE_REJECTED")
+	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_position_mm == 50000, "OLD_STATE_REJECTED")
 	client.disconnect_world()
 	check(client.world_session.view().identity.is_empty() and client.world_replica.snapshot().is_empty(), "TEARDOWN_CLEARS_REALM_AND_ZONE")
 	print(JSON.stringify({"suite": "recovery", "checks": checks, "failures": failures, "result": "PASS" if failures.is_empty() else "FAIL"}))

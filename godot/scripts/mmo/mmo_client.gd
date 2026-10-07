@@ -5,13 +5,13 @@ signal state_changed(state: String)
 signal fault(info: Dictionary)
 signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
-signal input_accepted(input_seq: int, direction: String, x: int)
+signal control_accepted(control_seq: int)
 signal input_rejected(code: String)
 signal world_ready
 signal disconnected
 
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
@@ -55,8 +55,8 @@ var _last_request_at := 0
 var _world_rules: Dictionary = {}
 var world_rules: Dictionary:
 	get: return _world_rules.duplicate(true)
-var _desired_input := "stop"
-var _server_input := "stop"
+var _desired_input := {"drive": 0, "facing": 1}
+var _server_input := {"drive": 0, "facing": 1}
 var _server_input_seq := 0
 
 func enter_character(handoff: Dictionary, character: Dictionary, profile: String, ca: X509Certificate = null) -> bool:
@@ -76,33 +76,27 @@ func enter_character(handoff: Dictionary, character: Dictionary, profile: String
 	_open(handoff.game.host, handoff.game.port, "CONNECTING_GAME")
 	return state != "FAILED"
 
-func set_input(direction: String) -> bool:
-	if _leave_requested or direction not in ["left", "right", "stop"] or state not in ["READY", "MOVING"] or _world_rules.is_empty():
-		return false
-	# Latest desired state is bounded/coalesced while one input request is in flight.
-	_desired_input = direction
-	if _pending.is_empty() and _scheduled.get("op") == "input":
-		# A not-yet-sent intention must not outlive the current human desire.
-		if direction == _server_input:
-			_scheduled = {}
-			_set_state("READY")
-		else:
-			_scheduled.payload.direction = direction
-	if state == "READY":
-		_schedule_desired_input()
+func set_control(drive: int, facing: int) -> bool:
+	if _leave_requested or drive not in [-1, 0, 1] or facing not in [-1, 1] or state not in ["READY", "MOVING"] or _world_rules.is_empty(): return false
+	_desired_input = {"drive": drive, "facing": facing}
+	if _pending.is_empty() and _scheduled.get("op") == "control_set":
+		_scheduled = {}
+		_set_state("READY")
+	_schedule_desired_input()
 	return true
 
 func _schedule_desired_input() -> void:
-	if state == "READY" and _pending.is_empty() and _desired_input != _server_input and _scheduled.get("op") == "ping":
-		_scheduled = {} # Unsent keepalive yields the slot to human input.
-	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty():
+	if state == "READY" and _pending.is_empty() and _desired_input != _server_input and _scheduled.get("op") == "ping": _scheduled = {}
+	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty(): return
+	if _server_input_seq >= 9007199254740991:
+		_fail("CONTROL_NAMESPACE_EXHAUSTED")
 		return
-	_schedule("input", {"input_seq": _server_input_seq + 1, "direction": _desired_input})
+	_schedule("control_set", _desired_input.merged({"control_seq": _server_input_seq + 1}))
 	_set_state("MOVING")
 
 func request_state() -> bool:
 	# A resync must not silently leave a held server input running while presentation freezes.
-	if _desired_input != "stop" or _server_input != "stop":
+	if _desired_input.drive != 0 or _server_input.drive != 0:
 		return false
 	if not _public_request("state"):
 		return false
@@ -116,9 +110,9 @@ func request_map() -> bool:
 func logout() -> bool:
 	if state not in ["READY", "MOVING"]: return false
 	_leave_requested = true
-	_desired_input = "stop"
+	_desired_input = {"drive": 0, "facing": _desired_input.facing}
 	# Drain the single in-flight input, explicitly stop, then logout/flush.
-	if _pending.is_empty() and _scheduled.get("op") in ["input", "ping"]:
+	if _pending.is_empty() and _scheduled.get("op") in ["control_set", "ping"]:
 		_scheduled = {}
 		_set_state("READY")
 	_advance_leave()
@@ -126,8 +120,8 @@ func logout() -> bool:
 
 func _advance_leave() -> void:
 	if not _leave_requested or state != "READY" or not _pending.is_empty() or not _scheduled.is_empty(): return
-	if _server_input != "stop":
-		_schedule("input", {"input_seq": _server_input_seq + 1, "direction": "stop"})
+	if _server_input.drive != 0:
+		_schedule("control_set", {"control_seq": _server_input_seq + 1, "drive": 0, "facing": _server_input.facing})
 		_set_state("MOVING")
 	else:
 		_schedule("logout", {})
@@ -135,7 +129,7 @@ func _advance_leave() -> void:
 
 func disconnect_world() -> void:
 	# Explicit cancellation closes the socket; it never claims a successful flush.
-	if not _pending.is_empty() and _pending.op in ["login", "enter", "input", "logout"]:
+	if not _pending.is_empty() and _pending.op in ["login", "enter", "control_set", "logout"]:
 		_fail("CANCELLED")
 	else:
 		_close_cleanly()
@@ -235,7 +229,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 		if session_id.is_empty() or not Protocol.event(message):
 			_fail("INVALID_EVENT")
 			return
-		if message.event in ["joined", "moved"] and not _production_player(message.data.player):
+		if message.event == "joined" and not _production_player(message.data.player):
 			_fail("CHARACTER_MISMATCH")
 			return
 		if not world_replica.apply_event(message):
@@ -258,10 +252,10 @@ func _on_frame(frame: PackedByteArray) -> void:
 		_fail("CORRELATION_ERROR")
 		return
 	if message.status != "ok":
-		if _pending.op == "input" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
+		if _pending.op == "control_set" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
 			var input_code: String = message.error.code
 			_pending = {}
-			_desired_input = "stop"
+			_desired_input = {"drive": 0, "facing": _desired_input.facing}
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 			var rejection_generation := _connection_generation
 			_set_state("READY")
@@ -284,11 +278,11 @@ func _on_frame(frame: PackedByteArray) -> void:
 		if message.data.player_id != _expected_character.get("character_id") or message.data.bootstrap.identity != _expected_identity or not _production_snapshot(message.data.snapshot) or not world_session.bind(message.data.bootstrap):
 			_fail("REALM_BOOTSTRAP_MISMATCH")
 			return
-		for capability in ["map", "state", "world_rules", "input", "logout"]:
+		for capability in ["map", "state", "world_rules", "control_set", "logout"]:
 			if not world_session.supports(capability):
 				_fail("WORLD_CAPABILITY_MISSING")
 				return
-	if op == "input" and not _valid_input_ack(message.data, completed):
+	if op == "control_set" and not _valid_input_ack(message.data, completed):
 		# Keep pending mutation context until validation: a malformed ACK is unknown.
 		_fail("INPUT_BASELINE_MISMATCH")
 		return
@@ -300,7 +294,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 		"session_rules":
 			_session_rules = data.duplicate(true)
 			# Post-receipt spacing adds a clock-tick margin to advertised admission.
-			_request_interval_ms = data.min_request_interval_ms + 1
+			_request_interval_ms = maxi(50, data.min_request_interval_ms + 1)
 			_next_request_at = Time.get_ticks_msec() + _request_interval_ms
 			_set_state("ENTERING_WORLD")
 			if state == "ENTERING_WORLD":
@@ -312,6 +306,10 @@ func _on_frame(frame: PackedByteArray) -> void:
 		"enter":
 			player_id = data.player_id
 			session_id = data.session_id
+			for item in data.snapshot.players:
+				if item.player_id == player_id:
+					_desired_input = {"drive": 0, "facing": item.motion.facing}
+					_server_input = _desired_input.duplicate()
 			initial_snapshot = data.snapshot.duplicate(true)
 			last_snapshot = data.snapshot.duplicate(true)
 			if not world_replica.start(data.snapshot, player_id, _nickname):
@@ -349,17 +347,14 @@ func _on_frame(frame: PackedByteArray) -> void:
 			response_received.emit(op, data.duplicate(true))
 			if loading and state == "READY":
 				world_ready.emit()
-		"input":
-			var sent_direction: String = completed.payload.direction
-			_server_input_seq = data.input_seq
-			_server_input = sent_direction
+		"control_set":
+			_server_input_seq = data.control_seq
+			_server_input = {"drive": completed.payload.drive, "facing": completed.payload.facing}
 			var generation := _connection_generation
 			_set_state("READY")
-			if generation != _connection_generation:
-				return
-			input_accepted.emit(_server_input_seq, _server_input, data.x)
-			if generation != _connection_generation:
-				return
+			if generation != _connection_generation: return
+			control_accepted.emit(_server_input_seq)
+			if generation != _connection_generation: return
 			response_received.emit(op, data.duplicate(true))
 			_schedule_desired_input()
 		"logout":
@@ -367,12 +362,9 @@ func _on_frame(frame: PackedByteArray) -> void:
 			response_received.emit(op, data.duplicate(true))
 
 func _valid_input_ack(data: Dictionary, completed: Dictionary) -> bool:
-	var payload: Dictionary = completed.get("payload", {})
-	var local: Dictionary = world_replica.local_player()
-	return payload.get("direction") in ["left", "right", "stop"] and data.epoch == world_replica.view().epoch \
-		and data.zone_id == local.get("zone_id") and data.player_id == player_id \
-		and data.input_seq == payload.get("input_seq") and data.input_seq == _server_input_seq + 1 \
-		and data.x == local.get("x")
+	return data.epoch == world_replica.view().epoch and data.zone_id == world_replica.local_player().get("zone_id") \
+		and data.player_id == player_id and data.control_seq == completed.payload.get("control_seq") \
+		and data.control_seq == _server_input_seq + 1
 
 func _accept_map(value: Dictionary, source: String) -> bool:
 	if not _map_matches(value):
@@ -427,15 +419,15 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_last_request_at = 0
 	_world_rules = {}
 	world_session.invalidate()
-	_desired_input = "stop"
-	_server_input = "stop"
+	_desired_input = {"drive": 0, "facing": _desired_input.facing}
+	_server_input = {"drive": 0, "facing": 1}
 	_server_input_seq = 0
 	if not preserve_replica:
 		world_replica.clear()
 
 func _fail(code: String, known_outcome: bool = false) -> void:
 	var op: String = _pending.get("op", "")
-	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "input", "logout"]}
+	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "control_set", "logout"]}
 	world_replica.invalidate(code)
 	_clear_session(true)
 	_set_state("FAILED")

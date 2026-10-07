@@ -3,8 +3,6 @@ extends Control
 
 const Platform = preload("res://scripts/presentation/platform_world.gd")
 const InputAdapter = preload("res://scripts/ui/move_input.gd")
-const Prediction = preload("res://scripts/presentation/local_prediction.gd")
-var prediction := Prediction.new()
 var input_adapter: Node
 var platform: Node2D
 const LOGIN_SCENE := "res://scenes/mmo/login.tscn"
@@ -26,10 +24,8 @@ func _ready() -> void:
 	refresh_button.pressed.connect(MmoClient.request_state)
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
-	MmoClient.input_accepted.connect(_on_input_accepted)
 	MmoClient.input_rejected.connect(_on_input_rejected)
 	MmoClient.world_replica.changed.connect(_show_world)
-	MmoClient.world_replica.local_moved.connect(_on_local_moved)
 	if MmoClient.state != "READY":
 		_return_to_login()
 		return
@@ -39,7 +35,6 @@ func _ready() -> void:
 	input_adapter.client = MmoClient
 	input_adapter.locomotion_intent_changed.connect(_on_locomotion_intent_changed)
 	add_child(input_adapter)
-	platform.set_local_intent(input_adapter.locomotion_intent)
 	_show_world()
 	_on_state_changed(MmoClient.state)
 
@@ -48,15 +43,12 @@ func _show_world() -> void:
 		platform.set_suspended(MmoClient.world_replica.view().status != "SYNCED")
 	var player: Dictionary = MmoClient.world_replica.local_player()
 	if player.is_empty():
-		prediction.clear()
 		identity.text = ""
 		position_label.text = ""
 		return
 	identity.text = "%s · %s" % [player.nickname, player.zone_id]
-	position_label.text = "Position: %d" % player.x
+	position_label.text = "Position: %.3f m" % (float(player.motion.position_mm) / 1000.0)
 	if platform != null:
-		var rules: Dictionary = MmoClient.world_rules
-		prediction.observe(MmoClient.map_document, MmoClient.world_replica.view(), rules.get("movement", {}).get("step_units", 0))
 		_project_display()
 
 func _project_display() -> void:
@@ -65,47 +57,10 @@ func _project_display() -> void:
 		platform.project(MmoClient.map_document, MmoClient.world_replica.view())
 
 func _on_locomotion_intent_changed(direction: int) -> void:
-	if platform != null:
-		platform.set_local_intent(direction)
-		if direction == 0:
-			# Release may cancel an unsent press: no ACK will arrive to settle it.
-			platform.reconcile_local_to_confirmed()
 	refresh_button.disabled = MmoClient.state != "READY" or direction != 0
 
-func _on_input_accepted(input_seq: int, direction: String, x: int) -> void:
-	if not prediction.accept_input(input_seq, direction, x):
-		return
-	if platform != null:
-		if direction != "stop":
-			# A fresh accepted direction intentionally releases an earlier
-			# boundary hold. WORLD_PAUSED rejects such an input, so pause holds remain.
-			platform.set_authoritative_hold(false)
-		else:
-			# Release is immediate locally; final resting X still converges to the server.
-			platform.reconcile_local_to_confirmed()
-
 func _on_input_rejected(code: String) -> void:
-	if platform != null:
-		platform.reconcile_local_to_confirmed()
-	match code:
-		"RATE_LIMITED": status_label.text = "Input pacing rejected. Release and try again."
-		"WORLD_PAUSED": status_label.text = "World paused. Input stopped."
-
-func _on_local_moved(event: Dictionary, previous_x: int) -> void:
-	var actual_x: int = event.data.player.x
-	var blocked := actual_x == previous_x
-	var correction_units := prediction.authoritative_step(actual_x, blocked)
-	if platform != null:
-		if blocked:
-			# Server held the body: stop extending local prediction and magnet
-			# exactly to confirmed X. Held keyboard intent is preserved.
-			platform.set_authoritative_hold(true)
-			platform.reconcile_local_to_confirmed()
-		else:
-			platform.set_authoritative_hold(false)
-			if correction_units != 0.0:
-				platform.apply_local_correction(correction_units)
-	_project_display()
+	status_label.text = "Control rejected: " + code
 
 func _leave_world() -> void:
 	if not MmoClient.logout():

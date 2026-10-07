@@ -1,6 +1,6 @@
 extends Node
 ## One bounded request slot per connection. Secrets never leave this object's reply.
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 signal connected_result(ok: bool)
 signal reply_result(value: Dictionary)

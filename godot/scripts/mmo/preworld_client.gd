@@ -1,7 +1,7 @@
 extends Node
 ## Account/realm/lifecycle authority. No spatial fields or gameplay simulation.
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Peer = preload("res://scripts/mmo/public_peer.gd")
 signal changed
 var state := "LOGIN"

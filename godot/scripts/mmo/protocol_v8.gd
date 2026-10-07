@@ -1,13 +1,13 @@
 extends RefCounted
 ## Public wire validation only. Replica reduction and presentation belong elsewhere.
 
-const VERSION := 7
+const VERSION := 8
 const MAX_FRAME_BYTES := 65536
 const WireJson = preload("res://scripts/mmo/wire_json.gd")
-const PUBLIC_OPERATIONS := ["login", "select_realm", "lobby_enter", "lobby_state", "lobby_leave", "character_list", "character_catalog", "character_validate", "character_create", "character_select", "character_delete", "world_enter", "enter", "map", "state", "input", "logout", "world_rules", "session_rules", "ping"]
+const PUBLIC_OPERATIONS := ["login", "select_realm", "lobby_enter", "lobby_state", "lobby_leave", "character_list", "character_catalog", "character_validate", "character_create", "character_select", "character_delete", "world_enter", "enter", "map", "state", "control_set", "logout", "world_rules", "session_rules", "ping"]
 const PUBLIC_ERROR_CODES := ["AUTH_FAILED", "APPEARANCE_INVALID", "APPEARANCE_INCOMPATIBLE", "REGISTRY_UNAVAILABLE", "NAME_TAKEN", "SLOTS_FULL", "CHARACTER_NOT_OWNED", "CHARACTER_DELETED", "CHARACTER_BUSY", "DURABILITY_UNSAFE", "STALE_CHARACTER", "IDEMPOTENCY_CONFLICT", "IDEMPOTENCY_LIMIT", "OUTCOME_UNKNOWN", "INVALID_HANDOFF", "REALM_UNAVAILABLE", "ACCOUNT_NOT_ALLOWED", "WORLD_PAUSED", "FLUSH_FAILED", "STORAGE_CONFLICT", "WRITER_BUSY", "NOT_AUTHORIZED", "WRONG_ENDPOINT", "SERVER_UNAVAILABLE", "INVALID_MESSAGE", "UNSUPPORTED_VERSION", "UNKNOWN_OPERATION", "MESSAGE_TOO_LARGE", "INVALID_MAP", "NOT_AUTHENTICATED", "ALREADY_AUTHENTICATED", "ALREADY_ONLINE", "OUT_OF_BOUNDS", "RATE_LIMITED", "RESOURCE_LIMIT", "TIMEOUT", "STORAGE_ERROR", "INTERNAL_ERROR"]
 const REJECTION_CODES := ["ACCOUNT_NOT_ALLOWED", "ALREADY_AUTHENTICATED", "ALREADY_ONLINE", "APPEARANCE_INCOMPATIBLE", "APPEARANCE_INVALID", "AUTH_FAILED", "CHARACTER_BUSY", "CHARACTER_DELETED", "CHARACTER_NOT_OWNED", "DURABILITY_UNSAFE", "IDEMPOTENCY_CONFLICT", "IDEMPOTENCY_LIMIT", "INVALID_HANDOFF", "NAME_TAKEN", "NOT_AUTHENTICATED", "RATE_LIMITED", "REALM_UNAVAILABLE", "REGISTRY_UNAVAILABLE", "SLOTS_FULL", "STALE_CHARACTER", "WORLD_PAUSED", "WRITER_BUSY"]
-const REJECTION_OPERATIONS := {"AUTH_FAILED": ["login"], "APPEARANCE_INVALID": ["character_create", "character_validate"], "APPEARANCE_INCOMPATIBLE": ["character_create", "character_delete", "character_list", "character_select", "character_validate", "enter", "world_enter"], "REGISTRY_UNAVAILABLE": ["character_create", "character_delete", "character_list", "character_select", "enter", "world_enter"], "NAME_TAKEN": ["character_create"], "SLOTS_FULL": ["character_create"], "CHARACTER_NOT_OWNED": ["character_delete", "character_select", "enter", "world_enter"], "CHARACTER_DELETED": ["character_delete", "character_select", "enter", "world_enter"], "CHARACTER_BUSY": ["character_delete", "character_select", "enter", "world_enter"], "DURABILITY_UNSAFE": ["character_delete", "character_select", "enter", "world_enter"], "STALE_CHARACTER": ["character_delete", "enter", "world_enter"], "IDEMPOTENCY_CONFLICT": ["character_create", "character_delete"], "IDEMPOTENCY_LIMIT": ["character_create", "character_delete"], "INVALID_HANDOFF": ["enter", "lobby_enter"], "REALM_UNAVAILABLE": ["select_realm"], "ACCOUNT_NOT_ALLOWED": ["login"], "WORLD_PAUSED": ["input"], "NOT_AUTHENTICATED": ["character_catalog", "character_create", "character_delete", "character_list", "character_select", "character_validate", "input", "lobby_leave", "lobby_state", "logout", "map", "ping", "select_realm", "state", "world_enter", "world_rules"], "ALREADY_AUTHENTICATED": ["enter", "lobby_enter", "login"], "ALREADY_ONLINE": ["enter"], "WRITER_BUSY": [], "RATE_LIMITED": ["character_catalog", "character_create", "character_delete", "character_list", "character_select", "character_validate", "enter", "input", "lobby_enter", "lobby_leave", "lobby_state", "login", "logout", "map", "ping", "select_realm", "session_rules", "state", "world_enter", "world_rules"]}
+const REJECTION_OPERATIONS := {"AUTH_FAILED": ["login"], "APPEARANCE_INVALID": ["character_create", "character_validate"], "APPEARANCE_INCOMPATIBLE": ["character_create", "character_delete", "character_list", "character_select", "character_validate", "enter", "world_enter"], "REGISTRY_UNAVAILABLE": ["character_create", "character_delete", "character_list", "character_select", "enter", "world_enter"], "NAME_TAKEN": ["character_create"], "SLOTS_FULL": ["character_create"], "CHARACTER_NOT_OWNED": ["character_delete", "character_select", "enter", "world_enter"], "CHARACTER_DELETED": ["character_delete", "character_select", "enter", "world_enter"], "CHARACTER_BUSY": ["character_delete", "character_select", "enter", "world_enter"], "DURABILITY_UNSAFE": ["character_delete", "character_select", "enter", "world_enter"], "STALE_CHARACTER": ["character_delete", "enter", "world_enter"], "IDEMPOTENCY_CONFLICT": ["character_create", "character_delete"], "IDEMPOTENCY_LIMIT": ["character_create", "character_delete"], "INVALID_HANDOFF": ["enter", "lobby_enter"], "REALM_UNAVAILABLE": ["select_realm"], "ACCOUNT_NOT_ALLOWED": ["login"], "WORLD_PAUSED": ["control_set"], "NOT_AUTHENTICATED": ["character_catalog", "character_create", "character_delete", "character_list", "character_select", "character_validate", "control_set", "lobby_leave", "lobby_state", "logout", "map", "ping", "select_realm", "state", "world_enter", "world_rules"], "ALREADY_AUTHENTICATED": ["enter", "lobby_enter", "login"], "ALREADY_ONLINE": ["enter"], "WRITER_BUSY": [], "RATE_LIMITED": ["character_catalog", "character_create", "character_delete", "character_list", "character_select", "character_validate", "enter", "control_set", "lobby_enter", "lobby_leave", "lobby_state", "login", "logout", "map", "ping", "select_realm", "session_rules", "state", "world_enter", "world_rules"]}
 
 static func decode(frame: PackedByteArray) -> Dictionary:
 	# TCP removes the delimiter LF; any other raw LF/CR is forbidden in a frame.
@@ -45,13 +45,27 @@ static func endpoint(value: Variant) -> bool:
 	return fields(value, ["host", "port"]) \
 		and matches(value.host, "^[A-Za-z0-9.:-]{1,253}$") and integer(value.port, 1, 65535)
 
+static func motion(value: Variant) -> bool:
+	return fields(value, ["position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "simulation_tick"]) \
+		and integer(value.position_mm, -1000000000, 1000000000) and integer(value.velocity_mm_s, -50000, 50000) \
+		and value.facing in [-1, 1] and integer(value.facing, -1, 1) \
+		and integer(value.last_applied_control_seq) and integer(value.simulation_tick)
+
 static func player(value: Variant) -> bool:
-	var keys := ["player_id", "nickname", "zone_id", "x"]
-	if value is Dictionary and value.has("character"):
-		keys.append("character")
-	return fields(value, keys) and token(value.player_id) and display_name(value.nickname) \
-		and zone(value.zone_id) and integer(value.x) and (not value.has("character") or \
-		(presentation(value.character) and value.character.character_id == value.player_id and value.character.display_name == value.nickname))
+	if not fields(value, ["player_id", "nickname", "zone_id", "motion", "contacts", "character"]) \
+		or not token(value.player_id) or not display_name(value.nickname) or not zone(value.zone_id) \
+		or not motion(value.motion) or not value.contacts is Array or value.contacts.size() > 65 \
+		or not presentation(value.character) or value.character.character_id != value.player_id or value.character.display_name != value.nickname:
+		return false
+	var previous := ""
+	for contact in value.contacts:
+		if not token(contact) or contact <= previous: return false
+		previous = contact
+	return true
+
+static func movement(value: Variant) -> bool:
+	return value == {"physics_hz": 60, "publication_hz": 20, "control_interval_ms": 50, "engage_ms": 100, \
+		"top_speed_mm_s": 3000, "mass_g": 70000, "width_mm": 400, "drive_force_mN": 560000, "brake_force_mN": 560000}
 
 static func map_reference(value: Variant) -> bool:
 	return fields(value, ["map_id", "content_version", "content_hash"]) and zone(value.map_id) \
@@ -60,7 +74,7 @@ static func map_reference(value: Variant) -> bool:
 static func snapshot(value: Variant) -> bool:
 	if not fields(value, ["epoch", "revision", "map", "players"]) or not token(value.epoch) \
 		or not integer(value.revision) or not map_reference(value.map) or not value.players is Array \
-		or value.players.is_empty() or value.players.size() > 128:
+		or value.players.is_empty() or value.players.size() > 64:
 		return false
 	var last_id := ""
 	var names: Dictionary = {}
@@ -133,19 +147,17 @@ static func response(value: Variant) -> bool:
 		"state":
 			return fields(data, ["snapshot"]) and snapshot(data.snapshot)
 		"world_rules":
-			return fields(data, ["identity", "movement"]) and identity(data.identity) \
-				and fields(data.movement, ["step_units", "min_move_interval_ms"]) \
-				and integer(data.movement.step_units, 1, 1) and integer(data.movement.min_move_interval_ms, 1, 60000)
+			return fields(data, ["identity", "movement"]) and identity(data.identity) and movement(data.movement)
 		"session_rules":
 			return fields(data, ["min_request_interval_ms", "idle_timeout_ms", "keepalive_interval_ms"]) \
 				and integer(data.min_request_interval_ms, 1, 60000) and integer(data.idle_timeout_ms, 1, 3600000) \
 				and integer(data.keepalive_interval_ms, data.min_request_interval_ms + 1, int(data.idle_timeout_ms / 2))
 		"ping":
 			return fields(data, ["pong"]) and data.pong is bool and data.pong
-		"input":
-			return fields(data, ["epoch", "zone_id", "player_id", "input_seq", "x"]) \
+		"control_set":
+			return fields(data, ["epoch", "zone_id", "player_id", "control_seq", "accepted"]) \
 				and token(data.epoch) and zone(data.zone_id) and token(data.player_id) \
-				and integer(data.input_seq, 1) and integer(data.x)
+				and integer(data.control_seq, 1) and data.accepted is bool and data.accepted
 		"logout":
 			return fields(data, ["flush"]) and fields(data.flush, ["status", "save_version"]) \
 				and ((data.flush.status == "completed" and integer(data.flush.save_version)) \
@@ -178,8 +190,14 @@ static func event(value: Variant) -> bool:
 		or not integer(value.protocol_version, VERSION, VERSION) or value.type != "event" \
 		or not token(value.epoch) or not zone(value.zone_id) or not integer(value.revision, 1):
 		return false
-	if value.event in ["joined", "moved"]:
+	if value.event == "joined":
 		return fields(value.data, ["player"]) and player(value.data.player) and value.data.player.zone_id == value.zone_id
+	if value.event == "motion_frame":
+		var data: Variant = value.data
+		if not fields(data, ["realm_instance_id", "zone_package_id", "zone_generation", "frame_seq", "players"]) \
+			or data.realm_instance_id != value.epoch or data.zone_package_id != value.zone_id \
+			or not integer(data.zone_generation, 1) or not integer(data.frame_seq, 1): return false
+		return snapshot({"epoch": value.epoch, "revision": value.revision, "map": {"map_id": value.zone_id, "content_version": 1, "content_hash": "0".repeat(64)}, "players": data.players})
 	return value.event == "left" and fields(value.data, ["player_id"]) and token(value.data.player_id)
 
 static func version_error(value: Variant) -> bool:

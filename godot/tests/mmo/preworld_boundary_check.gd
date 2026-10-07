@@ -1,6 +1,6 @@
 extends SceneTree
 ## Current v7 authority/failure invariants using adversarial delayed public replies.
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 var pre: Node
 var checks := 0
 var failures: Array = []
@@ -34,7 +34,7 @@ func scope() -> void:
 	pre.error = {}
 
 func result(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version": 7, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
+	return {"protocol_version": 8, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
 
 func record() -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "test", "account_id": "account-one", "character_id": "char-one", "display_name": "Alice Kotone", "slot": 1, "lifecycle_state": "active", "character_schema_version": 1, "appearance_schema_version": 2,

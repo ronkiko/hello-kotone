@@ -1,7 +1,7 @@
 extends RefCounted
 ## Realm binding independent of the currently observed zone. Values only.
 
-const Protocol = preload("res://scripts/mmo/protocol_v7.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 var _bootstrap: Dictionary = {}
 var _active := false
 
