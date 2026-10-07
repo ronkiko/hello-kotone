@@ -18,27 +18,24 @@ func ready_replica() -> RefCounted:
 	return replica
 func sample(seq: int = 1, revision: int = 5) -> Dictionary:
 	var p := player()
-	p.motion.facing = -1
-	p.motion.simulation_tick = 4
-	p.motion.last_applied_control_seq = 1
-	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"players":[p]}}
+	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"contacts":[]}]}}
 func _initialize() -> void:
 	var replica := ready_replica()
 	check(replica.apply_event(sample()), "coalesced physics revisions accepted")
-	check(replica.local_player().motion.facing == -1 and replica.local_player().motion.position_mm == 50000, "stationary facing sample")
+	check(replica.local_player().motion.facing == -1 and replica.local_player().motion.position_mm == 50000 \
+		and replica.local_player().nickname == "player1" and replica.local_player().character.character_id == "p1", "physics sample merges over static identity")
 	check(replica.apply_event(sample(3,8)), "coalesced publication sequence accepted")
 	check(not replica.apply_event(sample(3,8)) and replica.view().reconnect_required, "duplicate fenced")
-	for field in ["realm_instance_id","zone_package_id","zone_generation","frame_seq"]:
+	for field in ["realm_instance_id","zone_package_id","zone_generation","frame_seq","simulation_tick"]:
 		replica = ready_replica()
 		var bad := sample()
-		bad.data[field] = "other" if field in ["realm_instance_id","zone_package_id"] else 0
+		bad.data[field] = "other" if field in ["realm_instance_id","zone_package_id"] else (-1 if field == "simulation_tick" else 0)
 		check(not replica.apply_event(bad) and replica.view().reconnect_required, "invalid scope " + field)
-	for field in ["character","nickname","player_id"]:
+	for field in ["character","nickname","zone_id","player_id"]:
 		replica = ready_replica()
 		var bad := sample()
-		if field == "character": bad.data.players[0].character.appearance_payload.hair_color_id = "copper"
-		else: bad.data.players[0][field] = "other"
-		check(not replica.apply_event(bad), "identity fence " + field)
+		bad.data.players[0][field] = "other"
+		check(not replica.apply_event(bad), "static identity rejected in motion sample " + field)
 	replica = ready_replica()
 	var newer := baseline()
 	newer.revision = 9

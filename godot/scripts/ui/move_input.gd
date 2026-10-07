@@ -8,9 +8,12 @@ var _pressed := 0
 var _held_seconds := 0.0
 var _require_release := true
 var _focused := true
+var _engage_ms := 0
 
 func _ready() -> void:
 	facing = client.world_replica.local_player().get("motion", {}).get("facing", 1)
+	var movement: Dictionary = client.world_rules.get("movement", {})
+	_engage_ms = int(movement.get("engage_ms", 0))
 	client.input_rejected.connect(_on_rejected)
 	client.state_changed.connect(_on_state)
 
@@ -37,7 +40,7 @@ func sample_direction(direction: int, delta: float) -> void:
 		_submit(0, direction if direction != 0 else facing)
 	elif direction != 0:
 		_held_seconds += delta
-		if _held_seconds + 0.000001 >= 0.1: _submit(direction, facing)
+		if _engage_ms > 0 and _held_seconds * 1000.0 + 0.001 >= float(_engage_ms): _submit(direction, facing)
 
 func _on_rejected(_code: String) -> void:
 	_require_release = true

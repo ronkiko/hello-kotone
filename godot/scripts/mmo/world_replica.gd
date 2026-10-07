@@ -5,6 +5,7 @@ signal changed
 signal motion_received(event: Dictionary)
 var _frame_seq := 0
 var _zone_generation := 1
+var _simulation_tick := -1
 
 const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const WorldSession = preload("res://scripts/mmo/world_session.gd")
@@ -34,6 +35,7 @@ func local_player() -> Dictionary:
 func clear() -> void:
 	_frame_seq = 0
 	_zone_generation = 1
+	_simulation_tick = -1
 	world_session.clear()
 	_snapshot = {}
 	_players = {}
@@ -96,6 +98,8 @@ func replace_snapshot(value: Dictionary) -> bool:
 		return _reject("MAP_MISMATCH")
 	if value.revision < _snapshot.revision:
 		return _reject("SNAPSHOT_ROLLBACK")
+	if _snapshot_tick(value) < _simulation_tick:
+		return _reject("SNAPSHOT_TICK_ROLLBACK")
 	# All facts through this boundary precede state on the ordered TCP stream.
 
 	_commit(value)
@@ -111,17 +115,31 @@ func apply_event(value: Dictionary) -> bool:
 	if value.zone_id != _snapshot.map.map_id:
 		return _reject("WRONG_ZONE")
 	if value.event == "motion_frame":
-		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision:
+		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision \
+			or value.data.simulation_tick < _simulation_tick:
 			return _reject("STALE_MOTION_FRAME")
 		var incoming := {}
-		for item in value.data.players:
-			incoming[item.player_id] = item
-			if not _players.has(item.player_id) or _players[item.player_id].character != item.character or _players[item.player_id].nickname != item.nickname \
-				or item.motion.simulation_tick < _players[item.player_id].motion.simulation_tick:
-				return _reject("MOTION_IDENTITY_CHANGED")
+		for sample in value.data.players:
+			if not _players.has(sample.player_id) or incoming.has(sample.player_id):
+				return _reject("MOTION_MEMBERSHIP_CHANGED")
+			incoming[sample.player_id] = sample
 		if incoming.size() != _players.size(): return _reject("MOTION_MEMBERSHIP_CHANGED")
 		var next: Dictionary = _snapshot.duplicate(true)
-		next.players = value.data.players.duplicate(true)
+		next.players = []
+		var ids := _players.keys()
+		ids.sort()
+		for id in ids:
+			var player: Dictionary = _players[id].duplicate(true)
+			var sample: Dictionary = incoming[id]
+			var motion: Dictionary = player.motion.duplicate(true)
+			motion.position_mm = sample.position_mm
+			motion.velocity_mm_s = sample.velocity_mm_s
+			motion.facing = sample.facing
+			motion.last_applied_control_seq = sample.last_applied_control_seq
+			motion.simulation_tick = value.data.simulation_tick
+			player.motion = motion
+			player.contacts = sample.contacts.duplicate()
+			next.players.append(player)
 		next.revision = value.revision
 		if not _valid_snapshot(next, _local_id, _nickname): return _reject("INVALID_MOTION")
 		_frame_seq = value.data.frame_seq
@@ -182,6 +200,7 @@ func _commit(value: Dictionary, resync_pending: bool = false) -> void:
 	_players = {}
 	for player in _snapshot.players:
 		_players[player.player_id] = player.duplicate(true)
+		_simulation_tick = maxi(_simulation_tick, player.motion.simulation_tick)
 	_status = "STALE" if resync_pending else "SYNCED"
 	_reason = "RESYNC_PENDING" if resync_pending else ""
 	_reconnect_required = false
@@ -199,3 +218,9 @@ func _inside_map(player: Dictionary, document: Dictionary) -> bool:
 	var position: int = player.motion.position_mm
 	return float(position) >= float(document.min_x) * 1000.0 / float(document.units_per_meter) + 200.0 \
 		and float(position) <= float(document.max_x) * 1000.0 / float(document.units_per_meter) - 200.0
+
+func _snapshot_tick(value: Dictionary) -> int:
+	var latest := -1
+	for player in value.players:
+		latest = maxi(latest, player.motion.simulation_tick)
+	return latest

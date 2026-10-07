@@ -27,9 +27,9 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.7.11 presentation corrective
+## Current MMO client — v3.main.8.05 motion-wire corrective
 
-Current public protocol is **v7**. The startup shell supports Account Login →
+Current public protocol is **v8**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
 one-time handoffs. `Preworld` owns account/Lobby authority; `MmoClient` owns only
 the selected-character Game visit. Leave World stops held input, waits for logout
@@ -104,9 +104,17 @@ Recorded agent operations/plans and checksums are in `tools/character_recipes/`;
 byte-for-byte in a temporary directory.
 Author visual acceptance is tracked in the shared 7.11 roadmap.
 
-Held input, prediction/reconciliation, confirmed replica, map cache, realm identity
-fencing and bounded heartbeat remain active. Unknown outcomes never replay input or
-mutations; character mutation receipts reconcile only on explicit human action.
+Current v8 locomotion sends bounded `control_set` desired state. The server publishes
+20-Hz `motion_frame` samples with one zone-level `simulation_tick` and only
+player ID, position, velocity, facing, applied control sequence and contacts.
+Nickname, zone and character appearance remain on snapshots and reliable join facts;
+the Godot reducer overlays motion by player ID. The input engage threshold comes
+from the validated `world_rules.engage_ms` value.
+
+Confirmed server motion replica, map cache, realm identity fencing and bounded
+heartbeat remain active. Owner prediction/reconciliation and remote motion timeline
+follow in 8.06/8.07. Unknown outcomes never replay input or mutations; character
+mutation receipts reconcile only on explicit human action.
 
 See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
 runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs
@@ -121,7 +129,7 @@ superseded by the current flow:
 
 Series 7 final cleanup (7.14): obsolete Series 5 nickname/ticket process harnesses
 were removed. The canonical real-process runner is `ai_research/v3/game/op/check-client-lobby.py`;
-it executes current v7 TLS scenes, all maintained domain suites, raster tool checks
+it executes current v8 TLS scenes, all maintained domain suites, raster tool checks
 and recipe replay. Historical acceptance evidence stays in the shared roadmap.
 The two Yuna art references preserved in c429a4a remain tracked source references
 outside the Godot runtime asset tree.

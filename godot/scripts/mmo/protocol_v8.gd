@@ -51,6 +51,18 @@ static func motion(value: Variant) -> bool:
 		and value.facing in [-1, 1] and integer(value.facing, -1, 1) \
 		and integer(value.last_applied_control_seq) and integer(value.simulation_tick)
 
+static func motion_frame_player(value: Variant) -> bool:
+	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "contacts"]) \
+		or not token(value.player_id) or not integer(value.position_mm, -1000000000, 1000000000) \
+		or not integer(value.velocity_mm_s, -50000, 50000) or not integer(value.facing, -1, 1) or value.facing not in [-1, 1] \
+		or not integer(value.last_applied_control_seq) or not value.contacts is Array or value.contacts.size() > 65:
+		return false
+	var previous := ""
+	for contact in value.contacts:
+		if not token(contact) or contact <= previous: return false
+		previous = contact
+	return true
+
 static func player(value: Variant) -> bool:
 	if not fields(value, ["player_id", "nickname", "zone_id", "motion", "contacts", "character"]) \
 		or not token(value.player_id) or not display_name(value.nickname) or not zone(value.zone_id) \
@@ -64,8 +76,11 @@ static func player(value: Variant) -> bool:
 	return true
 
 static func movement(value: Variant) -> bool:
-	return value == {"physics_hz": 60, "publication_hz": 20, "control_interval_ms": 50, "engage_ms": 100, \
+	if not fields(value, ["physics_hz", "publication_hz", "control_interval_ms", "engage_ms", "top_speed_mm_s", "mass_g", "width_mm", "drive_force_mN", "brake_force_mN"]) \
+		or not integer(value.engage_ms, 1, 1000): return false
+	var expected := {"physics_hz": 60, "publication_hz": 20, "control_interval_ms": 50, "engage_ms": value.engage_ms, \
 		"top_speed_mm_s": 3000, "mass_g": 70000, "width_mm": 400, "drive_force_mN": 560000, "brake_force_mN": 560000}
+	return value == expected
 
 static func map_reference(value: Variant) -> bool:
 	return fields(value, ["map_id", "content_version", "content_hash"]) and zone(value.map_id) \
@@ -194,10 +209,16 @@ static func event(value: Variant) -> bool:
 		return fields(value.data, ["player"]) and player(value.data.player) and value.data.player.zone_id == value.zone_id
 	if value.event == "motion_frame":
 		var data: Variant = value.data
-		if not fields(data, ["realm_instance_id", "zone_package_id", "zone_generation", "frame_seq", "players"]) \
+		if not fields(data, ["realm_instance_id", "zone_package_id", "zone_generation", "frame_seq", "simulation_tick", "players"]) \
 			or data.realm_instance_id != value.epoch or data.zone_package_id != value.zone_id \
-			or not integer(data.zone_generation, 1) or not integer(data.frame_seq, 1): return false
-		return snapshot({"epoch": value.epoch, "revision": value.revision, "map": {"map_id": value.zone_id, "content_version": 1, "content_hash": "0".repeat(64)}, "players": data.players})
+			or not integer(data.zone_generation, 1) or not integer(data.frame_seq, 1) \
+			or not integer(data.simulation_tick) or not data.players is Array or data.players.is_empty() or data.players.size() > 64:
+			return false
+		var last_id := ""
+		for sample in data.players:
+			if not motion_frame_player(sample) or sample.player_id <= last_id: return false
+			last_id = sample.player_id
+		return true
 	return value.event == "left" and fields(value.data, ["player_id"]) and token(value.data.player_id)
 
 static func version_error(value: Variant) -> bool:

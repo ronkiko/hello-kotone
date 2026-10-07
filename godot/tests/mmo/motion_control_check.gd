@@ -27,7 +27,7 @@ func run() -> void:
 	client._clear_session()
 	check(client._server_input_seq == 0 and client._desired_input.drive == 0 and client._scheduled.is_empty(), "fresh session no unknown replay")
 	client.state = "READY"
-	client._world_rules = {"movement":{"engage_ms":100}}
+	client._world_rules = {"movement":{"engage_ms":120}}
 	var controller := InputAdapter.new()
 	controller.client = client
 	root.add_child(controller)
@@ -35,10 +35,11 @@ func run() -> void:
 	controller._require_release = false
 	controller.sample_direction(-1, 1.0/60.0)
 	check(client._desired_input == {"drive":0,"facing":-1}, "press turns only")
-	for i in range(5): controller.sample_direction(-1, 1.0/60.0)
-	check(client._desired_input.drive == 0, "no engage before 100ms")
+	for i in range(7): controller.sample_direction(-1, 1.0/60.0)
+	check(client._desired_input.drive == 0, "no engage before server's 120ms")
 	controller.sample_direction(-1, 1.0/60.0)
-	check(client._desired_input.drive == -1, "drive engages at 100ms")
+	controller.sample_direction(-1, 1.0/60.0)
+	check(client._desired_input.drive == -1, "drive engages after server's 120ms")
 	controller.sample_direction(0, 1.0/60.0)
 	check(client._desired_input == {"drive":0,"facing":-1}, "release preserves facing")
 	client.disconnect_world()
