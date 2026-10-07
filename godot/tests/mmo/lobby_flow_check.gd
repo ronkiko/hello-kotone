@@ -154,6 +154,7 @@ func _run() -> void:
 	check(shell.creator_stage == "MODEL" and shell.creator_payload.is_empty(), "separate local model stage")
 	check(pre.roster.characters.is_empty() and client.session_id.is_empty(), "model stage has no durable or Game authority")
 	var character_model_id := "kotone" if role == 1 else "yuna"
+	if not await wait_until(func(): return shell.model_buttons.has(character_model_id), "creator candidate model button"): quit(1); return
 	var model_button: Button = shell.model_buttons[character_model_id]
 	var hover := InputEventMouseMotion.new()
 	hover.position = model_button.get_global_rect().get_center()
