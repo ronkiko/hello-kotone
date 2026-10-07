@@ -166,24 +166,33 @@ func _run() -> void:
 	check(shell.model_previews[character_model_id].frame > 0, "hover runs authored preview animation")
 	await screenshot("models")
 	await press(character_model_id.capitalize())
-	check(shell.model_selected == character_model_id and model_button.button_pressed, "explicit selected model")
+	if not await wait_until(func(): return shell.model_selected == character_model_id and model_button.button_pressed,
+		"explicit selected model"): quit(1); return
 	check(shell.creator_payload == pre.catalog.character_models[character_model_id].default_payload, "model specific defaults")
 	await press("Customize")
-	check(shell.creator_stage == "FINE", "confirm enters fine tuning")
+	if not await wait_until(func(): return shell.creator_stage == "FINE" and shell.creator_name_edit != null,
+		"confirm enters fine tuning"): quit(1); return
 	check(not shell.creator_choices.has("hair_style_id") if role == 2 else shell.creator_choices.has("hair_style_id"), "only model scoped fine options")
 	# Back is entirely local and preserves same-model edits; switching resets them.
 	shell.creator_payload.hair_color_id = "black"
 	await press("Back to models")
+	if not await wait_until(func(): return shell.creator_stage == "MODEL" and shell.model_buttons.has(character_model_id),
+		"Back returns to model stage"): quit(1); return
 	check(pre.roster.characters.is_empty(), "Back never mutates Registry")
 	var alternate := "yuna" if role == 1 else "kotone"
 	await press(alternate.capitalize())
-	check(shell.creator_payload == pre.catalog.character_models[alternate].default_payload, "switch resets incompatible options")
+	if not await wait_until(func(): return shell.model_selected == alternate and shell.creator_payload == pre.catalog.character_models[alternate].default_payload,
+		"switch resets incompatible options"): quit(1); return
 	await press(character_model_id.capitalize())
+	if not await wait_until(func(): return shell.model_selected == character_model_id and shell.creator_payload == pre.catalog.character_models[character_model_id].default_payload,
+		"switch restores original model defaults"): quit(1); return
 	# Keyboard focus uses the same candidate preview as pointer hover.
 	shell.model_buttons[character_model_id].grab_focus()
 	await process_frame
 	check(shell.hovered_model == character_model_id, "keyboard focus highlights candidate")
 	await press("Customize")
+	if not await wait_until(func(): return shell.creator_stage == "FINE" and shell.creator_name_edit != null,
+		"fine appearance form is ready"): quit(1); return
 	shell.creator_name_edit.text = "Silver Kotone" if role == 1 else "Black Yuna"
 	shell.creator_name_edit.text_changed.emit(shell.creator_name_edit.text)
 	var wanted := {"face_style_id": "bright" if role == 1 else "soft", "hair_color_id": "silver" if role == 1 else "black"}
