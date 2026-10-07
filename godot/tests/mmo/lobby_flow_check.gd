@@ -88,6 +88,48 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 		return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("velocity_mm_s", 1) == 0 \
 			and is_equal_approx(renderer.visual_x, renderer.target_x), side + " remote timeline settled before measurement"):
 		return false
+	client.set_control(0, direction)
+	if not await wait_until(func(): return client.world_replica.local_player().motion.facing == direction
+		and client.world_replica.local_player().motion.velocity_mm_s == 0, side + " stationary facing baseline"):
+		return false
+	mark(prefix + "-baseline-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-baseline-ready%d" % other_role)), side + " both windows set facing baseline"):
+		return false
+	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("facing", 0) == direction
+		and renderer.sprite.animation == Appearance.idle_animation(direction), side + " baseline facing reaches remote presenter"):
+		return false
+	var tap_facing := -direction
+	var owner_tap_x: int = client.world_replica.local_player().motion.position_mm
+	var remote_tap_x: int = client.world_replica.view().players[remote_id].motion.position_mm
+	client.set_control(0, tap_facing)
+	if not await wait_until(func():
+		var motion: Dictionary = client.world_replica.local_player().motion
+		return motion.facing == tap_facing and motion.velocity_mm_s == 0 and motion.position_mm == owner_tap_x \
+			and world.platform.sprite.animation == Appearance.idle_animation(tap_facing), side + " stationary tap reaches owner facing"):
+		return false
+	mark(prefix + "-tap-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-tap-ready%d" % other_role)), side + " both windows applied short tap"):
+		return false
+	if not await wait_until(func():
+		var motion: Dictionary = client.world_replica.view().players.get(remote_id, {}).get("motion", {})
+		return motion.get("facing", 0) == tap_facing and motion.get("velocity_mm_s", -1) == 0 \
+			and motion.get("position_mm", -1) == remote_tap_x and renderer.sprite.animation == Appearance.idle_animation(tap_facing),
+		side + " stationary tap is shared with remote without displacement"):
+		return false
+	check(client.world_replica.local_player().motion.position_mm == owner_tap_x
+		and client.world_replica.view().players[remote_id].motion.position_mm == remote_tap_x,
+		side + " short tap creates no phantom movement")
+	await screenshot("short-tap-" + side)
+	client.set_control(0, direction)
+	if not await wait_until(func(): return client.world_replica.local_player().motion.facing == direction,
+		side + " restore authoritative facing after tap"):
+		return false
+	mark(prefix + "-restore-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-restore-ready%d" % other_role)), side + " both windows restore facing"):
+		return false
+	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("facing", 0) == direction
+		and renderer.sprite.animation == Appearance.idle_animation(direction), side + " restored facing reaches remote presenter"):
+		return false
 	mark(prefix + "-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-ready%d" % other_role)), side + " both windows ready"): return false
 	var go_path := sync.path_join(prefix + "-go")

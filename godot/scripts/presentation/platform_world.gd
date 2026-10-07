@@ -3,6 +3,7 @@ extends Node2D
 const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
+const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 const PIXELS_PER_METER := 8.0
 const ORIGIN_X := 32.0
@@ -41,6 +42,9 @@ var _blend_start_offset_x := 0.0
 var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulation_tick": -1,
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
+var _gait := GaitAnimator.new()
+var _last_rendered_x := 0.0
+var _local_model_id := ""
 
 func _ready() -> void:
 	var atlas := TileSetAtlasSource.new()
@@ -136,6 +140,10 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	local_label.position.x = character_root.position.x - 64
 	local_label.text = "%s (you)" % local.nickname
 	Appearance.install(sprite, local.character.appearance_payload)
+	if _local_model_id != local.character.appearance_payload.character_model_id:
+		_local_model_id = local.character.appearance_payload.character_model_id
+		_gait.reset(sprite, int(local.motion.facing))
+	_gait.configure(float(_movement.get("top_speed_mm_s", 3000)) * PIXELS_PER_METER / 1000.0)
 	local_label.position.y = FLOOR_Y - Appearance.display_height_px(local.character.appearance_payload.character_model_id) - 18
 	_sync_players()
 	_reframe()
@@ -151,6 +159,8 @@ func set_suspended(value: bool) -> void:
 		_blend_remaining = 0.0
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
+		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
+		_last_rendered_x = character_root.position.x
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		node.set_suspended(value)
@@ -246,13 +256,16 @@ func _process(delta: float) -> void:
 		var control: Dictionary = MmoClient.prediction_control_state()
 		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / PIXELS_PER_METER),
 			"facing": control.facing}
-		_pose(sprite, predicted_motion)
+		var rendered_x := character_root.position.x + visual_layer.position.x
+		if _suspended: sprite.pause()
+		else: _gait.update(sprite, _last_rendered_x, rendered_x, int(predicted_motion.facing), delta)
+		_last_rendered_x = rendered_x
 	var now_usec := Time.get_ticks_usec()
 	for node in remote_players.values():
 		if node.suspended: continue
 		var remote_motion: Dictionary = node.timeline.sample_at(now_usec)
 		if not remote_motion.is_empty():
-			node.render_at(server_to_pixel(float(remote_motion.position_mm)), remote_motion)
+			node.render_at(server_to_pixel(float(remote_motion.position_mm)), remote_motion, delta)
 
 func _integrate_control(control: Dictionary, delta: float) -> void:
 	var target_speed := float(control.drive) * float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0
@@ -302,6 +315,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	var contact_disagreement: bool = not force_snap and motion.contacts != contacts_at_tick
 	character_root.position.x = server_to_pixel(int(motion.position_mm))
 	character_root.velocity = Vector2(float(motion.velocity_mm_s) * PIXELS_PER_METER / 1000.0, 0.0)
+	_gait.try_contact_reaction(sprite, _local_model_id, motion)
 	_predicted_contacts.clear()
 	for contact in motion.contacts: _predicted_contacts.append(str(contact))
 	for entry in _prediction_history:
@@ -326,6 +340,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		_blend_remaining = 0.0
 		character_root.reset_physics_interpolation()
 		if not force_snap: _prediction_metrics.snaps += 1
+	_last_rendered_x = character_root.position.x + visual_layer.position.x
 
 func _pixel_to_server_mm(pixel_x: float) -> int:
 	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / PIXELS_PER_METER) * 1000.0)
@@ -347,11 +362,6 @@ func _fence_prediction() -> void:
 func _try_prediction_resync() -> void:
 	if _resync_requested and MmoClient.state == "READY":
 		MmoClient.request_state()
-
-func _pose(target: AnimatedSprite2D, motion: Dictionary) -> void:
-	var animation := ("walk_" if motion.velocity_mm_s != 0 else "idle_") + ("left" if motion.facing < 0 else "right")
-	if _suspended: target.pause()
-	else: target.play(animation)
 
 func _remove_remote(id: String) -> void:
 	var node: Node = remote_players[id]
@@ -377,8 +387,9 @@ func _sync_players() -> void:
 			add_child(node)
 			remote_players[id] = node
 		remote_players[id].suspended = _suspended
+		var latest_frame_sample: Dictionary = MmoClient.world_replica.latest_frame_sample(id)
 		remote_players[id].project(players[id], server_to_pixel(float(players[id].motion.position_mm)),
-			scope, received_usec, top_speed_mm_s)
+			scope, received_usec, top_speed_mm_s, latest_frame_sample)
 
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0

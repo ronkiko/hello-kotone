@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.8.07 remote motion timeline
+## Current MMO client — v3.main.8.08 facing, gait and presentation
 
 Current public protocol is **v8**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
@@ -137,6 +137,16 @@ stops at 100 ms or 250 mm; contact, discontinuity, epoch, map and zone-generatio
 changes reset or fence the timeline. Remote roots keep Godot physics interpolation
 off because its local physics clock does not define network sample time. See
 [multiplayer presentation](docs/multiplayer-presentation.md).
+
+8.08 keeps stationary facing shared and presentation-only: a short tap updates
+facing with zero drive and no displacement. Owner and remote SpriteFrames gait is
+driven by rendered displacement and authoritative facing; it does not infer facing
+from movement or treat remote drive as known. Motion frames include a bounded
+server-computed peer-contact velocity response with response-time facing, tick and
+peer IDs, retained until publication. It carries no animation state. Yuna's prepared
+rightward `stumble_right` reaction plays only for an actual sufficiently strong
+server contact response from behind; it remains cosmetic and cannot feed back into
+physics.
 
 See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
 runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs

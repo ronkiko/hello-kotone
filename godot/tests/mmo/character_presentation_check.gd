@@ -47,34 +47,43 @@ func run() -> void:
 		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
-		gait.configure(10)
+		gait.configure(24)
 		for facing in [-1,1]:
 			for index in range(own.sprite_frames.get_frame_count(Appearance.walk_animation(facing))):
 				Appearance.pose(own,true,facing,index)
 				check(own.position == Vector2(-128,-236) and own.scale == Vector2.ONE and platform.character_root.position == position, model + " walk frame preserves anchor")
-		gait.update(own,0,3,5,1,.1)
-		var frame := own.frame
-		gait.update(own,3,3,5,1,.5)
-		check(own.frame == frame and not own.is_playing(), model + " blocked body freezes gait")
-		gait.update(own,3,3,3,0,.1)
-		check(own.animation == &"idle_right" and platform.character_root.position == position, model + " release preserves root")
+		gait.reset(own, 1)
+		gait.update(own,0,3,-1,.1)
+		check(own.animation == Appearance.walk_animation(-1) and platform.character_root.position == position, model + " rendered motion selects walk without relying on held input")
+		gait.update(own,3,3,1,.1)
+		check(own.animation == Appearance.idle_animation(1) and not own.is_playing(), model + " stationary authoritative facing selects calm idle without phantom movement")
+		gait.update(own,3,6,1,.1)
+		check(own.animation == Appearance.walk_animation(1), model + " external displacement advances gait without input state")
 		for direction in [-1, 1]:
-			gait.reset(own)
-			gait.update(own, 0, direction * 3, direction * 3, direction, .1)
-			gait.update(own, direction * 3, direction * 2, direction * 2, 0, .1)
-			gait.update(own, direction * 2, direction * 2, direction * 2, 0, .1)
-			check(own.animation == Appearance.idle_animation(direction) and gait.facing == direction, model + " release correction preserves last intended direction")
+			gait.reset(own, direction)
+			gait.update(own, 0, 0, direction, .1)
+			check(own.animation == Appearance.idle_animation(direction) and gait.facing == direction, model + " stationary server-facing update selects authored idle")
 			check(not own.flip_h and not own.flip_v, model + " directional idle uses prepared textures without mirroring")
 			for index in range(own.sprite_frames.get_frame_count(Appearance.idle_animation(direction))):
 				Appearance.pose(own, false, direction, index)
 				check(own.position == Vector2(-128,-236) and own.scale == Vector2.ONE and platform.character_root.position == position, model + " directional idle preserves anchor")
 			var remote_gait := Gait.new()
-			remote_gait.observed_direction_without_intent = true
-			remote_gait.reset(other)
-			remote_gait.update(other, 0, direction * 3, direction * 3, 0, .1)
-			check(other.animation == Appearance.walk_animation(direction), model + " remote displacement selects observed walk direction")
-			remote_gait.update(other, direction * 3, direction * 3, direction * 3, 0, .1)
-			check(other.animation == Appearance.idle_animation(direction) and remote_gait.facing == direction and not other.flip_h, model + " remote arrival settles into observed directional idle")
+			remote_gait.reset(other, direction)
+			remote_gait.update(other, 0, direction * 3, direction, .1)
+			check(other.animation == Appearance.walk_animation(direction), model + " remote rendered displacement selects server-facing walk")
+			remote_gait.update(other, direction * 3, direction * 3, direction, .1)
+			check(other.animation == Appearance.idle_animation(direction) and remote_gait.facing == direction and not other.flip_h, model + " remote arrival settles into authoritative directional idle")
+		var push_gait := Gait.new()
+		push_gait.reset(own, 1)
+		var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
+			"contact_response_tick":7,"contact_response_contacts":["p2"]}
+		var reaction_started: bool = push_gait.try_contact_reaction(own, model, push)
+		if model == "yuna":
+			check(reaction_started and own.animation == &"stumble_right" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
+			push_gait.update(own, 0, 4, 1, .1)
+			check(own.animation == &"stumble_right", model + " reaction holds over gait until SpriteFrames completes it")
+		else:
+			check(not reaction_started, model + " has no Yuna-only contact reaction")
 	# Direct helpers are total on malformed resources; package loading rejects them.
 	var malformed := AnimatedSprite2D.new()
 	malformed.sprite_frames = SpriteFrames.new()

@@ -16,14 +16,16 @@ func ready_replica() -> RefCounted:
 	check(replica.world_session.bind({"identity":{"game_card_id":"hello-kotone","realm_id":"local","realm_instance_id":"e1"},"capabilities":["control_set","logout","map","state","world_rules"]}), "realm bound")
 	check(replica.start(baseline(), "p1", "player1") and replica.install_map(MAP), "current baseline")
 	return replica
-func sample(seq: int = 1, revision: int = 5) -> Dictionary:
+func sample(seq: int = 1, revision: int = 5, response_delta: int = 0) -> Dictionary:
 	var p := player()
-	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"contacts":[]}]}}
+	var contact_response_contacts: Array = ["p2"] if response_delta != 0 else []
+	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"contacts":[],"contact_delta_velocity_mm_s":response_delta,"contact_response_facing":-1 if response_delta != 0 else 0,"contact_response_tick":3 if response_delta != 0 else 0,"contact_response_contacts":contact_response_contacts}]}}
 func _initialize() -> void:
 	var replica := ready_replica()
 	check(replica.apply_event(sample()), "coalesced physics revisions accepted")
 	check(replica.local_player().motion.facing == -1 and replica.local_player().motion.position_mm == 50000 \
 		and replica.local_player().nickname == "player1" and replica.local_player().character.character_id == "p1", "physics sample merges over static identity")
+	check(replica.latest_frame_sample("p1").contact_delta_velocity_mm_s == 0, "transient frame sample is available to presentation")
 	check(replica.apply_event(sample(3,8)), "coalesced publication sequence accepted")
 	check(not replica.apply_event(sample(3,8)) and replica.view().reconnect_required, "duplicate fenced")
 	for field in ["realm_instance_id","zone_package_id","zone_generation","frame_seq","simulation_tick"]:

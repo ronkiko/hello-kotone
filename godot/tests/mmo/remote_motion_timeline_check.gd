@@ -8,9 +8,13 @@ func check(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok: failures.append(label)
 
-func motion(tick: int, position_mm: int, velocity_mm_s: int, contacts: Array = [], facing: int = 1) -> Dictionary:
+func motion(tick: int, position_mm: int, velocity_mm_s: int, contacts: Array = [], facing: int = 1,
+		response_delta: int = 0, response_facing: int = 0, response_tick: int = 0,
+		response_contacts: Array = []) -> Dictionary:
 	return {"simulation_tick": tick, "position_mm": position_mm,
-		"velocity_mm_s": velocity_mm_s, "facing": facing, "contacts": contacts}
+		"velocity_mm_s": velocity_mm_s, "facing": facing, "contacts": contacts,
+		"contact_delta_velocity_mm_s": response_delta, "contact_response_facing": response_facing,
+		"contact_response_tick": response_tick, "contact_response_contacts": response_contacts}
 
 func close_to(actual: float, expected: float, epsilon: float = 0.01) -> bool:
 	return absf(actual - expected) <= epsilon
@@ -46,6 +50,16 @@ func _initialize() -> void:
 		timeline.push_sample("e1|city/apartment|1", motion(tick, 1000 + offset, 1000), tick * 1000000 / 60, 1000)
 	check(timeline.sample_count() == 8 and int(timeline.metrics().sample_peak) == 8,
 		"recent sample ring stays bounded at eight")
+	var response := Timeline.new()
+	response.push_sample("e1|city/apartment|1", motion(0, 1000, 0), 0, 3000)
+	response.push_sample("e1|city/apartment|1", motion(3, 1000, 0, [], 1, 1200, 1, 2, ["p2"]), 50000, 3000)
+	var before_response: Dictionary = response.sample_at(116667)
+	var at_response: Dictionary = response.sample_at(133334)
+	check(int(before_response.contact_delta_velocity_mm_s) == 0
+		and int(at_response.contact_delta_velocity_mm_s) == 1200
+		and int(at_response.contact_response_tick) == 2
+		and at_response.contact_response_contacts == ["p2"],
+		"contact response is presented once its server tick enters the delayed cursor")
 
 	var stale := Timeline.new()
 	stale.push_sample("e1|city/apartment|1", motion(0, 0, 1000), 0, 1000)

@@ -30,11 +30,15 @@ func run() -> void:
 	check(sprite.animation == &"idle_right" and sprite.sprite_frames.get_frame_count(&"idle_right") == 2, "canonical Yuna calm idle frames")
 	check(is_equal_approx(sprite.sprite_frames.get_animation_speed(&"idle_right"), 0.5), "Yuna idle uses slow calm cycle")
 	var gait := Gait.new()
-	gait.configure(10)
-	gait.update(sprite, 0, -3, -5, -1, 0.1)
-	check(sprite.animation == &"walk_left" and not sprite.flip_h and sprite.sprite_frames.get_frame_count(&"walk_left") == 8, "Yuna left walk uses offline mirrored frames")
-	gait.update(sprite, -3, -3, -3, 0, 0.1)
-	check(sprite.animation == &"idle_left" and not sprite.flip_h, "Yuna left release selects prepared left idle")
+	gait.configure(24)
+	gait.update(sprite, 0, -3, -1, 0.1)
+	check(sprite.animation == &"walk_left" and not sprite.flip_h and sprite.sprite_frames.get_frame_count(&"walk_left") == 8, "rendered displacement and authoritative facing select prepared left walk")
+	gait.update(sprite, -3, -3, -1, 0.1)
+	check(sprite.animation == &"idle_left" and not sprite.flip_h, "zero rendered displacement selects prepared directional idle")
+	var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
+		"contact_response_tick":5,"contact_response_contacts":["p2"]}
+	check(gait.try_contact_reaction(sprite, "yuna", push)
+		and sprite.animation == &"stumble_right" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
 	check(Appearance.install(sprite, kotone), "Kotone installed")
 	check(sprite.animation == &"idle_right" and sprite.sprite_frames.get_frame_count(&"idle_right") == 6, "model switch installs native package")
 	var options := {"signal_id": ["steady", "pulse"]}

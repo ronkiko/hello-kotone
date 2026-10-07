@@ -57,6 +57,21 @@ func _initialize() -> void:
 	var partial := failure("INTERNAL_ERROR", "login", "error")
 	partial.request_id = null
 	check(not Protocol.response(partial), "partial correlation rejected")
+	var frame_player := {"player_id":"p1", "position_mm":1000, "velocity_mm_s":0, "facing":1,
+		"last_applied_control_seq":1, "contacts":[], "contact_delta_velocity_mm_s":0,
+		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[]}
+	check(Protocol.motion_frame_player(frame_player, 4), "empty physical response is explicit and valid")
+	var response := frame_player.duplicate(true)
+	response.contact_delta_velocity_mm_s = 1200
+	response.contact_response_facing = 1
+	response.contact_response_tick = 3
+	response.contact_response_contacts = ["p2"]
+	check(Protocol.motion_frame_player(response, 4), "bounded peer response fact is valid")
+	response.contact_response_tick = 5
+	check(not Protocol.motion_frame_player(response, 4), "future contact response tick rejected")
+	response = frame_player.duplicate(true)
+	response.contact_delta_velocity_mm_s = 1200
+	check(not Protocol.motion_frame_player(response, 4), "incomplete contact response rejected")
 	print(JSON.stringify({"suite": "protocol", "checks": _checks, "failures": _failures, "result": "PASS" if _failures == 0 else "FAIL"}))
 	quit(0 if _failures == 0 else 1)
 

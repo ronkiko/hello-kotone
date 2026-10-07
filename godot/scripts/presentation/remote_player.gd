@@ -1,12 +1,14 @@
 extends Node2D
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const MotionTimeline = preload("res://scripts/presentation/remote_motion_timeline.gd")
+const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
 
 var player_id := ""
 var sprite := AnimatedSprite2D.new()
 var visual_layer := Node2D.new()
 var identity := Label.new()
 var timeline := MotionTimeline.new()
+var gait := GaitAnimator.new()
 var visual_x: float:
 	get: return position.x
 var target_x: float:
@@ -28,9 +30,12 @@ func _ready() -> void:
 	add_child(identity)
 
 func project(player: Dictionary, confirmed_pixel: float, scope: String, received_usec: int,
-		top_speed_mm_s: int) -> void:
+		top_speed_mm_s: int, latest_frame_sample: Dictionary = {}) -> void:
 	var motion: Dictionary = player.motion.duplicate(true)
 	motion["contacts"] = player.get("contacts", []).duplicate()
+	for key in ["contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts"]:
+		if latest_frame_sample.has(key):
+			motion[key] = latest_frame_sample[key].duplicate(true) if key == "contact_response_contacts" else latest_frame_sample[key]
 	var update_result: String = timeline.push_sample(scope, motion, received_usec, top_speed_mm_s)
 	_target_x = confirmed_pixel
 	if update_result != "ignored":
@@ -44,28 +49,29 @@ func project(player: Dictionary, confirmed_pixel: float, scope: String, received
 	if payload != _appearance_payload:
 		Appearance.install(sprite, payload)
 		_appearance_payload = payload.duplicate(true)
+		gait.reset(sprite, int(motion.get("facing", 1)))
 	identity.position.y = -Appearance.display_height_px(payload.character_model_id) - 18
+	gait.configure(float(top_speed_mm_s) * 8.0 / 1000.0)
 	if update_result in ["seeded", "reset"]:
-		_apply_pose(motion)
+		gait.reset(sprite, int(motion.get("facing", 1)))
 
-func render_at(pixel_x: float, motion: Dictionary) -> void:
+func render_at(pixel_x: float, motion: Dictionary, delta: float) -> void:
+	var before_render_x := position.x
 	position.x = pixel_x
-	_apply_pose(motion)
+	if suspended:
+		sprite.pause()
+		return
+	var model_id := str(_appearance_payload.get("character_model_id", ""))
+	gait.try_contact_reaction(sprite, model_id, motion)
+	gait.update(sprite, before_render_x, position.x, int(motion.get("facing", 1)), delta)
 
 func set_suspended(value: bool) -> void:
 	suspended = value
 	if value:
 		timeline.reset()
 		last_motion_sample_received_usec = -1
+		gait.reset(sprite, gait.facing)
 		sprite.pause()
 
 func timeline_metrics() -> Dictionary:
 	return timeline.metrics()
-
-func _apply_pose(motion: Dictionary) -> void:
-	var animation := ("walk_" if int(motion.get("velocity_mm_s", 0)) != 0 else "idle_") \
-		+ ("left" if int(motion.get("facing", 1)) < 0 else "right")
-	if suspended:
-		sprite.pause()
-	elif sprite.animation != animation or not sprite.is_playing():
-		sprite.play(animation)

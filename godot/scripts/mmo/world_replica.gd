@@ -13,6 +13,7 @@ const WorldSession = preload("res://scripts/mmo/world_session.gd")
 var world_session := WorldSession.new()
 var _snapshot: Dictionary = {}
 var _players: Dictionary = {}
+var _latest_frame_samples: Dictionary = {}
 var _map: Dictionary = {}
 var _local_id := ""
 var _nickname := ""
@@ -34,6 +35,9 @@ func snapshot() -> Dictionary:
 func local_player() -> Dictionary:
 	return _players.get(_local_id, {}).duplicate(true)
 
+func latest_frame_sample(player_id: String) -> Dictionary:
+	return _latest_frame_samples.get(player_id, {}).duplicate(true)
+
 func clear() -> void:
 	_frame_seq = 0
 	_zone_generation = 1
@@ -41,6 +45,7 @@ func clear() -> void:
 	world_session.clear()
 	_snapshot = {}
 	_players = {}
+	_latest_frame_samples = {}
 	_map = {}
 	_local_id = ""
 	_nickname = ""
@@ -59,6 +64,7 @@ func start(value: Dictionary, local_id: String, nickname: String) -> bool:
 		return _reject("INVALID_BASELINE")
 	if not _valid_snapshot(value, local_id, nickname):
 		return _reject("INVALID_BASELINE")
+	_latest_frame_samples.clear()
 	_local_id = local_id
 	_nickname = nickname
 	_commit(value)
@@ -111,6 +117,7 @@ func replace_snapshot(value: Dictionary) -> bool:
 		return _reject("SNAPSHOT_TICK_ROLLBACK")
 	# All facts through this boundary precede state on the ordered TCP stream.
 
+	_latest_frame_samples.clear()
 	_commit(value)
 	authoritative_snapshot_received.emit(value.duplicate(true))
 	return true
@@ -154,6 +161,7 @@ func apply_event(value: Dictionary) -> bool:
 			next.players.append(player)
 		next.revision = value.revision
 		if not _valid_snapshot(next, _local_id, _nickname): return _reject("INVALID_MOTION")
+		_latest_frame_samples = incoming.duplicate(true)
 		_frame_seq = value.data.frame_seq
 		_commit(next, _status == "STALE")
 		motion_received.emit(value.duplicate(true))
@@ -162,12 +170,14 @@ func apply_event(value: Dictionary) -> bool:
 	var players: Dictionary = _players.duplicate(true)
 	var id: String = value.data.player_id if value.event == "left" else value.data.player.player_id
 	if value.event == "joined":
+		_latest_frame_samples.clear()
 		if players.has(id):
 			return _reject("ALREADY_PRESENT")
 		players[id] = value.data.player.duplicate(true)
 	elif not players.has(id):
 		return _reject("NOT_PRESENT")
 	elif value.event == "left":
+		_latest_frame_samples.clear()
 		if id == _local_id:
 			return _reject("LOCAL_PLAYER_LEFT")
 		players.erase(id)

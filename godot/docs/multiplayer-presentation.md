@@ -27,6 +27,28 @@ client-authored movement signal. Duplicate and older ticks are ignored. A reset
 starts from the new authoritative sample, so positions are never blended through a
 contact transition or teleport.
 
+## Shared facing and motion-driven gait (8.08)
+
+The server's `facing` sample remains authoritative even when `drive=0` and
+`velocity_mm_s=0`. A short directional tap can therefore update the owner's and
+observer's stationary directional idle without changing position. Renderers never
+derive facing from the sign of displacement.
+
+The owner and remote avatar use the same gait cursor. `AnimatedSprite2D` selects
+the prepared left/right `SpriteFrames` animation from facing and advances walk
+frames from actual displayed displacement. It does not read held input to decide
+whether the character walks. A server impulse can move a character with drive at
+zero; a stationary body settles to its facing-specific idle.
+
+Peer contact and a nonzero server-computed contact-induced velocity change are
+published separately from ordinary contact membership. The sample retains the
+response tick, facing at the response, and peer IDs through the next 20-Hz frame.
+The remote timeline exposes that cause only after its delayed cursor reaches the
+response tick. For the installed Yuna model, a sufficiently strong rightward push
+from behind can play the prepared non-looping `stumble_right` SpriteFrames reaction.
+No animation identity crosses the wire, wall contact cannot trigger it, and the
+reaction never changes body physics or position.
+
 Remote roots keep `physics_interpolation_mode = OFF`. Godot's built-in physics
 interpolation follows adjacent local physics transforms; its documentation calls
 out networked multiplayer as a case where incoming samples may not align with local

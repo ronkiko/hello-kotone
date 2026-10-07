@@ -2,6 +2,7 @@ extends RefCounted
 ## Server-tick timeline for one remote character. Never consumes client input.
 
 const MAX_SAMPLES := 8
+const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const SERVER_TICK_HZ := 60.0
 const INTERPOLATION_DELAY_TICKS := 6.0
 const MAX_EXTRAPOLATION_TICKS := 6.0
@@ -50,15 +51,39 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 	var velocity: Variant = motion.get("velocity_mm_s")
 	var facing: Variant = motion.get("facing")
 	var contacts_value: Variant = motion.get("contacts", [])
+	var response_delta: Variant = motion.get("contact_delta_velocity_mm_s", 0)
+	var response_facing: Variant = motion.get("contact_response_facing", 0)
+	var response_tick: Variant = motion.get("contact_response_tick", 0)
+	var response_contacts_value: Variant = motion.get("contact_response_contacts", [])
 	if typeof(tick) != TYPE_INT or int(tick) < 0 or typeof(position) != TYPE_INT \
 		or typeof(velocity) != TYPE_INT or typeof(facing) != TYPE_INT or int(facing) not in [-1, 1] \
-		or not contacts_value is Array:
+		or not contacts_value is Array or typeof(response_delta) != TYPE_INT \
+		or abs(int(response_delta)) > 100000 or typeof(response_facing) != TYPE_INT \
+		or int(response_facing) not in [-1, 0, 1] or typeof(response_tick) != TYPE_INT \
+		or int(response_tick) < 0 or int(response_tick) > int(tick) \
+		or not response_contacts_value is Array or response_contacts_value.size() > 63:
 		return "ignored"
 	var contacts: Array = contacts_value.duplicate()
 	contacts.sort()
+	var response_contacts: Array = response_contacts_value.duplicate()
+	response_contacts.sort()
+	if response_contacts != response_contacts_value:
+		return "ignored"
+	for contact in response_contacts:
+		if not Protocol.token(contact) or contact in ["wall_min", "wall_max"]:
+			return "ignored"
+	var has_response := int(response_delta) != 0
+	if has_response != (not response_contacts.is_empty()) \
+		or has_response != (int(response_facing) in [-1, 1]) \
+		or has_response != (int(response_tick) > 0):
+		return "ignored"
 	var next := {"tick": int(tick), "position_mm": int(position),
 		"velocity_mm_s": int(velocity), "facing": int(facing),
-		"contacts": contacts, "received_usec": received_usec}
+		"contacts": contacts, "received_usec": received_usec,
+		"contact_delta_velocity_mm_s": int(response_delta),
+		"contact_response_facing": int(response_facing),
+		"contact_response_tick": int(response_tick),
+		"contact_response_contacts": response_contacts}
 	if _samples.is_empty():
 		_append(next)
 		_metrics.accepted += 1
@@ -99,7 +124,7 @@ func sample_at(now_usec: int) -> Dictionary:
 	var render_tick := maxf(proposed_tick, _last_render_tick)
 	_last_render_tick = render_tick
 	if render_tick <= float(oldest.tick):
-		return _state(oldest, false, false)
+			return _with_contact_response(_state(oldest, false, false), render_tick)
 	for index in range(_samples.size() - 1):
 		var left: Dictionary = _samples[index]
 		var right: Dictionary = _samples[index + 1]
@@ -109,7 +134,7 @@ func sample_at(now_usec: int) -> Dictionary:
 		var alpha := clampf((render_tick - float(left.tick)) / interval, 0.0, 1.0)
 		if left.contacts != right.contacts:
 			# Defensive barrier: a contact transition is never blended through.
-			return _state(left if alpha < 0.5 else right, true, false)
+			return _with_contact_response(_state(left if alpha < 0.5 else right, true, false), render_tick)
 		var state := {
 			"position_mm": lerpf(float(left.position_mm), float(right.position_mm), alpha),
 			"velocity_mm_s": roundi(lerpf(float(left.velocity_mm_s), float(right.velocity_mm_s), alpha)),
@@ -119,7 +144,7 @@ func sample_at(now_usec: int) -> Dictionary:
 			"frozen": false,
 			"extrapolated": false,
 		}
-		return state
+		return _with_contact_response(state, render_tick)
 	var requested_ticks := maxf(0.0, render_tick - float(newest.tick))
 	var extrapolation_ticks := minf(requested_ticks, MAX_EXTRAPOLATION_TICKS)
 	var raw_distance := float(newest.velocity_mm_s) * extrapolation_ticks / SERVER_TICK_HZ
@@ -132,7 +157,7 @@ func sample_at(now_usec: int) -> Dictionary:
 		_metrics.max_extrapolation_ms = maxf(_metrics.max_extrapolation_ms, extrapolation_ticks * 1000.0 / SERVER_TICK_HZ)
 		_metrics.max_extrapolation_mm = maxf(_metrics.max_extrapolation_mm, absf(distance))
 	if frozen: _metrics.frozen += 1
-	return {
+	var state := {
 		"position_mm": float(newest.position_mm) + distance,
 		"velocity_mm_s": 0 if frozen else int(newest.velocity_mm_s),
 		"facing": int(newest.facing),
@@ -141,6 +166,7 @@ func sample_at(now_usec: int) -> Dictionary:
 		"frozen": frozen,
 		"extrapolated": extrapolation_ticks > 0.0 and not contact_barrier,
 	}
+	return _with_contact_response(state, render_tick)
 
 func metrics() -> Dictionary:
 	var result := _metrics.duplicate(true)
@@ -164,3 +190,23 @@ func _state(sample: Dictionary, contact_barrier: bool, extrapolated: bool) -> Di
 		"frozen": contact_barrier,
 		"extrapolated": extrapolated,
 	}
+
+func _with_contact_response(state: Dictionary, render_tick: float) -> Dictionary:
+	var response_tick := -1
+	var response: Dictionary = {}
+	for sample in _samples:
+		var candidate_tick := int(sample.contact_response_tick)
+		if int(sample.contact_delta_velocity_mm_s) == 0 or float(candidate_tick) > render_tick \
+			or candidate_tick <= response_tick:
+			continue
+		response_tick = candidate_tick
+		response = sample
+	if response.is_empty():
+		state.merge({"contact_delta_velocity_mm_s": 0, "contact_response_facing": 0,
+			"contact_response_tick": 0, "contact_response_contacts": []}, true)
+	else:
+		state.merge({"contact_delta_velocity_mm_s": int(response.contact_delta_velocity_mm_s),
+			"contact_response_facing": int(response.contact_response_facing),
+			"contact_response_tick": response_tick,
+			"contact_response_contacts": response.contact_response_contacts.duplicate()}, true)
+	return state
