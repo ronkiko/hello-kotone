@@ -74,15 +74,18 @@ func run() -> void:
 	reset()
 	ticks(2)
 	client.state = "MOVING"
+	client._server_input = {"drive":0,"facing":1}
+	client._server_input_seq = 0
 	client._pending = {"op":"control_set","payload":{"control_seq":1,"drive":1,"facing":1}}
 	client.set_control(0,1)
 	ticks(1)
 	check(not client.prediction_control_state().has("control_seq"), "predictor does not fabricate a future wire sequence")
-	var stop := motion(103,body_mm(),roundi(platform.character_root.velocity.x*1000.0/8.0))
 	client.set_control(1,1)
 	ticks(1)
 	var present := body_mm()
 	client._pending = {}
+	client._server_input = {"drive":1,"facing":1}
+	client._server_input_seq = 1
 	client.state = "READY"
 	client._schedule_desired_input()
 	check(client._scheduled.is_empty() and client._server_input_seq == 1,
@@ -92,9 +95,10 @@ func run() -> void:
 		"short local STOP interval replays once at its real tick")
 	check(platform._prediction_history[0].drive == 0 and platform._prediction_history[1].drive == 1,
 		"local STOP then RIGHT retain temporal order")
-	platform._apply_authoritative_motion(stop,false)
-	check(platform._prediction_history.size() == 1 and platform._prediction_history[0].drive == 1,
-		"advancing authoritative marker retires STOP despite unchanged seq1")
+	# STOP never reached the wire: server at 103 is still on the RIGHT curve.
+	platform._apply_authoritative_motion(motion(103,50150),false)
+	check(platform._prediction_history.size() == 1 and platform._prediction_history[0].drive == 1 and body_mm() == 50200,
+		"advancing authoritative marker retires STOP and restores server RIGHT curve despite unchanged seq1")
 	platform._apply_authoritative_motion(motion(104,body_mm()),false)
 	check(platform._prediction_history.is_empty(), "no ghost control survives confirmation of its interval")
 	ticks(1)
