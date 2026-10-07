@@ -2,7 +2,7 @@ extends SceneTree
 ## Actual shared Creator/own/remote package, root and gait invariants.
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const Gait = preload("res://scripts/presentation/gait_animator.gd")
-const Platform = preload("res://scripts/presentation/platform_world.gd")
+const FLOOR_Y := 104.0
 var checks := 0
 var failures := []
 func check(ok: bool, label: String) -> void:
@@ -15,7 +15,10 @@ func payload(model: String) -> Dictionary:
 func run() -> void:
 	var shell: Node = load("res://scenes/mmo/login.tscn").instantiate()
 	root.add_child(shell)
-	var platform := Platform.new()
+	# This SceneTree script starts before project autoload types are available to
+	# preload. Load the production presenter after the real startup scene exists.
+	var platform_script: GDScript = load("res://scripts/presentation/platform_world.gd")
+	var platform: Node2D = platform_script.new()
 	root.add_child(platform)
 	platform.set_process(false)
 	var document := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
@@ -40,7 +43,7 @@ func run() -> void:
 		check(own.scale == Vector2.ONE and own.position == Vector2(-128,-236), model + " canonical visual transform")
 		check(shell.preview.get_parent().scale == own.get_parent().scale and other.get_parent().scale == own.get_parent().scale, model + " common display transform")
 		var expected_height := Appearance.display_height_px(model)
-		check(is_equal_approx(platform.local_label.position.y, Platform.FLOOR_Y - expected_height - 18), model + " local label follows metric height")
+		check(is_equal_approx(platform.local_label.position.y, FLOOR_Y - expected_height - 18), model + " local label follows metric height")
 		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
