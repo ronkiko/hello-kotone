@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.8.06 owner prediction
+## Current MMO client — v3.main.8.07 remote motion timeline
 
 Current public protocol is **v8**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
@@ -70,14 +70,13 @@ spritesheets are no longer the target runtime format.
 
 Minimum locomotion package animations are `idle_left`, `idle_right`,
 `walk_left`, and `walk_right`. Last movement direction selects the stopped pose;
-initial/Creator pose is `idle_right`. Local intent owns local facing; remote
-presentation derives facing from observed displacement and settles into the
-matching directional idle once its displayed target is reached. This is visual
-velocity state, not inferred remote input. Both idle directions are prepared PNG
-frames. Runtime does not mirror art or substitute a missing view. Asymmetric
-models require independently authored directional sources. Current symmetric
-Yuna uses explicit offline mirror operations recorded in the recipe; Kotone
-retains front-facing art in both idle slots. The canonical offline entry point is:
+initial/Creator pose is `idle_right`. The owner presents its local facing
+prediction; remote characters use authoritative `facing` and velocity from the
+delayed motion timeline. Both idle directions are prepared PNG frames. Runtime
+does not mirror art or substitute a missing view. Asymmetric models require
+independently authored directional sources. Current symmetric Yuna uses explicit
+offline mirror operations recorded in the recipe; Kotone retains front-facing art
+in both idle slots. The canonical offline entry point is:
 
 ```text
 python godot/tools/character_assets.py doctor
@@ -129,7 +128,15 @@ uses native static bodies. Server contact remains decisive when the client could
 not predict a peer collision. Unknown outcomes fence prediction and never replay
 old-session controls. History overflow stops local prediction, clears held drive,
 and requests a fresh authoritative snapshot. The client exposes bounded correction
-and history metrics for acceptance. Remote motion timeline follows in 8.07.
+and history metrics for acceptance.
+
+Remote characters use an eight-sample timeline on the server's 60-Hz
+`simulation_tick`, rendered 100 ms behind the latest sample. Only authoritative
+position, velocity and facing are interpolated. Extrapolation is velocity-only and
+stops at 100 ms or 250 mm; contact, discontinuity, epoch, map and zone-generation
+changes reset or fence the timeline. Remote roots keep Godot physics interpolation
+off because its local physics clock does not define network sample time. See
+[multiplayer presentation](docs/multiplayer-presentation.md).
 
 See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
 runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs

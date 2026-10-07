@@ -11,6 +11,7 @@ var output := ""
 var failed := false
 var shell: Node
 var remote_idle_results: Array = []
+var remote_onset_results: Array = []
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -83,11 +84,45 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var other_role := 3 - role
 	var renderer: Node = world.platform.remote_players[remote_id]
 	world.input_adapter.set_physics_process(false)
+	if not await wait_until(func():
+		return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("velocity_mm_s", 1) == 0 \
+			and is_equal_approx(renderer.visual_x, renderer.target_x), side + " remote timeline settled before measurement"):
+		return false
 	mark(prefix + "-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-ready%d" % other_role)), side + " both windows ready"): return false
+	var go_path := sync.path_join(prefix + "-go")
+	if role == 1:
+		var go_file := FileAccess.open(go_path, FileAccess.WRITE)
+		go_file.store_string(str(Time.get_unix_time_from_system() + 0.5))
+		go_file.close()
+	elif not await wait_until(func(): return FileAccess.file_exists(go_path), side + " synchronized movement start"):
+		return false
+	var go_at := float(FileAccess.get_file_as_string(go_path))
+	while Time.get_unix_time_from_system() < go_at:
+		await process_frame
 	var start_x: int = client.world_replica.local_player().motion.position_mm
+	var start_usec := Time.get_ticks_usec()
+	var initial_remote_x: float = renderer.visual_x
+	var remote_sample_usec := -1
+	var remote_onset_usec := -1
 	client.set_control(direction, direction)
-	if not await wait_until(func(): return direction * (client.world_replica.local_player().motion.get("position_mm", start_x) - start_x) >= 400, side + " authoritative displacement"): return false
+	var movement_deadline := Time.get_ticks_msec() + 5000
+	while direction * (int(client.world_replica.local_player().motion.get("position_mm", start_x)) - start_x) < 400 \
+		and Time.get_ticks_msec() < movement_deadline:
+		if remote_sample_usec < 0 and renderer.last_motion_sample_received_usec >= start_usec:
+			remote_sample_usec = renderer.last_motion_sample_received_usec
+		if remote_sample_usec >= 0 and remote_onset_usec < 0 and absf(renderer.visual_x - initial_remote_x) >= 0.001:
+			remote_onset_usec = Time.get_ticks_usec()
+		await process_frame
+	if direction * (int(client.world_replica.local_player().motion.get("position_mm", start_x)) - start_x) < 400:
+		check(false, side + " authoritative displacement")
+		return false
+	check(remote_sample_usec >= 0 and remote_onset_usec >= remote_sample_usec,
+		side + " remote observer records sample and visible onset")
+	if remote_sample_usec >= 0 and remote_onset_usec >= remote_sample_usec:
+		var onset_ms := float(remote_onset_usec - remote_sample_usec) / 1000.0
+		check(onset_ms <= 117.0, side + " remote onset meets 100 ms buffer + render budget")
+		remote_onset_results.append({"side": side, "sample_to_onset_ms": onset_ms})
 	client.set_control(0, direction)
 	if not await wait_until(func(): return client._server_input.drive == 0 and client.state == "READY" and client.world_replica.local_player().motion.velocity_mm_s == 0, side + " acknowledged stop"): return false
 	var final_x: int = client.world_replica.local_player().motion.position_mm
@@ -279,5 +314,7 @@ func _run() -> void:
 		await press("Sign out account")
 		if not await wait_until(func(): return pre.state == "LOGIN" and current_scene.scene_file_path.ends_with("login.tscn"), "account logout from World flushes first"): quit(1); return
 	check(pre.state == "LOGIN" and pre.account_id == "" and client.session_id == "" and pre._binding.is_empty(), "account logout clears all authority")
-	print("LOBBY09_RESULT ", JSON.stringify({"role": role, "checks": checks, "passed": not failed, "display_backend": DisplayServer.get_name(), "remote_idle": remote_idle_results}))
+	print("LOBBY09_RESULT ", JSON.stringify({"role": role, "checks": checks, "passed": not failed,
+		"display_backend": DisplayServer.get_name(), "remote_idle": remote_idle_results,
+		"remote_onset": remote_onset_results}))
 	quit(1 if failed else 0)

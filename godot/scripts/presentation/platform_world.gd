@@ -106,7 +106,7 @@ func set_movement_rules(rules: Dictionary) -> bool:
 	_configure_owner_shape()
 	return true
 
-func server_to_pixel(position_mm: int) -> float:
+func server_to_pixel(position_mm: float) -> float:
 	return ORIGIN_X + (float(position_mm) / 1000.0 - float(_map.min_x) / float(_map.units_per_meter)) * PIXELS_PER_METER
 
 func project(document: Dictionary, view: Dictionary, _unused: Variant = null) -> bool:
@@ -153,7 +153,7 @@ func set_suspended(value: bool) -> void:
 		visual_layer.position.x = 0.0
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
-		if value: node.sprite.pause()
+		node.set_suspended(value)
 
 func prediction_metrics() -> Dictionary:
 	return _prediction_metrics.duplicate(true)
@@ -247,6 +247,12 @@ func _process(delta: float) -> void:
 		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / PIXELS_PER_METER),
 			"facing": control.facing}
 		_pose(sprite, predicted_motion)
+	var now_usec := Time.get_ticks_usec()
+	for node in remote_players.values():
+		if node.suspended: continue
+		var remote_motion: Dictionary = node.timeline.sample_at(now_usec)
+		if not remote_motion.is_empty():
+			node.render_at(server_to_pixel(float(remote_motion.position_mm)), remote_motion)
 
 func _integrate_control(control: Dictionary, delta: float) -> void:
 	var target_speed := float(control.drive) * float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0
@@ -356,6 +362,9 @@ func _remove_remote(id: String) -> void:
 func _sync_players() -> void:
 	var players: Dictionary = _view.players
 	var local_id: String = _view.local_player_id
+	var scope := "%s|%s|%d" % [str(_view.get("epoch", "")), str(_view.map.get("map_id", "")), int(_view.get("zone_generation", 1))]
+	var received_usec := Time.get_ticks_usec()
+	var top_speed_mm_s := int(_movement.get("top_speed_mm_s", 0))
 	for id in remote_players.keys():
 		if not players.has(id) or id == local_id: _remove_remote(id)
 	for id in players:
@@ -368,7 +377,8 @@ func _sync_players() -> void:
 			add_child(node)
 			remote_players[id] = node
 		remote_players[id].suspended = _suspended
-		remote_players[id].project(players[id], server_to_pixel(players[id].motion.position_mm))
+		remote_players[id].project(players[id], server_to_pixel(float(players[id].motion.position_mm)),
+			scope, received_usec, top_speed_mm_s)
 
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0

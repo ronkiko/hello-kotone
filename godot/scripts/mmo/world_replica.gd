@@ -24,6 +24,7 @@ func view() -> Dictionary:
 	return {"status": _status, "stale_reason": _reason,
 		"resync_required": _status == "STALE", "reconnect_required": _reconnect_required,
 		"epoch": _snapshot.get("epoch", ""), "revision": _snapshot.get("revision", 0),
+		"zone_generation": _zone_generation,
 		"map": _snapshot.get("map", {}).duplicate(true), "players": _players.duplicate(true),
 		"local_player_id": _local_id, "confirmed_local_position_mm": _players.get(_local_id, {}).get("motion", {}).get("position_mm", null)}
 
