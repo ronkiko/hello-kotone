@@ -59,6 +59,24 @@ var _desired_input := {"drive": 0, "facing": 1}
 var _server_input := {"drive": 0, "facing": 1}
 var _server_input_seq := 0
 
+func prediction_control_state() -> Dictionary:
+	# Predict the complete state that is current, queued, or will follow the
+	# single in-flight request. Coalesced states never consume a wire sequence.
+	var sequence := _server_input_seq
+	if not _pending.is_empty() and _pending.op == "control_set":
+		sequence = int(_pending.payload.control_seq)
+		if _desired_input.drive != _pending.payload.drive or _desired_input.facing != _pending.payload.facing:
+			sequence += 1
+	elif not _scheduled.is_empty() and _scheduled.op == "control_set":
+		sequence = int(_scheduled.payload.control_seq)
+	elif _desired_input != _server_input:
+		sequence += 1
+	sequence = mini(sequence, 9007199254740991)
+	var desired := _desired_input.duplicate()
+	if state not in ["READY", "MOVING"] and not _leave_requested:
+		desired.drive = 0
+	return {"control_seq": sequence, "drive": desired.drive, "facing": desired.facing}
+
 func enter_character(handoff: Dictionary, character: Dictionary, profile: String, ca: X509Certificate = null) -> bool:
 	if state not in ["IDLE", "DISCONNECTED", "FAILED"]: return false
 	_clear_session()

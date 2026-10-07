@@ -3,6 +3,7 @@ extends RefCounted
 
 signal changed
 signal motion_received(event: Dictionary)
+signal authoritative_snapshot_received(snapshot: Dictionary)
 var _frame_seq := 0
 var _zone_generation := 1
 var _simulation_tick := -1
@@ -98,11 +99,19 @@ func replace_snapshot(value: Dictionary) -> bool:
 		return _reject("MAP_MISMATCH")
 	if value.revision < _snapshot.revision:
 		return _reject("SNAPSHOT_ROLLBACK")
+	var applied_control_seq := -1
+	for player in value.players:
+		if player.player_id == _local_id:
+			applied_control_seq = player.motion.last_applied_control_seq
+			break
+	if applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
+		return _reject("SNAPSHOT_CONTROL_SEQUENCE_ROLLBACK")
 	if _snapshot_tick(value) < _simulation_tick:
 		return _reject("SNAPSHOT_TICK_ROLLBACK")
 	# All facts through this boundary precede state on the ordered TCP stream.
 
 	_commit(value)
+	authoritative_snapshot_received.emit(value.duplicate(true))
 	return true
 
 func apply_event(value: Dictionary) -> bool:
@@ -122,6 +131,8 @@ func apply_event(value: Dictionary) -> bool:
 		for sample in value.data.players:
 			if not _players.has(sample.player_id) or incoming.has(sample.player_id):
 				return _reject("MOTION_MEMBERSHIP_CHANGED")
+			if sample.player_id == _local_id and sample.last_applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
+				return _reject("STALE_CONTROL_SEQUENCE")
 			incoming[sample.player_id] = sample
 		if incoming.size() != _players.size(): return _reject("MOTION_MEMBERSHIP_CHANGED")
 		var next: Dictionary = _snapshot.duplicate(true)

@@ -1,5 +1,5 @@
 extends Node2D
-## Read-only projection. Replica facts plus an optional bounded display target.
+## Confirmed replica projection plus owner-only prediction; server remains authority.
 const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
@@ -11,7 +11,8 @@ const TILE_SIZE := 16
 var terrain := TileMapLayer.new()
 var camera := Camera2D.new()
 var ruler := Node2D.new()
-var character_root := Node2D.new()
+var character_root := CharacterBody2D.new()
+var character_collision := CollisionShape2D.new()
 var visual_layer := Node2D.new()
 var sprite: AnimatedSprite2D
 var local_label := Label.new()
@@ -24,6 +25,19 @@ var _display_x: Variant = null
 var _movement: Dictionary = {}
 var _position_installed := false
 var _first_cell := -1000000
+var _bound_nodes: Array[StaticBody2D] = []
+var _local_player_id := ""
+var _last_applied_control_seq := 0
+var _control_history: Array[Dictionary] = []
+var _pending_owner_motion: Dictionary = {}
+var _pending_snapshot_motion: Dictionary = {}
+var _prediction_fenced := false
+var _resync_requested := false
+var _predicted_contacts: Array[String] = []
+var _blend_remaining := 0.0
+var _blend_start_offset_x := 0.0
+var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulation_tick": -1,
+	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0}
 
 func _ready() -> void:
 	var atlas := TileSetAtlasSource.new()
@@ -46,9 +60,20 @@ func _ready() -> void:
 	add_child(ruler)
 	character_root.name = "CharacterRoot"
 	character_root.position.y = FLOOR_Y
+	character_root.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	character_root.safe_margin = 0.001
+	character_root.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
+	character_root.collision_layer = 2
+	character_root.collision_mask = 1
+	var initial_shape := RectangleShape2D.new()
+	initial_shape.size = Vector2(3.2, 3.2)
+	character_collision.shape = initial_shape
+	character_collision.position.y = -1.6
+	character_root.add_child(character_collision)
 	add_child(character_root)
 	visual_layer.name = "CharacterVisualLayer"
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
+	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	character_root.add_child(visual_layer)
 	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
@@ -68,11 +93,14 @@ func _ready() -> void:
 	add_child(camera)
 	camera.make_current()
 	get_viewport().size_changed.connect(_resize_projection)
+	MmoClient.world_replica.motion_received.connect(_queue_owner_motion)
+	MmoClient.world_replica.authoritative_snapshot_received.connect(_queue_snapshot_motion)
 	project(_map, _view, _display_x)
 
 func set_movement_rules(rules: Dictionary) -> bool:
 	if not Protocol.movement(rules.get("movement")): return false
 	_movement = rules.movement.duplicate(true)
+	_configure_owner_shape()
 	return true
 
 func server_to_pixel(position_mm: int) -> float:
@@ -86,26 +114,206 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	if not players is Dictionary or not players.has(view.get("local_player_id")) or players.size() > 64: return false
 	for id in players:
 		if not Protocol.player(players[id]) or players[id].player_id != id or players[id].zone_id != document.map_id: return false
+	var map_changed := _map.get("map_id", "") != document.map_id or _map.get("content_hash", "") != document.content_hash
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
+	if map_changed:
+		_install_world_bounds()
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
 	if not is_node_ready(): return true
 	var local: Dictionary = players[view.local_player_id]
-	character_root.position.x = server_to_pixel(local.motion.position_mm)
+	if not _position_installed or _local_player_id != view.local_player_id:
+		_local_player_id = view.local_player_id
+		_position_installed = true
+		_prediction_fenced = false
+		_control_history.clear()
+		var initial_motion: Dictionary = local.motion.duplicate(true)
+		initial_motion["contacts"] = local.contacts.duplicate()
+		_apply_authoritative_motion(initial_motion, true)
 	local_label.position.x = character_root.position.x - 64
 	local_label.text = "%s (you)" % local.nickname
 	Appearance.install(sprite, local.character.appearance_payload)
 	local_label.position.y = FLOOR_Y - Appearance.display_height_px(local.character.appearance_payload.character_model_id) - 18
-	_pose(sprite, local.motion)
 	_sync_players()
 	_reframe()
 	return true
 
 func set_suspended(value: bool) -> void:
 	_suspended = value
+	if value:
+		_pending_owner_motion.clear()
+		_control_history.clear()
+		_blend_remaining = 0.0
+		_blend_start_offset_x = 0.0
+		visual_layer.position.x = 0.0
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		if value: node.sprite.pause()
+
+func prediction_metrics() -> Dictionary:
+	return _prediction_metrics.duplicate(true)
+
+func _configure_owner_shape() -> void:
+	if _movement.is_empty(): return
+	var width_px := float(_movement.width_mm) * PIXELS_PER_METER / 1000.0
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(maxf(width_px, 0.01), maxf(width_px, 0.01))
+	character_collision.shape = shape
+	character_collision.position = Vector2(0.0, -shape.size.y / 2.0)
+
+func _install_world_bounds() -> void:
+	for node in _bound_nodes:
+		node.queue_free()
+	_bound_nodes.clear()
+	if _map.is_empty(): return
+	var extent := maxf(256.0, get_viewport_rect().size.y * 4.0)
+	for edge in [{"name": "wall_min", "map_x": _map.min_x}, {"name": "wall_max", "map_x": _map.max_x}]:
+		var wall := StaticBody2D.new()
+		wall.name = str(edge.name)
+		wall.position = Vector2(ORIGIN_X + (float(edge.map_x - _map.min_x) / float(_map.units_per_meter)) * PIXELS_PER_METER, FLOOR_Y)
+		wall.collision_layer = 1
+		wall.collision_mask = 0
+		wall.set_meta("contact_id", edge.name)
+		var shape := RectangleShape2D.new()
+		shape.size = Vector2(0.01, extent)
+		var collision := CollisionShape2D.new()
+		collision.shape = shape
+		wall.add_child(collision)
+		add_child(wall)
+		_bound_nodes.append(wall)
+
+func _queue_owner_motion(event: Dictionary) -> void:
+	if _suspended or _prediction_fenced or event.get("event") != "motion_frame": return
+	for sample in event.get("data", {}).get("players", []):
+		if sample.get("player_id") == _local_player_id:
+			_pending_owner_motion = sample.duplicate(true)
+			_pending_owner_motion["simulation_tick"] = event.data.simulation_tick
+			return
+
+func _queue_snapshot_motion(snapshot: Dictionary) -> void:
+	for player in snapshot.get("players", []):
+		if player.get("player_id") == _local_player_id:
+			_pending_snapshot_motion = player.motion.duplicate(true)
+			_pending_snapshot_motion["contacts"] = player.contacts.duplicate()
+			return
+
+func _physics_process(delta: float) -> void:
+	if not _pending_snapshot_motion.is_empty():
+		var snapshot_motion := _pending_snapshot_motion
+		_pending_snapshot_motion = {}
+		_pending_owner_motion = {}
+		_prediction_fenced = false
+		_resync_requested = false
+		_apply_authoritative_motion(snapshot_motion, true)
+	if not _pending_owner_motion.is_empty():
+		var owner_motion := _pending_owner_motion
+		_pending_owner_motion = {}
+		if not _suspended and not _prediction_fenced:
+			_apply_authoritative_motion(owner_motion, false)
+	if _suspended or _prediction_fenced or not _position_installed or _movement.is_empty(): return
+	var control: Dictionary = MmoClient.prediction_control_state()
+	if int(control.control_seq) > _last_applied_control_seq:
+		_control_history.append({"control_seq": control.control_seq, "drive": control.drive,
+			"facing": control.facing, "at_ms": Time.get_ticks_msec()})
+		_prediction_metrics.history_peak = maxi(_prediction_metrics.history_peak, _control_history.size())
+		var too_old := not _control_history.is_empty() and Time.get_ticks_msec() - int(_control_history[0].at_ms) > 2000
+		if _control_history.size() > 40 or too_old:
+			_fence_prediction()
+			return
+	_integrate_control(control, delta)
+	_reframe()
+
+func _process(delta: float) -> void:
+	_try_prediction_resync()
+	if _blend_remaining > 0.0:
+		var step := minf(delta, _blend_remaining)
+		_blend_remaining -= step
+		visual_layer.position.x = _blend_start_offset_x * (_blend_remaining / 0.1)
+		if _blend_remaining <= 0.0:
+			visual_layer.position.x = 0.0
+	if _position_installed:
+		local_label.position.x = character_root.position.x - local_label.size.x / 2.0
+		var control: Dictionary = MmoClient.prediction_control_state()
+		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / PIXELS_PER_METER),
+			"facing": control.facing}
+		_pose(sprite, predicted_motion)
+
+func _integrate_control(control: Dictionary, delta: float) -> void:
+	var target_speed := float(control.drive) * float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0
+	var force := float(_movement.drive_force_mN if control.drive != 0 else _movement.brake_force_mN)
+	var acceleration := force * PIXELS_PER_METER / float(_movement.mass_g)
+	character_root.velocity.x = move_toward(character_root.velocity.x, target_speed, acceleration * delta)
+	character_root.velocity.y = 0.0
+	character_root.move_and_slide()
+	var contacts: Array[String] = []
+	for index in range(character_root.get_slide_collision_count()):
+		var collider: Object = character_root.get_slide_collision(index).get_collider()
+		if collider is Node and collider.has_meta("contact_id"):
+			var contact_id := str(collider.get_meta("contact_id"))
+			if not contacts.has(contact_id): contacts.append(contact_id)
+	var half_width_mm := int(_movement.width_mm / 2)
+	var position_mm := _pixel_to_server_mm(character_root.position.x)
+	var min_center := roundi(float(_map.min_x) * 1000.0 / float(_map.units_per_meter)) + half_width_mm
+	var max_center := roundi(float(_map.max_x) * 1000.0 / float(_map.units_per_meter)) - half_width_mm
+	if abs(position_mm - min_center) <= 2 and not contacts.has("wall_min"): contacts.append("wall_min")
+	if abs(position_mm - max_center) <= 2 and not contacts.has("wall_max"): contacts.append("wall_max")
+	contacts.sort()
+	_predicted_contacts = contacts
+	if contacts.has("wall_min") or contacts.has("wall_max"):
+		character_root.velocity.x = 0.0
+
+func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
+	if character_root == null or _movement.is_empty(): return
+	_prediction_metrics.last_simulation_tick = int(motion.get("simulation_tick", -1))
+	var before_render_x := character_root.position.x + visual_layer.position.x
+	var error_mm := abs(_pixel_to_server_mm(character_root.position.x) - int(motion.position_mm))
+	if not force_snap:
+		_prediction_metrics.samples += 1
+		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
+	var contact_disagreement := not force_snap and motion.contacts != _predicted_contacts
+	var replay: Array[Dictionary] = []
+	if not force_snap:
+		for entry in _control_history:
+			if int(entry.control_seq) > int(motion.last_applied_control_seq): replay.append(entry)
+	_control_history = replay
+	_last_applied_control_seq = int(motion.last_applied_control_seq)
+	character_root.position.x = server_to_pixel(int(motion.position_mm))
+	character_root.velocity = Vector2(float(motion.velocity_mm_s) * PIXELS_PER_METER / 1000.0, 0.0)
+	_predicted_contacts.clear()
+	for entry in _control_history:
+		_integrate_control(entry, 1.0 / float(_movement.physics_hz))
+	var can_blend := not force_snap and error_mm <= 250 and not contact_disagreement
+	if can_blend:
+		visual_layer.position.x = before_render_x - character_root.position.x
+		_blend_start_offset_x = visual_layer.position.x
+		_blend_remaining = 0.1
+		_prediction_metrics.small_blends += 1
+	else:
+		visual_layer.position.x = 0.0
+		_blend_start_offset_x = 0.0
+		_blend_remaining = 0.0
+		character_root.reset_physics_interpolation()
+		if not force_snap: _prediction_metrics.snaps += 1
+
+func _pixel_to_server_mm(pixel_x: float) -> int:
+	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / PIXELS_PER_METER) * 1000.0)
+
+func _fence_prediction() -> void:
+	if _prediction_fenced: return
+	_prediction_fenced = true
+	_control_history.clear()
+	_pending_owner_motion.clear()
+	_prediction_metrics.fences += 1
+	if _resync_requested: return
+	_resync_requested = true
+	if MmoClient.state in ["READY", "MOVING"]:
+		var control: Dictionary = MmoClient.prediction_control_state()
+		if control.drive != 0: MmoClient.set_control(0, control.facing)
+		_try_prediction_resync()
+
+func _try_prediction_resync() -> void:
+	if _resync_requested and MmoClient.state == "READY":
+		MmoClient.request_state()
 
 func _pose(target: AnimatedSprite2D, motion: Dictionary) -> void:
 	var animation := ("walk_" if motion.velocity_mm_s != 0 else "idle_") + ("left" if motion.facing < 0 else "right")
@@ -129,6 +337,7 @@ func _sync_players() -> void:
 			var node := RemotePlayer.new()
 			node.player_id = id
 			node.position.y = FLOOR_Y
+			node.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 			add_child(node)
 			remote_players[id] = node
 		remote_players[id].suspended = _suspended

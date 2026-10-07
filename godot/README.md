@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.8.05 motion-wire corrective
+## Current MMO client — v3.main.8.06 owner prediction
 
 Current public protocol is **v8**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
@@ -111,10 +111,19 @@ Nickname, zone and character appearance remain on snapshots and reliable join fa
 the Godot reducer overlays motion by player ID. The input engage threshold comes
 from the validated `world_rules.engage_ms` value.
 
-Confirmed server motion replica, map cache, realm identity fencing and bounded
-heartbeat remain active. Owner prediction/reconciliation and remote motion timeline
-follow in 8.06/8.07. Unknown outcomes never replay input or mutations; character
-mutation receipts reconcile only on explicit human action.
+Confirmed server motion remains the only gameplay authority. The local owner is a
+Godot `CharacterBody2D` predicted at 60 Hz from the same complete semantic control
+state sent to Game. Its bounded history retains at most 40 physics states and 2 s;
+motion samples discard states through `last_applied_control_seq`, rebase position
+and velocity, and replay only unconfirmed states. Corrections up to 250 mm blend
+the visual child over 100 ms. Contact disagreement and larger corrections rebase
+immediately. Godot physics interpolation is enabled for the owner; initial and
+authoritative discontinuity rebases reset interpolation. World-edge collision
+uses native static bodies. Server contact remains decisive when the client could
+not predict a peer collision. Unknown outcomes fence prediction and never replay
+old-session controls. History overflow stops local prediction, clears held drive,
+and requests a fresh authoritative snapshot. The client exposes bounded correction
+and history metrics for acceptance. Remote motion timeline follows in 8.07.
 
 See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
 runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs
