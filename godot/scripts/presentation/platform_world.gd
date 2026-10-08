@@ -441,6 +441,9 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if not force_snap:
 		_prediction_metrics.samples += 1
 		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
+	# A control-boundary phase change can cover up to one 100-ms travel window.
+	# Its distance depends on the installed motor, not a shared character speed.
+	var blend_budget_mm := maxf(250.0, float(_movement.top_speed_mm_s) * 0.1)
 	# Sub-mm native/integer quantization is not a new 100-ms blend every frame.
 	# Keep a tiny visual residue, clear it once the authority is settled.
 	if not force_snap and error_mm <= 2:
@@ -450,7 +453,8 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		if _blend_remaining > 0.0:
 			_blend_start_offset_x = visual_layer.position.x * (0.1 / _blend_remaining)
 		_correction_class = "blend" if _blend_remaining > 0.0 else "none"
-	elif not force_snap and error_mm <= 250 and motion.contacts.is_empty():
+	elif not force_snap and error_mm <= blend_budget_mm and motion.contacts.is_empty() \
+			and int(motion.get("contact_delta_velocity_mm_s", 0)) == 0:
 		visual_layer.position.x = before_render_x - character_root.position.x
 		_blend_start_offset_x = visual_layer.position.x
 		_blend_remaining = 0.1

@@ -120,6 +120,41 @@ func run() -> void:
 	platform._apply_authoritative_motion(sample(8999,0,0,50000),false)
 	check(platform._prediction_fenced,"server freshness marker remains independently fenced")
 	reset()
+	var fast := Fixtures.player()
+	fast.physics = Fixtures.binding("yuna")
+	fast.character.appearance_payload = {"character_model_id":"yuna","body_variant_id":"standard","face_style_id":"soft","hair_style_id":"bob","hair_color_id":"rose"}
+	platform.project(Fixtures.MAP,{"epoch":"profile-lead","map":{"map_id":Fixtures.MAP.map_id,"content_version":1,"content_hash":Fixtures.MAP.content_hash},
+		"players":{"p1":fast},"local_player_id":"p1","confirmed_local_position_mm":50000})
+	reset()
+	sent(1,-1)
+	steps(25)
+	var held_x: int = platform._pixel_to_server_mm(platform.character_root.position.x)
+	platform._apply_authoritative_motion(sample(9119,1,9100,held_x+350,-4200),false)
+	check(platform._control_ledger[1].lead_ticks == 5, "held boundary measured five-tick lead")
+	sent(2,0)
+	steps(5)
+	var prior_render: float = platform.character_root.position.x+platform.visual_layer.position.x
+	var release_x: int = platform._pixel_to_server_mm(platform.character_root.position.x)
+	platform._apply_authoritative_motion(sample(9124,2,9121,release_x+337,-3453),false)
+	check(platform._control_ledger[2].lead_ticks == 1, "release boundary independently measured one-tick lead")
+	check(platform._correction_class == "blend", "Yuna 280-mm bounded lead change blends within profile's 100-ms travel budget")
+	check(absf(platform.character_root.position.x+platform.visual_layer.position.x-prior_render) < 0.001,
+		"profile lead transition cannot reverse the rendered root")
+	var reverse_steps := 0
+	for interval in range(30):
+		var before_release: float = platform.character_root.position.x+platform.visual_layer.position.x
+		platform._physics_process(DT)
+		platform._process(DT)
+		if platform.character_root.position.x+platform.visual_layer.position.x > before_release+0.0008: reverse_steps += 1
+	check(reverse_steps == 0, "profile-dependent release correction converges without backward render steps")
+	sent(3,-1)
+	steps(1)
+	var response := sample(9200,3,9200,platform._pixel_to_server_mm(platform.character_root.position.x)+337)
+	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,"contact_response_contacts":["p2"]})
+	platform._apply_authoritative_motion(response,false)
+	check(platform._correction_class == "snap", "physical response stays an authority barrier inside profile blend budget")
+
+	reset()
 	var owner := Fixtures.player()
 	var peer := owner.duplicate(true)
 	peer.player_id="p2"
