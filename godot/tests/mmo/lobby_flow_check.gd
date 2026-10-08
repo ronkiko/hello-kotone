@@ -112,6 +112,10 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 			"timeline_sample": renderer.timeline.sample_at(Time.get_ticks_usec()),
 			"timeline_metrics": renderer.timeline.metrics()}))
 		return false
+	mark(prefix + "-baseline-observed%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-baseline-observed%d" % other_role)),
+		side + " both windows observed baseline facing"):
+		return false
 	var tap_facing := -direction
 	var owner_tap_x: int = client.world_replica.local_player().motion.position_mm
 	var remote_tap_x: int = client.world_replica.view().players[remote_id].motion.position_mm
