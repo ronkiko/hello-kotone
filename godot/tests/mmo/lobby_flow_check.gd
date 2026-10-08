@@ -303,7 +303,10 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	report.close()
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-result%d" % (3-role))),"peer push report ready"): return false
 	var other: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(sync.path_join("push-result%d" % (3-role))))
-	check(other.response_ticks==response_ticks,"owner and observer share the same sequence of causal server knockback ticks")
+	# Native JSON parses diagnostic numbers as floats; compare typed tick values.
+	var other_response_ticks: Array[int] = []
+	for tick in other.response_ticks: other_response_ticks.append(int(tick))
+	check(other_response_ticks==response_ticks,"owner and observer share the same sequence of causal server knockback ticks")
 	await screenshot("real-peer-push")
 	return true
 
