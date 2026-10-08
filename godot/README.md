@@ -116,13 +116,17 @@ state sent to Game. Its bounded history retains at most 40 physics intervals and
 including intervals under an acknowledged held control. Local `local_ordinal`
 starts at zero on each snapshot, independently of the server clock. An actually
 sent control records its first predicted ordinal. Server-owned `control_started_tick`
-names the first physics interval applying that sequence. Only their explicit
-relative mapping retires history; server tick equality never does. Older held
+names the first physics interval applying that sequence. Their first applied sample calibrates a bounded prediction lead. Subsequent samples
+retire local intervals through that receive-relative mapping, so a slower server
+clock cannot accumulate extra replay throughout a hold. Server tick equality
+never selects local history. Older held
 samples cannot confirm a pending release. Contacts and discontinuities remain
 authoritative, and unknown outcomes fence prediction. Both history and the control
 ledger are bounded at 40 entries; history expires after 2 seconds.
 Camera follows presentation. Gait consumes integrated motion separately from
-correction transforms, with a deterministic 50-ms stop debounce. <=2-mm native
+correction transforms, with a deterministic 50-ms stop debounce. Presentation
+convergence cannot cancel more than the current physics displacement; a stopped
+visual may retain at most 0.05 px of numerical residue without altering the body. <=2-mm native
 numerical residues do not restart a visual blend on each sample. Native
 `StaticBody2D` prediction-only peers use authoritative velocity hints capped at
 100 ms / 250 mm; after 200 ms without a sample they stop colliding. Leave,

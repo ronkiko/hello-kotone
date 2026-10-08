@@ -9,6 +9,7 @@ const PIXELS_PER_METER := 8.0
 const ORIGIN_X := 32.0
 const FLOOR_Y := 104.0
 const TILE_SIZE := 16
+const NUMERICAL_PRESENTATION_PX := 0.05
 var terrain := TileMapLayer.new()
 var camera := Camera2D.new()
 var ruler := Node2D.new()
@@ -274,12 +275,32 @@ func _physics_process(delta: float) -> void:
 		"position_mm": _pixel_to_server_mm(character_root.position.x),
 		"contacts": _predicted_contacts.duplicate()})
 	_prediction_metrics.history_peak = maxi(_prediction_metrics.history_peak, _prediction_history.size())
+	if _blend_remaining <= 0.0 and absf(visual_layer.position.x) > NUMERICAL_PRESENTATION_PX \
+		and absf(character_root.velocity.x) > 0.0001:
+		_blend_remaining = delta
+		_blend_start_offset_x = visual_layer.position.x*(0.1/delta)
+	if _blend_remaining > 0.0 and absf(character_root.velocity.x) < 0.0001 \
+		and absf(visual_layer.position.x) <= NUMERICAL_PRESENTATION_PX:
+		# Numerical rest residue is bounded; do not manufacture a reverse stop step.
+		_blend_remaining = 0.0
+		_correction_class = "none"
 	if _blend_remaining > 0.0:
 		var step := minf(delta, _blend_remaining)
 		_blend_remaining -= step
-		visual_layer.position.x = _blend_start_offset_x * (_blend_remaining / 0.1)
-		if _blend_remaining <= 0.0:
-			visual_layer.position.x = 0.0
+		var target_offset := _blend_start_offset_x * (_blend_remaining / 0.1)
+		var offset_delta := target_offset-visual_layer.position.x
+		var integrated_delta := character_root.position.x-before_step
+		if offset_delta*integrated_delta < 0.0:
+			# Convergence cannot cancel more than this interval's forward motion.
+			offset_delta = signf(offset_delta)*minf(absf(offset_delta),absf(integrated_delta))
+		visual_layer.position.x += offset_delta
+		if _blend_remaining > 0.000001:
+			_blend_start_offset_x = visual_layer.position.x*(0.1/_blend_remaining)
+		elif absf(visual_layer.position.x) > NUMERICAL_PRESENTATION_PX:
+			_blend_remaining = delta
+			_blend_start_offset_x = visual_layer.position.x*(0.1/_blend_remaining)
+		else:
+			_blend_remaining = 0.0
 	_reframe()
 
 func _process(delta: float) -> void:
@@ -359,7 +380,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		_prediction_history.clear()
 		_control_ledger.clear()
 		_local_control.clear()
-		_control_ledger[applied_seq] = {"first_ordinal":0,"snapshot_tick":tick,"control":{"drive":0,"facing":motion.facing}}
+		_control_ledger[applied_seq] = {"first_ordinal":0,"lead_ticks":0,"control":{"drive":0,"facing":motion.facing}}
 		_gait_displacement = 0.0
 	else:
 		if not _control_ledger.has(applied_seq):
@@ -367,12 +388,21 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 			return
 		_track_local_control(MmoClient.prediction_control_state())
 		var boundary: Dictionary = _control_ledger[applied_seq]
-		if boundary.has("snapshot_tick"):
-			mapped_ordinal = tick - int(boundary.snapshot_tick)
-		else:
-			# Correlate elapsed intervals of an actually sent/applied control.
-			# Server tick and local ordinal are never compared as clock identities.
+		if not boundary.has("lead_ticks"):
+			# The first applied boundary measures prediction lead for this control.
+			# Retaining it prevents server overruns from becoming ever-growing replay.
 			mapped_ordinal = int(boundary.first_ordinal) + tick - int(motion.control_started_tick)
+			boundary.lead_ticks = maxi(0,_prediction_ordinal-mapped_ordinal)
+		else:
+			mapped_ordinal = _prediction_ordinal-int(boundary.lead_ticks)
+			# If no local interval occurred, real authoritative progress can retire
+			# the remaining history. A server origin is never a local clock index.
+			if boundary.has("last_receive_ordinal") and _prediction_ordinal==int(boundary.last_receive_ordinal):
+				mapped_ordinal = maxi(mapped_ordinal,int(boundary.last_mapped_ordinal)+tick-int(boundary.last_sample_tick))
+		mapped_ordinal = mini(_prediction_ordinal,mapped_ordinal)
+		boundary.last_receive_ordinal = _prediction_ordinal
+		boundary.last_sample_tick = tick
+		boundary.last_mapped_ordinal = mapped_ordinal
 		if boundary.control != _local_control and mapped_ordinal >= _local_control_start and motion.contacts.is_empty():
 			_correction_class = "pending_control"
 			return
