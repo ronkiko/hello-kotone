@@ -97,11 +97,20 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	mark(prefix + "-baseline-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-baseline-ready%d" % other_role)), side + " both windows set facing baseline"):
 		return false
-	if not await wait_until(func():
+	var baseline_ready := await wait_until(func():
 		var motion: Dictionary = client.world_replica.view().players.get(remote_id, {}).get("motion", {})
 		return motion.get("facing", 0) == direction \
 			and renderer.sprite.animation == Appearance.idle_animation(direction),
-		side + " baseline facing reaches remote presenter"):
+		side + " baseline facing reaches remote presenter")
+	if not baseline_ready:
+		print("REMOTE BASELINE DIAGNOSTIC ", JSON.stringify({
+			"role": role, "direction": direction,
+			"remote_motion": client.world_replica.view().players.get(remote_id, {}).get("motion", {}),
+			"animation": String(renderer.sprite.animation), "gait_facing": renderer.gait.facing,
+			"gait_walking": renderer.gait.walking, "reaction_tick": renderer.gait.last_contact_response_tick,
+			"sprite_playing": renderer.sprite.is_playing(),
+			"timeline_sample": renderer.timeline.sample_at(Time.get_ticks_usec()),
+			"timeline_metrics": renderer.timeline.metrics()}))
 		return false
 	var tap_facing := -direction
 	var owner_tap_x: int = client.world_replica.local_player().motion.position_mm
