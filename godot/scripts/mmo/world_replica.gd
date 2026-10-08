@@ -108,9 +108,10 @@ func replace_snapshot(value: Dictionary) -> bool:
 		return _reject("SNAPSHOT_ROLLBACK")
 	var applied_control_seq := -1
 	for player in value.players:
+		if _players.has(player.player_id) and player.physics != _players[player.player_id].physics:
+			return _reject("PHYSICS_BINDING_CHANGED")
 		if player.player_id == _local_id:
 			applied_control_seq = player.motion.last_applied_control_seq
-			break
 	if applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
 		return _reject("SNAPSHOT_CONTROL_SEQUENCE_ROLLBACK")
 	if _snapshot_tick(value) < _simulation_tick:
@@ -239,8 +240,8 @@ func _reject(reason: String) -> bool:
 
 func _inside_map(player: Dictionary, document: Dictionary) -> bool:
 	var position: int = player.motion.position_mm
-	return float(position) >= float(document.min_x) * 1000.0 / float(document.units_per_meter) + 200.0 \
-		and float(position) <= float(document.max_x) * 1000.0 / float(document.units_per_meter) - 200.0
+	return float(position) >= float(document.min_x) * 1000.0 / float(document.units_per_meter) \
+		and float(position) <= float(document.max_x) * 1000.0 / float(document.units_per_meter)
 
 func _snapshot_tick(value: Dictionary) -> int:
 	var latest := -1

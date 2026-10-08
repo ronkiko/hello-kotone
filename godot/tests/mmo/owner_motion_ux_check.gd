@@ -2,8 +2,7 @@ extends SceneTree
 ## Independent server/local clocks and fixed one-way delivery; shipped predictor.
 const Fixtures = preload("res://tests/mmo/replica_check.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const RULES = {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,
-	"top_speed_mm_s":3000,"mass_g":70000,"width_mm":400,"drive_force_mN":560000,"brake_force_mN":560000}
+var RULES = Fixtures.rules()
 const DT = 1.0 / 60.0
 var platform: Node
 var client: Node
@@ -54,6 +53,7 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 	var player := Fixtures.player()
 	player.character.appearance_payload={"character_model_id":model,"body_variant_id":"standard","face_style_id":"soft",
 		"hair_style_id":"short" if model=="kotone" else "bob","hair_color_id":"chestnut" if model=="kotone" else "rose"}
+	player.physics = Fixtures.binding(model)
 	var players := {"p1":player}
 	if nearby_peer:
 		var peer := player.duplicate(true)
@@ -109,7 +109,7 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 				started_tick = server_tick
 			server_seq = accepted_seq
 			server_drive = accepted_drive
-			server_v = move_toward(server_v, server_drive * 3000.0, 8000.0 * DT)
+			server_v = move_toward(server_v, server_drive * float(Fixtures.physics(model).motor.top_speed_mm_s), float(Fixtures.physics(model).motor.drive_force_mN) * 1000.0 / float(Fixtures.physics(model).body.mass_g) * DT)
 			server_x += server_v * DT
 			last_physical_tick = server_tick
 		if ordinal % 3 == 0:

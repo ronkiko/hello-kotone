@@ -27,7 +27,7 @@ from scratch rather than converted from the Canvas implementation.
 5. Timer, bell, dialogue, and henshin flow
 6. Audio, settings, and mobile controls
 
-## Current MMO client — v3.main.8.08 facing, gait and presentation
+## Current MMO client — v3.main.8.09 physical body / motor binding
 
 Current public protocol is **v8**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
@@ -167,3 +167,12 @@ it executes current v8 TLS scenes, all maintained domain suites, raster tool che
 and recipe replay. Historical acceptance evidence stays in the shared roadmap.
 The two Yuna art references preserved in c429a4a remain tracked source references
 outside the Godot runtime asset tree.
+
+8.09 resolves each selected character through server-owned body/motor profiles.
+`world_rules.physics_profiles` supplies one bounded installed revision; reliable
+snapshot/join carries the chosen profile IDs. Owner prediction uses that body mass,
+drive/brake force, speed and dimensions. Remote gait and prediction proxies use
+the peer's selected profile. No client model-to-stat table or default body remains.
+Kotone currently has 70 kg / 3000 mm/s, Yuna 50 kg / 4200 mm/s. Body geometry
+400×1700 mm and motor contact effort remain temporary card content for 8.10 review;
+8.09 does not close the deferred release/repress collider defect.

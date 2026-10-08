@@ -340,7 +340,14 @@ func _on_frame(frame: PackedByteArray) -> void:
 				return
 			response_received.emit(op, data.duplicate(true))
 		"world_rules":
+			if not _world_rules.is_empty() and _world_rules != data:
+				_fail("PHYSICS_REVISION_CHANGED")
+				return
 			_world_rules = data.duplicate(true)
+			for player in world_replica.view().players.values():
+				if Protocol.selected_physics(_world_rules.movement, player).is_empty():
+					_fail("PHYSICS_BINDING_MISMATCH")
+					return
 			_set_state("LOADING_STATE")
 			_schedule("state", {})
 			response_received.emit(op, data.duplicate(true))
@@ -453,6 +460,7 @@ func _exit_tree() -> void:
 
 func _production_player(player: Dictionary) -> bool:
 	var character: Variant = player.get("character")
+	if not _world_rules.is_empty() and Protocol.selected_physics(_world_rules.movement, player).is_empty(): return false
 	return Protocol.presentation(character) and Appearance.supported(character.appearance_payload) and character.game_card_id == _expected_identity.get("game_card_id") and character.realm_id == _expected_identity.get("realm_id") \
 		and character.character_id == player.player_id and character.display_name == player.nickname
 

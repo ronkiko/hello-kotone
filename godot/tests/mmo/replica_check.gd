@@ -8,7 +8,7 @@ func check(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok: failures.append(label)
 static func player(id: String = "p1", name: String = "player1", position_mm: int = 50000) -> Dictionary:
-	return {"player_id":id,"nickname":name,"zone_id":"city/apartment","motion":{"position_mm":position_mm,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":{"game_card_id":"hello-kotone","realm_id":"local","character_id":id,"display_name":name,"appearance_schema_version":2,"appearance_payload":{"character_model_id":"kotone","body_variant_id":"standard","face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}}}
+	return {"player_id":id,"nickname":name,"zone_id":"city/apartment","motion":{"position_mm":position_mm,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"physics":binding(),"character":{"game_card_id":"hello-kotone","realm_id":"local","character_id":id,"display_name":name,"appearance_schema_version":2,"appearance_payload":{"character_model_id":"kotone","body_variant_id":"standard","face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}}}
 func baseline() -> Dictionary:
 	return {"epoch":"e1","revision":1,"map":{"map_id":MAP.map_id,"content_version":1,"content_hash":MAP.content_hash},"players":[player()]}
 func ready_replica() -> RefCounted:
@@ -54,3 +54,17 @@ func _initialize() -> void:
 	check(replica.view().players.size() == 1, "defensive values")
 	print(JSON.stringify({"suite":"motion-replica","checks":checks,"failures":failures,"result":"PASS" if failures.is_empty() else "FAIL"}))
 	quit(0 if failures.is_empty() else 1)
+
+static func physics(model: String = "kotone") -> Dictionary:
+	return {"character_model_id":model,"physics_profile_revision":"hello_kotone_physics_v1",
+		"body":{"body_profile_id":model+"_body_v1","mass_g":70000 if model=="kotone" else 50000,
+		"collision_width_mm":400,"collision_height_mm":1700},
+		"motor":{"motor_profile_id":model+"_motor_v1","drive_force_mN":560000,"brake_force_mN":560000,
+		"top_speed_mm_s":3000 if model=="kotone" else 4200,"contact_effort_ms":750}}
+
+static func binding(model: String = "kotone") -> Dictionary:
+	return {"physics_profile_revision":"hello_kotone_physics_v1", "body_profile_id":model+"_body_v1", "motor_profile_id":model+"_motor_v1"}
+
+static func rules() -> Dictionary:
+	return {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,
+		"physics_profiles":[physics("kotone"),physics("yuna")]}

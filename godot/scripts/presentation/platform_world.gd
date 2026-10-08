@@ -82,10 +82,7 @@ func _ready() -> void:
 	character_root.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	character_root.collision_layer = 2
 	character_root.collision_mask = 5
-	var initial_shape := RectangleShape2D.new()
-	initial_shape.size = Vector2(3.2, 3.2)
-	character_collision.shape = initial_shape
-	character_collision.position.y = -1.6
+	character_collision.disabled = true
 	character_root.add_child(character_collision)
 	add_child(character_root)
 	visual_layer.name = "CharacterVisualLayer"
@@ -121,7 +118,6 @@ func _ready() -> void:
 func set_movement_rules(rules: Dictionary) -> bool:
 	if not Protocol.movement(rules.get("movement")): return false
 	_movement = rules.movement.duplicate(true)
-	_configure_owner_shape()
 	return true
 
 func server_to_pixel(position_mm: float) -> float:
@@ -134,15 +130,20 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var players: Variant = view.get("players", {})
 	if not players is Dictionary or not players.has(view.get("local_player_id")) or players.size() > 64: return false
 	for id in players:
-		if not Protocol.player(players[id]) or players[id].player_id != id or players[id].zone_id != document.map_id: return false
+		if not Protocol.player(players[id]) or players[id].player_id != id or players[id].zone_id != document.map_id \
+			or Protocol.selected_physics(_movement, players[id]).is_empty(): return false
 	var map_changed: bool = _map.get("map_id", "") != document.map_id or _map.get("content_hash", "") != document.content_hash
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
 	if map_changed:
 		_install_world_bounds()
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
-	if not is_node_ready(): return true
 	var local: Dictionary = players[view.local_player_id]
+	var local_physics := Protocol.selected_physics(_movement, local)
+	_movement.merge(local_physics.body, true)
+	_movement.merge(local_physics.motor, true)
+	if not is_node_ready(): return true
+	_configure_owner_shape()
 	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
 	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
 		_owner_scope = owner_scope
@@ -160,7 +161,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	if _local_model_id != local.character.appearance_payload.character_model_id:
 		_local_model_id = local.character.appearance_payload.character_model_id
 		_gait.reset(sprite, int(local.motion.facing))
-	_gait.configure(float(_movement.get("top_speed_mm_s", 3000)) * PIXELS_PER_METER / 1000.0)
+	_gait.configure(float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0)
 	local_label.position.y = FLOOR_Y - Appearance.display_height_px(local.character.appearance_payload.character_model_id) - 18
 	_sync_players()
 	_reframe()
@@ -201,10 +202,11 @@ func prediction_diagnostics() -> Dictionary:
 
 func _configure_owner_shape() -> void:
 	if _movement.is_empty(): return
-	var width_px := float(_movement.width_mm) * PIXELS_PER_METER / 1000.0
+	var width_px := float(_movement.collision_width_mm) * PIXELS_PER_METER / 1000.0
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(maxf(width_px, 0.01), maxf(width_px, 0.01))
+	shape.size = Vector2(width_px, float(_movement.collision_height_mm) * PIXELS_PER_METER / 1000.0)
 	character_collision.shape = shape
+	character_collision.disabled = false
 	character_collision.position = Vector2(0.0, -shape.size.y / 2.0)
 
 func _install_world_bounds() -> void:
@@ -334,7 +336,7 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 		if collider is Node and collider.has_meta("contact_id"):
 			var contact_id := str(collider.get_meta("contact_id"))
 			if not contacts.has(contact_id): contacts.append(contact_id)
-	var half_width_mm := int(_movement.width_mm / 2)
+	var half_width_mm := int(_movement.collision_width_mm / 2)
 	var position_mm := _pixel_to_server_mm(character_root.position.x)
 	var min_center := roundi(float(_map.min_x) * 1000.0 / float(_map.units_per_meter)) + half_width_mm
 	var max_center := roundi(float(_map.max_x) * 1000.0 / float(_map.units_per_meter)) - half_width_mm
@@ -500,7 +502,6 @@ func _sync_players() -> void:
 	var local_id: String = _view.local_player_id
 	var scope := "%s|%s|%d" % [str(_view.get("epoch", "")), str(_view.map.get("map_id", "")), int(_view.get("zone_generation", 1))]
 	var received_usec := Time.get_ticks_usec()
-	var top_speed_mm_s := int(_movement.get("top_speed_mm_s", 0))
 	for id in remote_players.keys():
 		if not players.has(id) or id == local_id: _remove_remote(id)
 	for id in players:
@@ -515,7 +516,7 @@ func _sync_players() -> void:
 		remote_players[id].suspended = _suspended
 		var latest_frame_sample: Dictionary = MmoClient.world_replica.latest_frame_sample(id)
 		remote_players[id].project(players[id], server_to_pixel(float(players[id].motion.position_mm)),
-			scope, received_usec, top_speed_mm_s, latest_frame_sample)
+			scope, received_usec, int(Protocol.selected_physics(_movement, players[id]).motor.top_speed_mm_s), latest_frame_sample)
 
 func _clear_peer_proxies() -> void:
 	for proxy in _peer_proxies.values():
@@ -536,10 +537,12 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 			proxy.set_meta("contact_id", id)
 			var collision := CollisionShape2D.new()
 			var shape := RectangleShape2D.new()
-			var width := float(_movement.width_mm) * PIXELS_PER_METER / 1000.0
-			shape.size = Vector2(width,width)
+			var body: Dictionary = Protocol.selected_physics(_movement, _view.players[id]).body
+			var width := float(body.collision_width_mm) * PIXELS_PER_METER / 1000.0
+			var height := float(body.collision_height_mm) * PIXELS_PER_METER / 1000.0
+			shape.size = Vector2(width,height)
 			collision.shape = shape
-			collision.position.y = -width/2.0
+			collision.position.y = -height/2.0
 			proxy.add_child(collision)
 			add_child(proxy)
 			_peer_proxies[id] = proxy

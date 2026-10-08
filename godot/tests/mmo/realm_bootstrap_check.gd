@@ -89,7 +89,7 @@ func run() -> void:
 			var before: Dictionary = client.world_replica.snapshot()
 			var scope := identity()
 			scope[field] = "different"
-			var data := {"identity": scope, "map": Fixtures.MAP} if op == "map" else {"identity": scope, "movement": {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,"top_speed_mm_s":3000,"mass_g":70000,"width_mm":400,"drive_force_mN":560000,"brake_force_mN":560000}}
+			var data := {"identity": scope, "map": Fixtures.MAP} if op == "map" else {"identity": scope, "movement": Fixtures.rules()}
 			deliver(op, data)
 			check(client.state == "FAILED" and client.last_error.code == "REALM_IDENTITY_MISMATCH", "SCOPED_REPLY_REJECTED_" + op + "_" + field)
 			check(client.world_replica.snapshot() == before and client.map_document.is_empty() and client.world_rules.is_empty(), "NO_FOREIGN_PRESENTATION_" + op + "_" + field)

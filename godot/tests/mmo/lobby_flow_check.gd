@@ -418,6 +418,13 @@ func _run() -> void:
 	check(world.platform.remote_players[remote_id].sprite.get_node("SemanticAppearance").payload == remote.character.appearance_payload, "remote applies authoritative appearance")
 	check(world.platform.remote_players[remote_id].sprite.get_meta("character_model_id") == remote.character.appearance_payload.character_model_id, "remote presenter model")
 	check(world.platform.sprite.get_meta("character_model_id") == chosen.character_model_id, "own presenter model")
+	var profiles = preload("res://tests/mmo/replica_check.gd")
+	var own_physics := profiles.physics(chosen.character_model_id)
+	check(client.world_replica.local_player().physics == profiles.binding(chosen.character_model_id), "owner server-selected binding")
+	check(remote.physics == profiles.binding(remote.character.appearance_payload.character_model_id), "peer server-selected binding")
+	check(world.platform._movement.mass_g == own_physics.body.mass_g and world.platform._movement.top_speed_mm_s == own_physics.motor.top_speed_mm_s, "native predictor uses own mass/motor")
+	check(not client.world_replica.latest_frame_sample(remote_id).has("physics"), "20-Hz frame omits static profiles")
+
 	check(world.platform.sprite.get_node("SemanticAppearance").payload == chosen, "own renderer applies appearance")
 	check(not world.platform.sprite.material == world.platform.remote_players[remote_id].sprite.material, "independent appearance materials")
 	world.input_adapter.set_physics_process(false)
@@ -450,6 +457,7 @@ func _run() -> void:
 	await press("Enter world")
 	if not await wait_until(func(): return client.state == "READY" and current_scene.scene_file_path.ends_with("world.tscn"), "both models re-enter World"): quit(1); return
 	check(client.world_replica.local_player().character.appearance_payload == chosen, "re-entry keeps durable model")
+	check(client.world_replica.local_player().physics == profiles.binding(chosen.character_model_id), "re-entry keeps selected body/motor binding")
 	check(client._server_input_seq == 0 and client._server_input.drive == 0, "re-entry never replays input")
 	if role == 1:
 		await press("Leave world")

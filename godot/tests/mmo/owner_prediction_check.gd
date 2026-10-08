@@ -1,8 +1,7 @@
 extends SceneTree
 ## Explicit applied-control boundary correlation; independent local ordinals.
 const Fixtures = preload("res://tests/mmo/replica_check.gd")
-const RULES = {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,
-	"top_speed_mm_s":3000,"mass_g":70000,"width_mm":400,"drive_force_mN":560000,"brake_force_mN":560000}
+var RULES = Fixtures.rules()
 const DT := 1.0/60.0
 var checks := 0
 var failures: Array = []

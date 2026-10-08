@@ -22,12 +22,12 @@ func run() -> void:
 	root.add_child(platform)
 	platform.set_process(false)
 	var document := {"schema_version":1,"map_id":"city/apartment","content_version":1,"min_x":0,"max_x":100,"spawn_x":50,"units_per_meter":1,"content_hash":"4f465435cbb8eb3e5154a4776be29e7aee4f73376e00fb26299bfbf0cfcd361b"}
-	platform.set_movement_rules({"movement":{"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,"top_speed_mm_s":3000,"mass_g":70000,"width_mm":400,"drive_force_mN":560000,"brake_force_mN":560000}})
+	platform.set_movement_rules({"movement":preload("res://tests/mmo/replica_check.gd").rules()})
 	var view := {"map":{"map_id":document.map_id,"content_version":1,"content_hash":document.content_hash},"confirmed_local_position_mm":50000,"epoch":"e1","local_player_id":"p1","players":{}}
 	for model in ["kotone", "yuna"]:
 		var definition := {"game_card_id":"hello-kotone","realm_id":"local","character_id":"p1","display_name":"local","appearance_schema_version":2,"appearance_payload":payload(model)}
 		# Current Protocol.character includes the durable definition shape used by v7.
-		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":definition}
+		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":definition,"physics":preload("res://tests/mmo/replica_check.gd").binding(model)}
 		var remote := player.duplicate(true)
 		remote.player_id = "p2"
 		remote.character.character_id = "p2"
@@ -36,6 +36,12 @@ func run() -> void:
 		view.players = {"p1":player,"p2":remote}
 		check(platform.project(document,view), model + " current character projection")
 		if not platform.remote_players.has("p2"): continue
+		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
+		check(platform._movement.mass_g == physical.body.mass_g and platform._movement.top_speed_mm_s == physical.motor.top_speed_mm_s, model + " predictor uses selected server profile")
+		check(is_equal_approx(platform.character_collision.shape.size.x, physical.body.collision_width_mm * 8.0/1000.0), model + " native owner width from body")
+		var bad_view := view.duplicate(true)
+		bad_view.players.p1.physics.motor_profile_id = "missing"
+		check(not platform.project(document,bad_view), model + " unknown actuator binding fails closed")
 		shell._preview(payload(model))
 		var own: AnimatedSprite2D = platform.sprite
 		var other: AnimatedSprite2D = platform.remote_players.p2.sprite

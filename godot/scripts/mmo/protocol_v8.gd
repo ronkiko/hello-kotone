@@ -79,10 +79,10 @@ static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	return true
 
 static func player(value: Variant) -> bool:
-	if not fields(value, ["player_id", "nickname", "zone_id", "motion", "contacts", "character"]) \
+	if not fields(value, ["player_id", "nickname", "zone_id", "motion", "contacts", "character", "physics"]) \
 		or not token(value.player_id) or not display_name(value.nickname) or not zone(value.zone_id) \
 		or not motion(value.motion) or not value.contacts is Array or value.contacts.size() > 65 \
-		or not presentation(value.character) or value.character.character_id != value.player_id or value.character.display_name != value.nickname:
+		or not presentation(value.character) or not physics_binding(value.physics) or value.character.character_id != value.player_id or value.character.display_name != value.nickname:
 		return false
 	var previous := ""
 	for contact in value.contacts:
@@ -90,12 +90,47 @@ static func player(value: Variant) -> bool:
 		previous = contact
 	return true
 
+static func physics_profile(value: Variant) -> bool:
+	if not fields(value, ["character_model_id", "physics_profile_revision", "body", "motor"]) \
+		or not token(value.character_model_id) or not token(value.physics_profile_revision): return false
+	var body: Variant = value.body
+	var motor: Variant = value.motor
+	if not fields(body, ["body_profile_id", "mass_g", "collision_width_mm", "collision_height_mm"]) \
+		or not token(body.body_profile_id) or not integer(body.mass_g, 10000, 500000) \
+		or not integer(body.collision_width_mm, 2, 10000) or int(body.collision_width_mm) % 2 != 0 \
+		or not integer(body.collision_height_mm, 1, 10000): return false
+	return fields(motor, ["motor_profile_id", "drive_force_mN", "brake_force_mN", "top_speed_mm_s", "contact_effort_ms"]) \
+		and token(motor.motor_profile_id) and integer(motor.drive_force_mN, 0, 2000000) \
+		and integer(motor.brake_force_mN, 0, 2000000) and integer(motor.top_speed_mm_s, 1, 50000) \
+		and integer(motor.contact_effort_ms, 0, 1000) \
+		and maxi(int(motor.drive_force_mN), int(motor.brake_force_mN)) * 1000 <= int(body.mass_g) * 50000
+
+static func physics_binding(value: Variant) -> bool:
+	return fields(value, ["physics_profile_revision", "body_profile_id", "motor_profile_id"]) \
+		and token(value.physics_profile_revision) and token(value.body_profile_id) and token(value.motor_profile_id)
+
+static func selected_physics(movement_rules: Dictionary, player_value: Dictionary) -> Dictionary:
+	for profile in movement_rules.physics_profiles:
+		if profile.character_model_id == player_value.character.appearance_payload.character_model_id \
+			and profile.physics_profile_revision == player_value.physics.physics_profile_revision \
+			and profile.body.body_profile_id == player_value.physics.body_profile_id \
+			and profile.motor.motor_profile_id == player_value.physics.motor_profile_id:
+			return profile.duplicate(true)
+	return {}
+
 static func movement(value: Variant) -> bool:
-	if not fields(value, ["physics_hz", "publication_hz", "control_interval_ms", "engage_ms", "top_speed_mm_s", "mass_g", "width_mm", "drive_force_mN", "brake_force_mN"]) \
-		or not integer(value.engage_ms, 1, 1000): return false
-	var expected := {"physics_hz": 60, "publication_hz": 20, "control_interval_ms": 50, "engage_ms": value.engage_ms, \
-		"top_speed_mm_s": 3000, "mass_g": 70000, "width_mm": 400, "drive_force_mN": 560000, "brake_force_mN": 560000}
-	return value == expected
+	if not fields(value, ["physics_hz", "publication_hz", "control_interval_ms", "engage_ms", "physics_profiles"]) \
+		or not integer(value.engage_ms, 1, 1000) or value.physics_hz != 60 or value.publication_hz != 20 \
+		or value.control_interval_ms != 50 or not value.physics_profiles is Array \
+		or value.physics_profiles.is_empty() or value.physics_profiles.size() > 32: return false
+	var models: Dictionary = {}
+	var revision := ""
+	for profile in value.physics_profiles:
+		if not physics_profile(profile) or models.has(profile.character_model_id): return false
+		if revision != "" and revision != profile.physics_profile_revision: return false
+		revision = profile.physics_profile_revision
+		models[profile.character_model_id] = true
+	return true
 
 static func map_reference(value: Variant) -> bool:
 	return fields(value, ["map_id", "content_version", "content_hash"]) and zone(value.map_id) \

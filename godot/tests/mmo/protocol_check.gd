@@ -72,6 +72,27 @@ func _initialize() -> void:
 	response = frame_player.duplicate(true)
 	response.contact_delta_velocity_mm_s = 1200
 	check(not Protocol.motion_frame_player(response, 4), "incomplete contact response rejected")
+	var fixtures = preload("res://tests/mmo/replica_check.gd")
+	var rules := fixtures.rules()
+	check(Protocol.movement(rules), "bounded profile bootstrap")
+	for model in ["kotone", "yuna"]:
+		var p := fixtures.player()
+		p.character.appearance_payload.character_model_id = model
+		p.physics = fixtures.binding(model)
+		check(Protocol.player(p), "selected binding structurally valid")
+		var resolved := Protocol.selected_physics(rules, p)
+		check(resolved == fixtures.physics(model), "selected immutable profile resolves")
+		p.physics.body_profile_id = "missing"
+		check(Protocol.selected_physics(rules, p).is_empty(), "no default body fallback")
+	var bad_rules := rules.duplicate(true)
+	bad_rules.physics_profiles[1].body.mass_g = true
+	check(not Protocol.movement(bad_rules), "forged bool mass rejected")
+	bad_rules = rules.duplicate(true)
+	bad_rules.physics_profiles[1].physics_profile_revision = "another"
+	check(not Protocol.movement(bad_rules), "mixed installed revisions rejected")
+	bad_rules = rules.duplicate(true)
+	bad_rules.physics_profiles.append(bad_rules.physics_profiles[0])
+	check(not Protocol.movement(bad_rules), "duplicate model binding rejected")
 	print(JSON.stringify({"suite": "protocol", "checks": _checks, "failures": _failures, "result": "PASS" if _failures == 0 else "FAIL"}))
 	quit(0 if _failures == 0 else 1)
 
