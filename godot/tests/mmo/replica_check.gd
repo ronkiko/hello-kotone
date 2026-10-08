@@ -8,7 +8,7 @@ func check(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok: failures.append(label)
 static func player(id: String = "p1", name: String = "player1", position_mm: int = 50000) -> Dictionary:
-	return {"player_id":id,"nickname":name,"zone_id":"city/apartment","motion":{"position_mm":position_mm,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"simulation_tick":0},"contacts":[],"character":{"game_card_id":"hello-kotone","realm_id":"local","character_id":id,"display_name":name,"appearance_schema_version":2,"appearance_payload":{"character_model_id":"kotone","body_variant_id":"standard","face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}}}
+	return {"player_id":id,"nickname":name,"zone_id":"city/apartment","motion":{"position_mm":position_mm,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":{"game_card_id":"hello-kotone","realm_id":"local","character_id":id,"display_name":name,"appearance_schema_version":2,"appearance_payload":{"character_model_id":"kotone","body_variant_id":"standard","face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}}}
 func baseline() -> Dictionary:
 	return {"epoch":"e1","revision":1,"map":{"map_id":MAP.map_id,"content_version":1,"content_hash":MAP.content_hash},"players":[player()]}
 func ready_replica() -> RefCounted:
@@ -19,7 +19,7 @@ func ready_replica() -> RefCounted:
 func sample(seq: int = 1, revision: int = 5, response_delta: int = 0) -> Dictionary:
 	var p := player()
 	var contact_response_contacts: Array = ["p2"] if response_delta != 0 else []
-	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"contacts":[],"contact_delta_velocity_mm_s":response_delta,"contact_response_facing":-1 if response_delta != 0 else 0,"contact_response_tick":3 if response_delta != 0 else 0,"contact_response_contacts":contact_response_contacts}]}}
+	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"control_started_tick":0,"contacts":[],"contact_delta_velocity_mm_s":response_delta,"contact_response_facing":-1 if response_delta != 0 else 0,"contact_response_tick":3 if response_delta != 0 else 0,"contact_response_contacts":contact_response_contacts}]}}
 func _initialize() -> void:
 	var replica := ready_replica()
 	check(replica.apply_event(sample()), "coalesced physics revisions accepted")

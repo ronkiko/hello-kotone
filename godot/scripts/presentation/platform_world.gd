@@ -19,6 +19,9 @@ var sprite: AnimatedSprite2D
 var local_label := Label.new()
 var _suspended := false
 var remote_players: Dictionary = {}
+var _peer_proxies: Dictionary = {}
+var _peer_lead_ticks := 0
+var _peer_anchor_ordinal := 0
 var world_length := 0.0
 var _map: Dictionary = {}
 var _view: Dictionary = {}
@@ -28,8 +31,15 @@ var _position_installed := false
 var _first_cell := -1000000
 var _bound_nodes: Array[StaticBody2D] = []
 var _local_player_id := ""
+var _owner_scope := ""
 var _last_applied_control_seq := 0
-var _prediction_tick := -1
+var _prediction_ordinal := -1
+var _control_ledger: Dictionary = {}
+var _local_control: Dictionary = {}
+var _local_control_start := 0
+var _gait_displacement := 0.0
+var _correction_class := "none"
+var _diagnostic_motion: Dictionary = {}
 var _last_authoritative_tick := -1
 var _prediction_history: Array[Dictionary] = []
 var _pending_owner_motion: Dictionary = {}
@@ -43,7 +53,6 @@ var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulati
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
-var _last_rendered_x := 0.0
 var _local_model_id := ""
 
 func _ready() -> void:
@@ -71,7 +80,7 @@ func _ready() -> void:
 	character_root.safe_margin = 0.001
 	character_root.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	character_root.collision_layer = 2
-	character_root.collision_mask = 1
+	character_root.collision_mask = 5
 	var initial_shape := RectangleShape2D.new()
 	initial_shape.size = Vector2(3.2, 3.2)
 	character_collision.shape = initial_shape
@@ -80,7 +89,7 @@ func _ready() -> void:
 	add_child(character_root)
 	visual_layer.name = "CharacterVisualLayer"
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
-	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	character_root.add_child(visual_layer)
 	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
@@ -95,11 +104,15 @@ func _ready() -> void:
 	local_label.add_theme_constant_override("outline_size", 3)
 	local_label.z_index = 2
 	add_child(local_label)
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	camera.position.y = 58.0
 	camera.position_smoothing_enabled = false
 	add_child(camera)
 	camera.make_current()
 	get_viewport().size_changed.connect(_resize_projection)
+	MmoClient.control_sent.connect(_record_sent_control)
+	MmoClient.input_rejected.connect(_discard_rejected_control)
 	MmoClient.world_replica.motion_received.connect(_queue_owner_motion)
 	MmoClient.world_replica.authoritative_snapshot_received.connect(_queue_snapshot_motion)
 	project(_map, _view, _display_x)
@@ -129,7 +142,10 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
 	if not is_node_ready(): return true
 	var local: Dictionary = players[view.local_player_id]
-	if not _position_installed or _local_player_id != view.local_player_id:
+	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
+	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
+		_owner_scope = owner_scope
+		_clear_peer_proxies()
 		_local_player_id = view.local_player_id
 		_position_installed = true
 		_prediction_fenced = false
@@ -152,21 +168,35 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 func set_suspended(value: bool) -> void:
 	_suspended = value
 	if value:
+		_clear_peer_proxies()
 		_pending_owner_motion.clear()
+		_pending_snapshot_motion.clear()
 		_prediction_history.clear()
-		_prediction_tick = -1
+		_prediction_ordinal = -1
+		_control_ledger.clear()
+		_local_control.clear()
 		_last_authoritative_tick = -1
 		_blend_remaining = 0.0
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
 		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
-		_last_rendered_x = character_root.position.x
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		node.set_suspended(value)
 
 func prediction_metrics() -> Dictionary:
 	return _prediction_metrics.duplicate(true)
+
+func prediction_diagnostics() -> Dictionary:
+	# Caller-owned bounded evidence; no trace/log accumulation or session secrets.
+	return {"sample":_diagnostic_motion.duplicate(true),"ledger":_control_ledger.duplicate(true),"local_usec":Time.get_ticks_usec(),"local_ordinal":_prediction_ordinal,
+		"simulation_tick":_last_authoritative_tick,"applied_seq":_last_applied_control_seq,
+		"desired":MmoClient.prediction_control_state(),"acknowledged":MmoClient._server_input.duplicate(),
+		"body_mm":_pixel_to_server_mm(character_root.position.x),
+		"render_mm":_pixel_to_server_mm(character_root.position.x+visual_layer.position.x),
+		"offset_px":visual_layer.position.x,"predicted_contacts":_predicted_contacts.duplicate(),
+		"correction_class":_correction_class,"animation":String(sprite.animation),
+		"gait_walking":_gait.walking,"camera_px":camera.position.x}
 
 func _configure_owner_shape() -> void:
 	if _movement.is_empty(): return
@@ -226,40 +256,43 @@ func _physics_process(delta: float) -> void:
 		if not _suspended and not _prediction_fenced:
 			_apply_authoritative_motion(owner_motion, false)
 	if _suspended or _prediction_fenced or not _position_installed or _movement.is_empty(): return
-	if _prediction_tick < 0: return
+	if _prediction_ordinal < 0: return
 	var control: Dictionary = MmoClient.prediction_control_state()
 	var too_old := not _prediction_history.is_empty() and Time.get_ticks_msec() - int(_prediction_history[0].at_ms) > 2000
 	if _prediction_history.size() >= 40 or too_old:
 		_fence_prediction()
 		return
-	# Snapshot anchors the logical timeline; every local physics interval consumes
-	# one tick even while the same wire control remains acknowledged and held.
-	_prediction_tick += 1
+	_track_local_control(control)
+	# This ordinal belongs only to the local Godot clock.
+	_prediction_ordinal += 1
+	_update_peer_proxies(float(_peer_lead_ticks + _prediction_ordinal - _peer_anchor_ordinal))
+	var before_step := character_root.position.x
 	_integrate_control(control, delta)
-	_prediction_history.append({"simulation_tick": _prediction_tick,
+	_gait_displacement += character_root.position.x - before_step
+	_prediction_history.append({"local_ordinal": _prediction_ordinal,
 		"drive": control.drive, "facing": control.facing, "at_ms": Time.get_ticks_msec(),
 		"position_mm": _pixel_to_server_mm(character_root.position.x),
 		"contacts": _predicted_contacts.duplicate()})
 	_prediction_metrics.history_peak = maxi(_prediction_metrics.history_peak, _prediction_history.size())
-	_reframe()
-
-func _process(delta: float) -> void:
-	_try_prediction_resync()
 	if _blend_remaining > 0.0:
 		var step := minf(delta, _blend_remaining)
 		_blend_remaining -= step
 		visual_layer.position.x = _blend_start_offset_x * (_blend_remaining / 0.1)
 		if _blend_remaining <= 0.0:
 			visual_layer.position.x = 0.0
+	_reframe()
+
+func _process(delta: float) -> void:
+	_try_prediction_resync()
 	if _position_installed:
-		local_label.position.x = character_root.position.x - local_label.size.x / 2.0
+		local_label.position.x = character_root.position.x + visual_layer.position.x - local_label.size.x / 2.0
 		var control: Dictionary = MmoClient.prediction_control_state()
 		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / PIXELS_PER_METER),
 			"facing": control.facing}
-		var rendered_x := character_root.position.x + visual_layer.position.x
 		if _suspended: sprite.pause()
-		else: _gait.update(sprite, _last_rendered_x, rendered_x, int(predicted_motion.facing), delta)
-		_last_rendered_x = rendered_x
+		else: _gait.update(sprite, 0.0, _gait_displacement, int(predicted_motion.facing), delta)
+		_gait_displacement = 0.0
+		_reframe()
 	var now_usec := Time.get_ticks_usec()
 	for node in remote_players.values():
 		if node.suspended: continue
@@ -291,56 +324,112 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 	if contacts.has("wall_min") or contacts.has("wall_max"):
 		character_root.velocity.x = 0.0
 
+func _track_local_control(control: Dictionary) -> void:
+	var semantics := {"drive":control.drive,"facing":control.facing}
+	if semantics != _local_control:
+		_local_control = semantics
+		_local_control_start = _prediction_ordinal + 1
+
+func _record_sent_control(control: Dictionary) -> void:
+	if _suspended or _prediction_fenced or _prediction_ordinal < 0: return
+	_track_local_control(control)
+	_control_ledger[int(control.control_seq)] = {"first_ordinal":_local_control_start,"control":_local_control.duplicate()}
+	if _control_ledger.size() > 40: _fence_prediction()
+
+func _discard_rejected_control(_code: String) -> void:
+	# A definite rejection cannot become a future applied-boundary mapping.
+	_control_ledger.erase(int(MmoClient._server_input_seq)+1)
+
 func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if character_root == null or _movement.is_empty(): return
 	var tick := int(motion.simulation_tick)
-	if not force_snap and (tick < _last_authoritative_tick or int(motion.last_applied_control_seq) < _last_applied_control_seq):
+	var applied_seq := int(motion.last_applied_control_seq)
+	if not force_snap and (tick < _last_authoritative_tick or applied_seq < _last_applied_control_seq):
 		_fence_prediction()
 		return
+	_diagnostic_motion = motion.duplicate(true)
 	_prediction_metrics.last_simulation_tick = tick
+	_last_authoritative_tick = tick
+	_last_applied_control_seq = applied_seq
+	_prediction_metrics.last_applied_control_seq = applied_seq
+	_gait.try_contact_reaction(sprite, _local_model_id, motion)
+	var mapped_ordinal := 0
+	if force_snap:
+		_prediction_ordinal = 0
+		_prediction_history.clear()
+		_control_ledger.clear()
+		_local_control.clear()
+		_control_ledger[applied_seq] = {"first_ordinal":0,"snapshot_tick":tick,"control":{"drive":0,"facing":motion.facing}}
+		_gait_displacement = 0.0
+	else:
+		if not _control_ledger.has(applied_seq):
+			_fence_prediction()
+			return
+		_track_local_control(MmoClient.prediction_control_state())
+		var boundary: Dictionary = _control_ledger[applied_seq]
+		if boundary.has("snapshot_tick"):
+			mapped_ordinal = tick - int(boundary.snapshot_tick)
+		else:
+			# Correlate elapsed intervals of an actually sent/applied control.
+			# Server tick and local ordinal are never compared as clock identities.
+			mapped_ordinal = int(boundary.first_ordinal) + tick - int(motion.control_started_tick)
+		if boundary.control != _local_control and mapped_ordinal >= _local_control_start and motion.contacts.is_empty():
+			_correction_class = "pending_control"
+			return
+		for seq in _control_ledger:
+			if int(seq) > applied_seq and mapped_ordinal >= int(_control_ledger[seq].first_ordinal) \
+				and motion.contacts.is_empty():
+				# An old held-control sample cannot confirm the predicted release.
+				# Wait for its applied boundary; peer/wall authority never waits.
+				_correction_class = "pending_control"
+				return
 	var before_body_x := character_root.position.x
 	var before_render_x := character_root.position.x + visual_layer.position.x
-	var contacts_at_tick: Array = _predicted_contacts
 	var replay: Array[Dictionary] = []
 	if not force_snap:
 		for entry in _prediction_history:
-			if int(entry.simulation_tick) == tick: contacts_at_tick = entry.contacts
-			if int(entry.simulation_tick) > tick: replay.append(entry)
+			if int(entry.local_ordinal) > mapped_ordinal: replay.append(entry)
 	_prediction_history = replay
-	_prediction_tick = tick if force_snap else maxi(_prediction_tick, tick)
-	_last_authoritative_tick = tick
-	_last_applied_control_seq = int(motion.last_applied_control_seq)
-	_prediction_metrics.last_applied_control_seq = _last_applied_control_seq
+	for seq in _control_ledger.keys():
+		if int(seq) < applied_seq: _control_ledger.erase(seq)
 	_prediction_metrics.last_replayed_ticks = replay.size()
-	var contact_disagreement: bool = not force_snap and motion.contacts != contacts_at_tick
+	_peer_lead_ticks = replay.size()
+	_peer_anchor_ordinal = _prediction_ordinal
 	character_root.position.x = server_to_pixel(int(motion.position_mm))
 	character_root.velocity = Vector2(float(motion.velocity_mm_s) * PIXELS_PER_METER / 1000.0, 0.0)
-	_gait.try_contact_reaction(sprite, _local_model_id, motion)
-	_predicted_contacts.clear()
-	for contact in motion.contacts: _predicted_contacts.append(str(contact))
-	for entry in _prediction_history:
+	_predicted_contacts.assign(motion.contacts)
+	var replay_index := 0
+	for entry in replay:
+		replay_index += 1
+		_update_peer_proxies(float(replay_index))
 		_integrate_control(entry, 1.0 / float(_movement.physics_hz))
 		entry.position_mm = _pixel_to_server_mm(character_root.position.x)
 		entry.contacts = _predicted_contacts.duplicate()
-	# Compare the old and reconciled present, not present vs an older server pose.
 	var error_mm := absi(_pixel_to_server_mm(before_body_x) - _pixel_to_server_mm(character_root.position.x))
-	var render_error_mm := absi(_pixel_to_server_mm(before_render_x) - _pixel_to_server_mm(character_root.position.x))
 	if not force_snap:
 		_prediction_metrics.samples += 1
 		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
-	var can_blend: bool = not force_snap and error_mm <= 250 and render_error_mm <= 250 and not contact_disagreement
-	if can_blend:
+	# Sub-mm native/integer quantization is not a new 100-ms blend every frame.
+	# Keep a tiny visual residue, clear it once the authority is settled.
+	if not force_snap and error_mm <= 2:
+		visual_layer.position.x = before_render_x - character_root.position.x
+		# Preserve an in-progress convergence deadline across numerical samples.
+		# Canceling its timer here used to strand an offset until a stop snap.
+		if _blend_remaining > 0.0:
+			_blend_start_offset_x = visual_layer.position.x * (0.1 / _blend_remaining)
+		_correction_class = "blend" if _blend_remaining > 0.0 else "none"
+	elif not force_snap and error_mm <= 250 and motion.contacts.is_empty():
 		visual_layer.position.x = before_render_x - character_root.position.x
 		_blend_start_offset_x = visual_layer.position.x
 		_blend_remaining = 0.1
+		_correction_class = "blend"
 		_prediction_metrics.small_blends += 1
 	else:
 		visual_layer.position.x = 0.0
-		_blend_start_offset_x = 0.0
 		_blend_remaining = 0.0
 		character_root.reset_physics_interpolation()
+		_correction_class = "snap"
 		if not force_snap: _prediction_metrics.snaps += 1
-	_last_rendered_x = character_root.position.x + visual_layer.position.x
 
 func _pixel_to_server_mm(pixel_x: float) -> int:
 	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / PIXELS_PER_METER) * 1000.0)
@@ -349,7 +438,9 @@ func _fence_prediction() -> void:
 	if _prediction_fenced: return
 	_prediction_fenced = true
 	_prediction_history.clear()
-	_prediction_tick = -1
+	_control_ledger.clear()
+	_local_control.clear()
+	_prediction_ordinal = -1
 	_pending_owner_motion.clear()
 	_prediction_metrics.fences += 1
 	if _resync_requested: return
@@ -366,6 +457,11 @@ func _try_prediction_resync() -> void:
 func _remove_remote(id: String) -> void:
 	var node: Node = remote_players[id]
 	remote_players.erase(id)
+	if _peer_proxies.has(id):
+		var proxy: Node = _peer_proxies[id]
+		_peer_proxies.erase(id)
+		remove_child(proxy)
+		proxy.queue_free()
 	remove_child(node)
 	node.queue_free()
 
@@ -391,10 +487,41 @@ func _sync_players() -> void:
 		remote_players[id].project(players[id], server_to_pixel(float(players[id].motion.position_mm)),
 			scope, received_usec, top_speed_mm_s, latest_frame_sample)
 
+func _clear_peer_proxies() -> void:
+	for proxy in _peer_proxies.values():
+		remove_child(proxy)
+		proxy.queue_free()
+	_peer_proxies.clear()
+
+func _update_peer_proxies(lead_ticks: float) -> void:
+	for id in remote_players:
+		var hint: Dictionary = remote_players[id].timeline.prediction_hint(Time.get_ticks_usec(), lead_ticks)
+		if hint.is_empty() or _suspended:
+			if _peer_proxies.has(id): _peer_proxies[id].collision_layer = 0
+			continue
+		if not _peer_proxies.has(id):
+			var proxy := StaticBody2D.new()
+			proxy.name = "PredictionPeer_" + id
+			proxy.collision_mask = 0
+			proxy.set_meta("contact_id", id)
+			var collision := CollisionShape2D.new()
+			var shape := RectangleShape2D.new()
+			var width := float(_movement.width_mm) * PIXELS_PER_METER / 1000.0
+			shape.size = Vector2(width,width)
+			collision.shape = shape
+			collision.position.y = -width/2.0
+			proxy.add_child(collision)
+			add_child(proxy)
+			_peer_proxies[id] = proxy
+		var proxy: StaticBody2D = _peer_proxies[id]
+		proxy.collision_layer = 4
+		proxy.position = Vector2(server_to_pixel(float(hint.position_mm)), FLOOR_Y)
+		proxy.constant_linear_velocity = Vector2(float(hint.velocity_mm_s)*PIXELS_PER_METER/1000.0,0)
+
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0
 	var right := ORIGIN_X * 2.0 + world_length
-	camera.position.x = right / 2.0 if right < half_width * 2.0 else clampf(character_root.position.x, half_width, right - half_width)
+	camera.position.x = right / 2.0 if right < half_width * 2.0 else clampf(character_root.position.x + visual_layer.position.x, half_width, right - half_width)
 	_update_tiles()
 	queue_redraw()
 	ruler.queue_redraw()

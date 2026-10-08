@@ -113,22 +113,20 @@ from the validated `world_rules.engage_ms` value.
 Confirmed server motion remains the only gameplay authority. The local owner is a
 Godot `CharacterBody2D` predicted at 60 Hz from the same complete semantic control
 state sent to Game. Its bounded history retains at most 40 physics intervals and 2 s,
-including intervals under an acknowledged held control. A snapshot anchors the
-logical prediction tick; each local physics step advances it once. Motion samples
-discard intervals through `simulation_tick`, rebase position and velocity, and
-replay later intervals in order. `last_applied_control_seq` remains a separate
-network fence; prediction never allocates a speculative wire sequence. Short
-coalesced states occupy only their actual local intervals. Correction/contact
-comparison uses the corresponding timeline state, and diagnostics measure correction
-of the reconciled present. Corrections up to 250 mm blend
-the visual child over 100 ms. Contact disagreement and larger corrections rebase
-immediately. Godot physics interpolation is enabled for the owner; initial and
-authoritative discontinuity rebases reset interpolation. World-edge collision
-uses native static bodies. Server contact remains decisive when the client could
-not predict a peer collision. Unknown outcomes fence prediction and never replay
-old-session controls. History overflow stops local prediction, clears held drive,
-and requests a fresh authoritative snapshot. The client exposes bounded correction
-and history metrics for acceptance.
+including intervals under an acknowledged held control. Local `local_ordinal`
+starts at zero on each snapshot, independently of the server clock. An actually
+sent control records its first predicted ordinal. Server-owned `control_started_tick`
+names the first physics interval applying that sequence. Only their explicit
+relative mapping retires history; server tick equality never does. Older held
+samples cannot confirm a pending release. Contacts and discontinuities remain
+authoritative, and unknown outcomes fence prediction. Both history and the control
+ledger are bounded at 40 entries; history expires after 2 seconds.
+Camera follows presentation. Gait consumes integrated motion separately from
+correction transforms, with a deterministic 50-ms stop debounce. <=2-mm native
+numerical residues do not restart a visual blend on each sample. Native
+`StaticBody2D` prediction-only peers use authoritative velocity hints capped at
+100 ms / 250 mm; after 200 ms without a sample they stop colliding. Leave,
+suspension and scope changes fence this state. No client collision becomes authority.
 
 Remote characters use an eight-sample timeline on the server's 60-Hz
 `simulation_tick`, rendered 100 ms behind the latest sample. Only authoritative
@@ -144,7 +142,7 @@ driven by rendered displacement and authoritative facing; it does not infer faci
 from movement or treat remote drive as known. Motion frames include a bounded
 server-computed peer-contact velocity response with response-time facing, tick and
 peer IDs, retained until publication. It carries no animation state. Yuna's prepared
-rightward `stumble_right` reaction plays only for an actual sufficiently strong
+rightward `stumble_right2` reaction plays only for an actual sufficiently strong
 server contact response from behind; it remains cosmetic and cannot feed back into
 physics.
 

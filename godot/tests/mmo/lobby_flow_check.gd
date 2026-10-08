@@ -12,6 +12,8 @@ var failed := false
 var shell: Node
 var remote_idle_results: Array = []
 var remote_onset_results: Array = []
+var contact_results: Dictionary = {}
+var owner_ux_results: Array = []
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -137,6 +139,8 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	check(client.world_replica.local_player().motion.position_mm == owner_tap_x
 		and client.world_replica.view().players[remote_id].motion.position_mm == remote_tap_x,
 		side + " short tap creates no phantom movement")
+	mark(prefix + "-tap-observed%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-tap-observed%d" % other_role)),side+" both peers observed stationary tap"): return false
 	await screenshot("short-tap-" + side)
 	client.set_control(0, direction)
 	if not await wait_until(func(): return client.world_replica.local_player().motion.facing == direction,
@@ -169,9 +173,19 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var remote_sample_usec := -1
 	var remote_onset_usec := -1
 	client.set_control(direction, direction)
+	var owner_previous: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
+	var max_reverse_mm := 0.0
+	var negative_steps := 0
+	var ux_trace: Array = []
 	var movement_deadline := Time.get_ticks_msec() + 5000
-	while direction * (int(client.world_replica.local_player().motion.get("position_mm", start_x)) - start_x) < 400 \
-		and Time.get_ticks_msec() < movement_deadline:
+	while Time.get_ticks_usec()-start_usec<1000000 and Time.get_ticks_msec()<movement_deadline:
+		var owner_x: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
+		var signed_mm := direction*(owner_x-owner_previous)*125.0
+		if ux_trace.size()<1500: ux_trace.append(world.platform.prediction_diagnostics().merged({"signed_delta_mm":signed_mm}))
+		if signed_mm < -0.1:
+			negative_steps+=1
+			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
+		owner_previous=owner_x
 		if remote_sample_usec < 0 and renderer.last_motion_sample_received_usec >= start_usec:
 			remote_sample_usec = renderer.last_motion_sample_received_usec
 		if remote_sample_usec >= 0 and remote_onset_usec < 0 and absf(renderer.visual_x - initial_remote_x) >= 0.001:
@@ -187,6 +201,21 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 		check(onset_ms <= 117.0, side + " remote onset meets 100 ms buffer + render budget")
 		remote_onset_results.append({"side": side, "sample_to_onset_ms": onset_ms})
 	client.set_control(0, direction)
+	var release_deadline := Time.get_ticks_msec()+1000
+	while Time.get_ticks_msec()<release_deadline:
+		var owner_x: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
+		var signed_mm := direction*(owner_x-owner_previous)*125.0
+		if ux_trace.size()<1500: ux_trace.append(world.platform.prediction_diagnostics().merged({"signed_delta_mm":signed_mm}))
+		if signed_mm < -0.1:
+			negative_steps+=1
+			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
+		owner_previous=owner_x
+		await process_frame
+	var trace_file := FileAccess.open(output.path_join("owner-%d-%s.json" % [role,side]),FileAccess.WRITE)
+	trace_file.store_string(JSON.stringify(ux_trace))
+	trace_file.close()
+	owner_ux_results.append({"side":side,"reverse_steps":negative_steps,"max_reverse_mm":max_reverse_mm})
+	check(negative_steps==0,side+" loopback owner hold1s/release signed render monotonic")
 	if not await wait_until(func(): return client._server_input.drive == 0 and client.state == "READY" and client.world_replica.local_player().motion.velocity_mm_s == 0, side + " acknowledged stop"): return false
 	var final_x: int = client.world_replica.local_player().motion.position_mm
 	var marker_path := sync.path_join(prefix + "-stop%d" % role)
@@ -212,6 +241,64 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	remote_idle_results.append({"side": side, "remote_model": renderer.sprite.get_meta("character_model_id"), "animation": String(renderer.sprite.animation), "first_frame": first_frame, "next_frame": renderer.sprite.frame, "confirmed_x": peer_x, "rendered_x": renderer.visual_x, "target_x": renderer.target_x, "flip_h": renderer.sprite.flip_h, "visual_origin": [renderer.sprite.position.x, renderer.sprite.position.y], "display_backend": DisplayServer.get_name()})
 	mark(prefix + "-observed%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-observed%d" % other_role)), side + " both windows observed idle"): return false
+	return true
+
+func verify_peer_push(world: Node, remote_id: String) -> bool:
+	client.set_control(0,1)
+	if not await wait_until(func(): return client._server_input.drive==0 and client.state=="READY" \
+		and client.world_replica.local_player().motion.velocity_mm_s==0,"push stationary right-facing baseline"): return false
+	mark("push-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-ready%d" % (3-role))),"both push baselines ready"): return false
+	var yuna_id: String = client.player_id if role==2 else remote_id
+	var renderer: Node = world.platform if role==2 else world.platform.remote_players[remote_id]
+	var gait: RefCounted = renderer._gait if role==2 else renderer.gait
+	var reaction_starts := 0
+	var response_tick := 0
+	var response_delta := 0
+	var contact_at := -1
+	var reverse_after_contact := 0
+	var max_reverse_mm := 0.0
+	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
+	var reaction_was_playing := false
+	if role==1: client.set_control(1,1)
+	var deadline := Time.get_ticks_msec()+8000
+	while Time.get_ticks_msec()<deadline:
+		var frame_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
+		if int(frame_sample.get("contact_delta_velocity_mm_s",0))>=300:
+			response_tick=int(frame_sample.contact_response_tick)
+			response_delta=int(frame_sample.contact_delta_velocity_mm_s)
+		if client.world_replica.local_player().contacts.has(remote_id) and contact_at<0:
+			contact_at=Time.get_ticks_msec()
+		var playing: bool = renderer.sprite.animation==&"stumble_right2" and renderer.sprite.is_playing()
+		if playing and not reaction_was_playing: reaction_starts+=1
+		reaction_was_playing=playing
+		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
+		var signed_mm := (rendered-before)*125.0
+		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < -0.1:
+			reverse_after_contact+=1
+			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
+		before=rendered
+		if contact_at>=0 and Time.get_ticks_msec()-contact_at>1500: break
+		await process_frame
+	if role==1: client.set_control(0,1)
+	check(contact_at>=0,"real bodies enter authoritative peer contact")
+	check(response_delta>=300 and response_tick>0,"public frame carries nonzero server peer response")
+	check(reaction_starts==1,"Yuna owner and observer each start intended eight-frame reaction once")
+	check(gait.last_contact_response_tick>=response_tick,"presentation consumes physical response tick")
+	check(reverse_after_contact==0,"sustained peer push has no periodic owner snap back")
+	mark("push-stopped%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
+	if not await wait_until(func(): return client.world_replica.local_player().motion.velocity_mm_s==0 \
+		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
+	contact_results={"response_tick":response_tick,"response_delta_mm_s":response_delta,
+		"reaction_starts":reaction_starts,"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
+	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
+	report.store_string(JSON.stringify(contact_results))
+	report.close()
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-result%d" % (3-role))),"peer push report ready"): return false
+	var other: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(sync.path_join("push-result%d" % (3-role))))
+	check(other.response_tick==response_tick,"owner and observer reaction share the same causal server tick")
+	await screenshot("real-peer-push")
 	return true
 
 func _run() -> void:
@@ -340,6 +427,7 @@ func _run() -> void:
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("observed%d" % (3-role))), "peer observations complete"): quit(1); return
 	for direction in [-1, 1]:
 		if not await verify_remote_idle(world, remote_id, direction): quit(1); return
+	if not await verify_peer_push(world,remote_id): quit(1); return
 	world.input_adapter.set_physics_process(false)
 	var before: int = client.world_replica.local_player().motion.position_mm
 	check(client.set_control(1, 1), "held input sent")
@@ -379,5 +467,5 @@ func _run() -> void:
 	check(pre.state == "LOGIN" and pre.account_id == "" and client.session_id == "" and pre._binding.is_empty(), "account logout clears all authority")
 	print("LOBBY09_RESULT ", JSON.stringify({"role": role, "checks": checks, "passed": not failed,
 		"display_backend": DisplayServer.get_name(), "remote_idle": remote_idle_results,
-		"remote_onset": remote_onset_results}))
+		"remote_onset": remote_onset_results,"contact":contact_results,"owner_ux":owner_ux_results}))
 	quit(1 if failed else 0)

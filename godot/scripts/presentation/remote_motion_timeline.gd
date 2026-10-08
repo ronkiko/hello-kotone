@@ -168,6 +168,17 @@ func sample_at(now_usec: int) -> Dictionary:
 	}
 	return _with_contact_response(state, render_tick)
 
+func prediction_hint(now_usec: int, lead_ticks: float) -> Dictionary:
+	# Separate from delayed rendering: bounded physical hints, never peer intent.
+	if _samples.is_empty(): return {}
+	var latest: Dictionary = _samples.back()
+	if now_usec - int(latest.received_usec) > 200000: return {}
+	var ticks := clampf(lead_ticks, 0.0, MAX_EXTRAPOLATION_TICKS)
+	var distance := clampf(float(latest.velocity_mm_s) * ticks / SERVER_TICK_HZ,
+		-MAX_EXTRAPOLATION_MM, MAX_EXTRAPOLATION_MM)
+	return {"position_mm":float(latest.position_mm)+distance,
+		"velocity_mm_s":int(latest.velocity_mm_s),"contacts":latest.contacts.duplicate()}
+
 func metrics() -> Dictionary:
 	var result := _metrics.duplicate(true)
 	result["sample_count"] = _samples.size()

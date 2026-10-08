@@ -6,6 +6,7 @@ signal fault(info: Dictionary)
 signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
 signal control_accepted(control_seq: int)
+signal control_sent(control: Dictionary)
 signal input_rejected(code: String)
 signal world_ready
 signal disconnected
@@ -224,6 +225,7 @@ func _process(_delta: float) -> void:
 		_fail("WRITE_FAILED")
 	else:
 		_last_request_at = now
+		if _pending.op == "control_set": control_sent.emit(_pending.payload.duplicate())
 
 func _on_frame(frame: PackedByteArray) -> void:
 	var message := Protocol.decode(frame)

@@ -155,6 +155,7 @@ func apply_event(value: Dictionary) -> bool:
 			motion.velocity_mm_s = sample.velocity_mm_s
 			motion.facing = sample.facing
 			motion.last_applied_control_seq = sample.last_applied_control_seq
+			motion.control_started_tick = sample.control_started_tick
 			motion.simulation_tick = value.data.simulation_tick
 			player.motion = motion
 			player.contacts = sample.contacts.duplicate()

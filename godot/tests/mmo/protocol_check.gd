@@ -58,7 +58,7 @@ func _initialize() -> void:
 	partial.request_id = null
 	check(not Protocol.response(partial), "partial correlation rejected")
 	var frame_player := {"player_id":"p1", "position_mm":1000, "velocity_mm_s":0, "facing":1,
-		"last_applied_control_seq":1, "contacts":[], "contact_delta_velocity_mm_s":0,
+		"last_applied_control_seq":1,"control_started_tick":0, "contacts":[], "contact_delta_velocity_mm_s":0,
 		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[]}
 	check(Protocol.motion_frame_player(frame_player, 4), "empty physical response is explicit and valid")
 	var response := frame_player.duplicate(true)

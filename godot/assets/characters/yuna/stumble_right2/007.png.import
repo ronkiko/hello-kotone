@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bo8il2ef36s47"
-path="res://.godot/imported/004.png-ebebff278a5f120994881f7e1e57acff.ctex"
+uid="uid://bkmk5mq870nhs"
+path="res://.godot/imported/007.png-ec039ede1f8e0d45e76d4d8117321614.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/yuna/stumble_right/004.png"
-dest_files=["res://.godot/imported/004.png-ebebff278a5f120994881f7e1e57acff.ctex"]
+source_file="res://assets/characters/yuna/stumble_right2/007.png"
+dest_files=["res://.godot/imported/007.png-ec039ede1f8e0d45e76d4d8117321614.ctex"]
 
 [params]
 

@@ -46,17 +46,18 @@ static func endpoint(value: Variant) -> bool:
 		and matches(value.host, "^[A-Za-z0-9.:-]{1,253}$") and integer(value.port, 1, 65535)
 
 static func motion(value: Variant) -> bool:
-	return fields(value, ["position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "simulation_tick"]) \
+	return fields(value, ["position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "simulation_tick", "control_started_tick"]) \
 		and integer(value.position_mm, -1000000000, 1000000000) and integer(value.velocity_mm_s, -50000, 50000) \
 		and value.facing in [-1, 1] and integer(value.facing, -1, 1) \
-		and integer(value.last_applied_control_seq) and integer(value.simulation_tick)
+		and integer(value.last_applied_control_seq) and integer(value.simulation_tick) \
+		and integer(value.control_started_tick, 0, int(value.simulation_tick))
 
 static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
-	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "contacts", \
+	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "control_started_tick", "contacts", \
 		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts"]) \
 		or not token(value.player_id) or not integer(value.position_mm, -1000000000, 1000000000) \
 		or not integer(value.velocity_mm_s, -50000, 50000) or not integer(value.facing, -1, 1) or value.facing not in [-1, 1] \
-		or not integer(value.last_applied_control_seq) or not value.contacts is Array or value.contacts.size() > 65 \
+		or not integer(value.last_applied_control_seq) or not integer(value.control_started_tick, 0, frame_tick) or not value.contacts is Array or value.contacts.size() > 65 \
 		or not integer(value.contact_delta_velocity_mm_s, -100000, 100000) \
 		or not integer(value.contact_response_facing, -1, 1) \
 		or not integer(value.contact_response_tick, 0, frame_tick) \

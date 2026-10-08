@@ -38,7 +38,18 @@ func run() -> void:
 	var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
 		"contact_response_tick":5,"contact_response_contacts":["p2"]}
 	check(gait.try_contact_reaction(sprite, "yuna", push)
-		and sprite.animation == &"stumble_right" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
+		and sprite.animation == &"stumble_right2" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
+	check(not gait.try_contact_reaction(sprite,"yuna",push),"same physical response tick cannot replay reaction")
+	for no_response in [{"contacts":["p2"]},{"contacts":["wall_max"]},{"velocity_mm_s":3000}]:
+		check(not gait.try_contact_reaction(sprite,"yuna",no_response),"touch wall or motor without server response never stumbles")
+	check(sprite.sprite_frames.get_frame_count(&"stumble_right2")==8 and not sprite.sprite_frames.get_animation_loop(&"stumble_right2"),"intended reaction has eight non-looping authored frames")
+	check(not sprite.sprite_frames.has_animation(&"stumble_right"),"superseded reaction removed from shipped resource")
+	gait.reset(sprite,1)
+	gait.update(sprite,0,0.4,1,1.0/60.0)
+	gait.update(sprite,0,0,1,1.0/60.0)
+	check(gait.walking and sprite.animation==&"walk_right","one zero-displacement render interval cannot flicker idle")
+	gait.update(sprite,0,0,1,0.05)
+	check(not gait.walking and sprite.animation==&"idle_right","bounded50ms debounce settles stop")
 	check(Appearance.install(sprite, kotone), "Kotone installed")
 	check(sprite.animation == &"idle_right" and sprite.sprite_frames.get_frame_count(&"idle_right") == 6, "model switch installs native package")
 	var options := {"signal_id": ["steady", "pulse"]}

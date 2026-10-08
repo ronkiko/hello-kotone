@@ -27,7 +27,7 @@ func run() -> void:
 	for model in ["kotone", "yuna"]:
 		var definition := {"game_card_id":"hello-kotone","realm_id":"local","character_id":"p1","display_name":"local","appearance_schema_version":2,"appearance_payload":payload(model)}
 		# Current Protocol.character includes the durable definition shape used by v7.
-		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"simulation_tick":0},"contacts":[],"character":definition}
+		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":definition}
 		var remote := player.duplicate(true)
 		remote.player_id = "p2"
 		remote.character.character_id = "p2"
@@ -79,9 +79,9 @@ func run() -> void:
 			"contact_response_tick":7,"contact_response_contacts":["p2"]}
 		var reaction_started: bool = push_gait.try_contact_reaction(own, model, push)
 		if model == "yuna":
-			check(reaction_started and own.animation == &"stumble_right" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
+			check(reaction_started and own.animation == &"stumble_right2" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
 			push_gait.update(own, 0, 4, 1, .1)
-			check(own.animation == &"stumble_right", model + " reaction holds over gait until SpriteFrames completes it")
+			check(own.animation == &"stumble_right2", model + " reaction holds over gait until SpriteFrames completes it")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
 	# Direct helpers are total on malformed resources; package loading rejects them.
