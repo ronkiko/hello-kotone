@@ -52,8 +52,14 @@ func project(player: Dictionary, confirmed_pixel: float, scope: String, received
 		gait.reset(sprite, int(motion.get("facing", 1)))
 	identity.position.y = -Appearance.display_height_px(payload.character_model_id) - 18
 	gait.configure(float(top_speed_mm_s) * 8.0 / 1000.0)
-	if update_result in ["seeded", "reset"]:
+	if update_result == "seeded":
 		gait.reset(sprite, int(motion.get("facing", 1)))
+	elif update_result == "reset":
+		# Position barriers do not retire pending/consumed causal response facts.
+		var consumed_tick := gait.last_contact_response_tick
+		if sprite.animation != GaitAnimator.PUSH_REACTION or not sprite.is_playing():
+			gait.reset(sprite, int(motion.get("facing", 1)))
+		gait.last_contact_response_tick = consumed_tick
 
 func render_at(pixel_x: float, motion: Dictionary, delta: float) -> void:
 	var before_render_x := position.x

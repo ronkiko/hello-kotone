@@ -61,6 +61,22 @@ func _initialize() -> void:
 		and at_response.contact_response_contacts == ["p2"],
 		"contact response is presented once its server tick enters the delayed cursor")
 
+	var rebased := Timeline.new()
+	rebased.push_sample("e1|city/apartment|1", motion(9, 1000, 0), 150000, 4200)
+	rebased.push_sample("e1|city/apartment|1", motion(12, 1000, 8400, ["p2"], 1, 8400, 1, 12, ["p2"]), 200000, 4200)
+	check(rebased.sample_at(200000).contact_response_tick == 0, "received response waits for delayed server cursor")
+	check(rebased.push_sample("e1|city/apartment|1", motion(15, 1400, 7800), 250000, 4200) == "reset", "separation rebases position before delayed contact reaction")
+	check(rebased.sample_at(250000).contact_response_tick == 0, "rebase cannot present future causal fact")
+	check(rebased.sample_at(300000).contact_response_tick == 12, "received response survives contact separation reset")
+	check(rebased.sample_at(300000).contact_delta_velocity_mm_s == 8400, "mass-aware physical response retained intact")
+	rebased.push_sample("e1|city/apartment|1", motion(18, 9999, 0), 300000, 4200)
+	check(rebased.sample_at(350000).contact_response_tick == 12, "same-scope discontinuity retains authoritative response")
+	for tick in range(21, 81, 3):
+		rebased.push_sample("e1|city/apartment|1", motion(tick, 10000, 0, [], 1, 8400, 1, tick, ["p2"]), tick*1000000/60, 4200)
+	check(rebased._responses.size() == 8 and rebased.sample_count() <= 8, "causal and motion rings independently bounded")
+	rebased.push_sample("e2|city/apartment|1", motion(0, 2000, 0), 1500000, 4200)
+	check(rebased._responses.is_empty() and rebased.sample_at(1600000).contact_response_tick == 0, "fresh scope clears pending responses")
+
 	var stale := Timeline.new()
 	stale.push_sample("e1|city/apartment|1", motion(0, 0, 1000), 0, 1000)
 	var stale_state: Dictionary = stale.sample_at(250000)

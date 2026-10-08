@@ -12,6 +12,9 @@ const SNAP_CORRECTION_MM := 250.0
 
 var _scope := ""
 var _samples: Array[Dictionary] = []
+# Causal facts outlive positional contact/discontinuity rebases within one scope.
+var _responses: Array[Dictionary] = []
+var _latest_response_tick := 0
 var _last_render_tick := -1.0
 var _metrics := {
 	"accepted": 0,
@@ -28,6 +31,8 @@ var _metrics := {
 func reset() -> void:
 	_scope = ""
 	_samples.clear()
+	_responses.clear()
+	_latest_response_tick = 0
 	_last_render_tick = -1.0
 
 func sample_count() -> int:
@@ -186,6 +191,13 @@ func metrics() -> Dictionary:
 	return result
 
 func _append(sample: Dictionary) -> void:
+	if int(sample.contact_response_tick) > _latest_response_tick:
+		_latest_response_tick = int(sample.contact_response_tick)
+		_responses.append({"contact_response_tick":_latest_response_tick,
+			"contact_delta_velocity_mm_s":int(sample.contact_delta_velocity_mm_s),
+			"contact_response_facing":int(sample.contact_response_facing),
+			"contact_response_contacts":sample.contact_response_contacts.duplicate()})
+		while _responses.size() > MAX_SAMPLES: _responses.pop_front()
 	_samples.append(sample)
 	while _samples.size() > MAX_SAMPLES:
 		_samples.pop_front()
@@ -205,7 +217,7 @@ func _state(sample: Dictionary, contact_barrier: bool, extrapolated: bool) -> Di
 func _with_contact_response(state: Dictionary, render_tick: float) -> Dictionary:
 	var response_tick := -1
 	var response: Dictionary = {}
-	for sample in _samples:
+	for sample in _responses:
 		var candidate_tick := int(sample.contact_response_tick)
 		if int(sample.contact_delta_velocity_mm_s) == 0 or float(candidate_tick) > render_tick \
 			or candidate_tick <= response_tick:

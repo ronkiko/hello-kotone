@@ -51,6 +51,19 @@ func run() -> void:
 		var expected_height := Appearance.display_height_px(model)
 		check(is_equal_approx(platform.local_label.position.y, FLOOR_Y - expected_height - 18), model + " local label follows metric height")
 		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
+		if model == "yuna":
+			var remote_node: Node = platform.remote_players.p2
+			var physical_response := {"contact_delta_velocity_mm_s":8400,"contact_response_tick":12,"contact_response_facing":1,"contact_response_contacts":["p1"]}
+			check(remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "remote starts received mass-aware reaction")
+			var contact_player := remote.duplicate(true)
+			contact_player.motion.simulation_tick = 15
+			contact_player.contacts = ["p1"]
+			remote_node.project(contact_player,remote_node.position.x,"e1|city/apartment|1",50000,4200)
+			check(remote_node.gait.last_contact_response_tick == 12 and other.animation == Gait.PUSH_REACTION, "position rebase preserves consumed event and playing reaction")
+			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
+			remote_node.set_suspended(true)
+			check(remote_node.gait.last_contact_response_tick == 0 and remote_node.timeline._responses.is_empty(), "visit suspension clears causal response scope")
+			remote_node.set_suspended(false)
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
 		gait.configure(24)
