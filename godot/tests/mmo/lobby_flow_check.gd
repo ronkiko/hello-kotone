@@ -286,7 +286,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"real bodies enter authoritative peer contact")
-	check(strongest_response>=6000,"standard Yuna push response reaches at least twice 3000-mm/s walk speed")
+	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
 	check(response_ticks.size()>=2,"held push produces later distinct knockback after physical separation and re-contact")
 	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
 	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
