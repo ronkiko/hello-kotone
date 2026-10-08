@@ -82,6 +82,15 @@ func run() -> void:
 			check(reaction_started and own.animation == &"stumble_right2" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
 			push_gait.update(own, 0, 4, 1, .1)
 			check(own.animation == &"stumble_right2", model + " reaction holds over gait until SpriteFrames completes it")
+			own.set_frame_and_progress(4, 0.5)
+			var second_push := {"contact_delta_velocity_mm_s":6000,"contact_response_facing":1,
+				"contact_response_tick":8,"contact_response_contacts":["p2"]}
+			check(push_gait.try_contact_reaction(own, model, second_push)
+				and own.animation == &"stumble_right2" and own.frame == 0
+				and push_gait.last_contact_response_tick == 8,
+				model + " later authoritative knockback restarts reaction from frame zero")
+			check(not push_gait.try_contact_reaction(own, model, second_push),
+				model + " duplicate response tick cannot restart reaction twice")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
 	# Direct helpers are total on malformed resources; package loading rejects them.

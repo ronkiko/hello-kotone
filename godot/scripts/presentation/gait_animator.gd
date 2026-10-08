@@ -33,17 +33,21 @@ func try_contact_reaction(sprite: AnimatedSprite2D, character_model_id: String, 
 	if response_tick <= last_contact_response_tick or delta_velocity < MIN_PUSH_DELTA_MM_S \
 		or response_facing != 1 or not contacts is Array or contacts.is_empty():
 		return false
-	last_contact_response_tick = response_tick
 	if character_model_id != "yuna" or sprite == null or sprite.sprite_frames == null \
 		or not sprite.sprite_frames.has_animation(PUSH_REACTION) \
 		or sprite.sprite_frames.get_frame_count(PUSH_REACTION) == 0:
 		return false
-	if sprite.animation == PUSH_REACTION and sprite.is_playing():
-		return false
+	# Every distinct authoritative knockback tick is a distinct presentation event.
+	# A later impact may restart the non-looping reaction even if the previous one
+	# has not quite finished; duplicate delivery of the same server tick stays inert.
+	last_contact_response_tick = response_tick
 	walking = false
 	stop_elapsed = 0.0
 	idle_elapsed = 0.0
-	sprite.play(PUSH_REACTION)
+	sprite.stop()
+	sprite.animation = PUSH_REACTION
+	sprite.set_frame_and_progress(0, 0.0)
+	sprite.play()
 	return true
 
 func update(sprite: AnimatedSprite2D, before_render_x: float, after_render_x: float,

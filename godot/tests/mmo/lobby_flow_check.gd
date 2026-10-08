@@ -252,52 +252,58 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var yuna_id: String = client.player_id if role==2 else remote_id
 	var renderer: Node = world.platform if role==2 else world.platform.remote_players[remote_id]
 	var gait: RefCounted = renderer._gait if role==2 else renderer.gait
-	var reaction_starts := 0
-	var response_tick := 0
-	var response_delta := 0
+	var response_ticks: Array[int] = []
+	var reaction_ticks: Array[int] = []
+	var strongest_response := 0
 	var contact_at := -1
 	var reverse_after_contact := 0
 	var max_reverse_mm := 0.0
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
-	var reaction_was_playing := false
 	if role==1: client.set_control(1,1)
-	var deadline := Time.get_ticks_msec()+8000
+	var deadline := Time.get_ticks_msec()+10000
 	while Time.get_ticks_msec()<deadline:
 		var frame_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
-		if int(frame_sample.get("contact_delta_velocity_mm_s",0))>=300:
-			response_tick=int(frame_sample.contact_response_tick)
-			response_delta=int(frame_sample.contact_delta_velocity_mm_s)
+		var response_tick := int(frame_sample.get("contact_response_tick",0))
+		var response_delta := int(frame_sample.get("contact_delta_velocity_mm_s",0))
+		if response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
+			response_ticks.append(response_tick)
+			strongest_response=maxi(strongest_response,response_delta)
+		var consumed_tick := int(gait.last_contact_response_tick)
+		if consumed_tick>0 and not reaction_ticks.has(consumed_tick):
+			reaction_ticks.append(consumed_tick)
 		if client.world_replica.local_player().contacts.has(remote_id) and contact_at<0:
 			contact_at=Time.get_ticks_msec()
-		var playing: bool = renderer.sprite.animation==&"stumble_right2" and renderer.sprite.is_playing()
-		if playing and not reaction_was_playing: reaction_starts+=1
-		reaction_was_playing=playing
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 		var signed_mm := (rendered-before)*125.0
 		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < -0.1:
 			reverse_after_contact+=1
 			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
 		before=rendered
-		if contact_at>=0 and Time.get_ticks_msec()-contact_at>1500: break
+		# Keep the pusher held long enough for the 2x target knockback to separate
+		# the bodies, brake, and create at least one later physical re-contact.
+		if contact_at>=0 and Time.get_ticks_msec()-contact_at>2500 and response_ticks.size()>=2:
+			break
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"real bodies enter authoritative peer contact")
-	check(response_delta>=300 and response_tick>0,"public frame carries nonzero server peer response")
-	check(reaction_starts==1,"Yuna owner and observer each start intended eight-frame reaction once")
-	check(gait.last_contact_response_tick>=response_tick,"presentation consumes physical response tick")
-	check(reverse_after_contact==0,"sustained peer push has no periodic owner snap back")
+	check(strongest_response>=6000,"standard Yuna push response reaches at least twice 3000-mm/s walk speed")
+	check(response_ticks.size()>=2,"held push produces later distinct knockback after physical separation and re-contact")
+	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
+	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
+	check(reverse_after_contact==0,"repeated peer knockback has no periodic owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
 	if not await wait_until(func(): return client.world_replica.local_player().motion.velocity_mm_s==0 \
 		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
-	contact_results={"response_tick":response_tick,"response_delta_mm_s":response_delta,
-		"reaction_starts":reaction_starts,"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
+	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
+		"strongest_response_delta_mm_s":strongest_response,
+		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
 	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
 	report.store_string(JSON.stringify(contact_results))
 	report.close()
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-result%d" % (3-role))),"peer push report ready"): return false
 	var other: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(sync.path_join("push-result%d" % (3-role))))
-	check(other.response_tick==response_tick,"owner and observer reaction share the same causal server tick")
+	check(other.response_ticks==response_ticks,"owner and observer share the same sequence of causal server knockback ticks")
 	await screenshot("real-peer-push")
 	return true
 
