@@ -89,14 +89,19 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 			and is_equal_approx(renderer.visual_x, renderer.target_x), side + " remote timeline settled before measurement"):
 		return false
 	client.set_control(0, direction)
-	if not await wait_until(func(): return client.world_replica.local_player().motion.facing == direction
-		and client.world_replica.local_player().motion.velocity_mm_s == 0, side + " stationary facing baseline"):
+	if not await wait_until(func():
+		var motion: Dictionary = client.world_replica.local_player().motion
+		return motion.facing == direction and motion.velocity_mm_s == 0,
+		side + " stationary facing baseline"):
 		return false
 	mark(prefix + "-baseline-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-baseline-ready%d" % other_role)), side + " both windows set facing baseline"):
 		return false
-	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("facing", 0) == direction
-		and renderer.sprite.animation == Appearance.idle_animation(direction), side + " baseline facing reaches remote presenter"):
+	if not await wait_until(func():
+		var motion: Dictionary = client.world_replica.view().players.get(remote_id, {}).get("motion", {})
+		return motion.get("facing", 0) == direction \
+			and renderer.sprite.animation == Appearance.idle_animation(direction),
+		side + " baseline facing reaches remote presenter"):
 		return false
 	var tap_facing := -direction
 	var owner_tap_x: int = client.world_replica.local_player().motion.position_mm
@@ -127,8 +132,11 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	mark(prefix + "-restore-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-restore-ready%d" % other_role)), side + " both windows restore facing"):
 		return false
-	if not await wait_until(func(): return client.world_replica.view().players.get(remote_id, {}).get("motion", {}).get("facing", 0) == direction
-		and renderer.sprite.animation == Appearance.idle_animation(direction), side + " restored facing reaches remote presenter"):
+	if not await wait_until(func():
+		var motion: Dictionary = client.world_replica.view().players.get(remote_id, {}).get("motion", {})
+		return motion.get("facing", 0) == direction \
+			and renderer.sprite.animation == Appearance.idle_animation(direction),
+		side + " restored facing reaches remote presenter"):
 		return false
 	mark(prefix + "-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join(prefix + "-ready%d" % other_role)), side + " both windows ready"): return false
