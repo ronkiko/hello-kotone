@@ -29,6 +29,15 @@
 [ext_resource type="Texture2D" path="res://assets/characters/yuna/walk_right/006.png" id="27_ihcf1"]
 [ext_resource type="Texture2D" path="res://assets/characters/yuna/walk_right/007.png" id="28_njsu6"]
 
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/000.png" id="29_sr20"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/001.png" id="30_sr21"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/002.png" id="31_sr22"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/003.png" id="32_sr23"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/004.png" id="33_sr24"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/005.png" id="34_sr25"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/006.png" id="35_sr26"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/007.png" id="36_sr27"]
+
 [resource]
 animations = [{
 "frames": [{
@@ -80,6 +89,35 @@ animations = [{
 }],
 "loop": 0,
 "name": &"stumble_right",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("29_sr20")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_sr21")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_sr22")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_sr23")
+}, {
+"duration": 1.0,
+"texture": ExtResource("33_sr24")
+}, {
+"duration": 1.0,
+"texture": ExtResource("34_sr25")
+}, {
+"duration": 1.0,
+"texture": ExtResource("35_sr26")
+}, {
+"duration": 1.0,
+"texture": ExtResource("36_sr27")
+}],
+"loop": 0,
+"name": &"stumble_right2",
 "speed": 10.0
 }, {
 "frames": [{
