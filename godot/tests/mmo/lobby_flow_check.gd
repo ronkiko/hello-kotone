@@ -261,6 +261,8 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var release_sent := false
 	var release_applied_at := -1
 	var repress_sent := false
+	var repress_applied := false
+	var responses_before_repress := -1
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 	if role==1: client.set_control(1,1)
 	var deadline := Time.get_ticks_msec()+12000
@@ -294,16 +296,23 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		if role==1 and release_applied_at>=0 and not repress_sent 			and Time.get_ticks_msec()-release_applied_at>=100:
 			client.set_control(1,1)
 			repress_sent=true
+		if role==1 and repress_sent and not repress_applied and client._server_input.drive==1:
+			repress_applied=true
+			responses_before_repress=response_ticks.size()
 			mark("push-repressed1")
-		if response_ticks.size()>=2 and (role!=1 or repress_sent):
+		if role!=1 and not repress_applied and FileAccess.file_exists(sync.path_join("push-repressed1")):
+			repress_applied=true
+			responses_before_repress=response_ticks.size()
+		if repress_applied and response_ticks.size()>responses_before_repress:
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"real bodies enter authoritative peer contact")
 	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
 	if role==1:
-		check(release_applied_at>=0 and repress_sent,"release is server-applied before repress")
-	check(response_ticks.size()>=2,"push release repress produces a later distinct physical knockback")
+		check(release_applied_at>=0 and repress_applied,"release and repress are both server-applied")
+	check(repress_applied and response_ticks.size()>responses_before_repress,
+		"push release repress produces a later distinct physical knockback")
 	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
 	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
 	check(reverse_after_contact==0,"repeated peer knockback has no periodic owner snap back")
@@ -313,7 +322,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
 	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
 		"strongest_response_delta_mm_s":strongest_response,
-		"release_applied_before_repress":release_applied_at>=0 and repress_sent if role==1 else true,
+		"release_applied_before_repress":((release_applied_at>=0 and repress_applied) if role==1 else repress_applied),
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
 	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
 	report.store_string(JSON.stringify(contact_results))
