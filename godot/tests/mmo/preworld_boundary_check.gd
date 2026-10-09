@@ -142,6 +142,17 @@ func run() -> void:
 		"clean Game disconnect drops stale authority and returns to fresh sign-in")
 	scope()
 	pre.state = "WORLD"
+	pre._game_fault({"code": "NOT_AUTHENTICATED", "outcome_unknown": false})
+	check(pre.state == "LOGIN" and pre.account_id.is_empty() and pre._binding.is_empty()
+		and pre.error.code == "REAUTH_REQUIRED",
+		"server restart session rejection drops stale world authority")
+	scope()
+	pre.state = "WORLD"
+	pre._game_fault({"code": "INVALID_HANDOFF", "outcome_unknown": false})
+	check(pre.state == "LOGIN" and pre.account_id.is_empty() and pre._binding.is_empty(),
+		"expired world handoff cannot strand the client on a dead failure page")
+	scope()
+	pre.state = "WORLD"
 	pre._game_fault({"code": "REQUEST_TIMEOUT", "outcome_unknown": true})
 	check(pre.state == "FAILED" and pre.error.phase == "Game" and pre.error.outcome_unknown,
 		"Game unknown outcome remains explicit and is never auto-replayed")
