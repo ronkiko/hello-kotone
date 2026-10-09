@@ -1,8 +1,9 @@
 # Login & Loading shell — v3.main.5.02
 
 `project.godot` starts `scenes/mmo/login.tscn`. Nickname defaults to `player1`;
-the local development Login address is `127.0.0.1:24000`. These are editable
-fields, not a second endpoint configuration hidden in code. Game is discovered
+the local development Login address is `127.0.0.1:23200`. These are editable
+fields. The default matches the canonical multi-realm `cluster` startup; standalone
+`stand.py` ports may be entered explicitly. Game is discovered
 from the validated Login response.
 
 Connect explicitly starts the existing MmoClient wire flow. Fields/Connect are
