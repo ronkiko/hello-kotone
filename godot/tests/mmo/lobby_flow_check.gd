@@ -293,7 +293,12 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 			release_sent=true
 		if role==1 and release_sent and release_applied_at<0 and client._server_input.drive==0:
 			release_applied_at=Time.get_ticks_msec()
-		if role==1 and release_applied_at>=0 and not repress_sent 			and Time.get_ticks_msec()-release_applied_at>=100:
+			mark("push-release-applied1")
+		if role!=1 and not release_sent and FileAccess.file_exists(sync.path_join("push-release-applied1")):
+			release_sent=true
+			responses_before_repress=response_ticks.size()
+			mark("push-release-seen2")
+		if role==1 and release_applied_at>=0 and not repress_sent 			and Time.get_ticks_msec()-release_applied_at>=100 			and FileAccess.file_exists(sync.path_join("push-release-seen2")):
 			client.set_control(1,1)
 			repress_sent=true
 		if role==1 and repress_sent and not repress_applied and client._server_input.drive==1:
@@ -302,7 +307,6 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 			mark("push-repressed1")
 		if role!=1 and not repress_applied and FileAccess.file_exists(sync.path_join("push-repressed1")):
 			repress_applied=true
-			responses_before_repress=response_ticks.size()
 		if repress_applied and response_ticks.size()>responses_before_repress:
 			break
 		await process_frame
