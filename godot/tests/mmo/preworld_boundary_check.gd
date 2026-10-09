@@ -46,6 +46,8 @@ func _initialize() -> void:
 func run() -> void:
 	pre = root.get_node("Preworld")
 	pre.set_process(false)
+	check(pre.login_endpoint == {"host":"127.0.0.1","port":23200},
+		"canonical local Godot login matches standard multi-realm cluster")
 	var real_peer: Node = pre._lobby
 	var peer := DelayedPeer.new()
 	root.add_child(peer)
