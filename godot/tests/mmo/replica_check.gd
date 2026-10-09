@@ -56,14 +56,15 @@ func _initialize() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 static func physics(model: String = "kotone") -> Dictionary:
-	return {"character_model_id":model,"physics_profile_revision":"hello_kotone_physics_v1",
-		"body":{"body_profile_id":model+"_body_v1","mass_g":70000 if model=="kotone" else 50000,
-		"collision_width_mm":400,"collision_height_mm":1700},
+	return {"character_model_id":model,"physics_profile_revision":"hello_kotone_physics_v2",
+		"body":{"body_profile_id":model+"_body_v2","mass_g":70000 if model=="kotone" else 50000,
+		"collision_width_mm":400 if model=="kotone" else 360,
+		"collision_height_mm":1720 if model=="kotone" else 1550},
 		"motor":{"motor_profile_id":model+"_motor_v1","drive_force_mN":560000,"brake_force_mN":560000,
 		"top_speed_mm_s":3000 if model=="kotone" else 4200,"contact_effort_ms":750}}
 
 static func binding(model: String = "kotone") -> Dictionary:
-	return {"physics_profile_revision":"hello_kotone_physics_v1", "body_profile_id":model+"_body_v1", "motor_profile_id":model+"_motor_v1"}
+	return {"physics_profile_revision":"hello_kotone_physics_v2", "body_profile_id":model+"_body_v2", "motor_profile_id":model+"_motor_v1"}
 
 static func rules() -> Dictionary:
 	return {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,
