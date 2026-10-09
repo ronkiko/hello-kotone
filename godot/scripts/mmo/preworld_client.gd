@@ -13,7 +13,7 @@ var roster := {}
 var catalog := {}
 var selection := {}
 var availability := {}
-var login_endpoint := {"host": "127.0.0.1", "port": 21060}
+var login_endpoint := {"host": "127.0.0.1", "port": 24000}
 var profile := "trusted_local_dev"
 var username := "dev1"
 var trusted_ca: X509Certificate
