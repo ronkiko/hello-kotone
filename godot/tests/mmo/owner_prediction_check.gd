@@ -161,12 +161,12 @@ func run() -> void:
 	platform.visual_layer.position.x = 0.12
 	platform._blend_remaining = DT
 	platform._blend_start_offset_x = 0.12 * (0.1 / DT)
-	var stopped_render := platform.character_root.position.x + platform.visual_layer.position.x
+	var stopped_render: float = platform.character_root.position.x + platform.visual_layer.position.x
 	platform._physics_process(DT)
 	check(is_equal_approx(platform.character_root.position.x + platform.visual_layer.position.x, stopped_render),
 		"stopped body defers presentation residue instead of reversing")
 	client._desired_input = {"drive":1,"facing":1}
-	var before_absorb := platform.character_root.position.x + platform.visual_layer.position.x
+	var before_absorb: float = platform.character_root.position.x + platform.visual_layer.position.x
 	platform._physics_process(DT)
 	check(platform.character_root.position.x + platform.visual_layer.position.x >= before_absorb - 0.000001
 		and absf(platform.visual_layer.position.x) < 0.12,
