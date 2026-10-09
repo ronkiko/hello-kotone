@@ -80,6 +80,16 @@ func mark(label: String) -> void:
 	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
 	file.store_string("ready")
 
+func mark_int(label: String, value: int) -> void:
+	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
+	file.store_string(str(value))
+
+func read_mark_int(label: String) -> int:
+	var path := sync.path_join(label)
+	if not FileAccess.file_exists(path):
+		return -1
+	return int(FileAccess.get_file_as_string(path))
+
 func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var side := "left" if direction < 0 else "right"
 	var prefix := "directional-" + side
@@ -259,10 +269,11 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var reverse_after_contact := 0
 	var max_reverse_mm := 0.0
 	var release_sent := false
-	var release_applied_at := -1
+	var release_seq := -1
+	var release_applied_tick := -1
 	var repress_sent := false
-	var repress_applied := false
-	var responses_before_repress := -1
+	var repress_seq := -1
+	var repress_applied_tick := -1
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 	if role==1: client.set_control(1,1)
 	var deadline := Time.get_ticks_msec()+12000
@@ -291,31 +302,33 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		if role==1 and response_ticks.size()>=1 and not release_sent:
 			client.set_control(0,1)
 			release_sent=true
-		if role==1 and release_sent and release_applied_at<0 and client._server_input.drive==0:
-			release_applied_at=Time.get_ticks_msec()
-			mark("push-release-applied1")
-		if role!=1 and not release_sent and FileAccess.file_exists(sync.path_join("push-release-applied1")):
-			release_sent=true
-			responses_before_repress=response_ticks.size()
+		if role==1 and release_sent and release_seq<0 and client._server_input.drive==0:
+			release_seq=client._server_input_seq
+		if role==1 and release_seq>=0 and release_applied_tick<0 			and int(client.world_replica.local_player().motion.last_applied_control_seq)>=release_seq:
+			release_applied_tick=int(client.world_replica.local_player().motion.simulation_tick)
+			mark_int("push-release-applied1",release_applied_tick)
+		if role!=1 and release_applied_tick<0 and FileAccess.file_exists(sync.path_join("push-release-applied1")):
+			release_applied_tick=read_mark_int("push-release-applied1")
 			mark("push-release-seen2")
-		if role==1 and release_applied_at>=0 and not repress_sent 			and Time.get_ticks_msec()-release_applied_at>=100 			and FileAccess.file_exists(sync.path_join("push-release-seen2")):
+		if role==1 and release_applied_tick>=0 and not repress_sent 			and FileAccess.file_exists(sync.path_join("push-release-seen2")):
 			client.set_control(1,1)
 			repress_sent=true
-		if role==1 and repress_sent and not repress_applied and client._server_input.drive==1:
-			repress_applied=true
-			responses_before_repress=response_ticks.size()
-			mark("push-repressed1")
-		if role!=1 and not repress_applied and FileAccess.file_exists(sync.path_join("push-repressed1")):
-			repress_applied=true
-		if repress_applied and response_ticks.size()>responses_before_repress:
+		if role==1 and repress_sent and repress_seq<0 and client._server_input.drive==1:
+			repress_seq=client._server_input_seq
+		if role==1 and repress_seq>=0 and repress_applied_tick<0 			and int(client.world_replica.local_player().motion.last_applied_control_seq)>=repress_seq:
+			repress_applied_tick=int(client.world_replica.local_player().motion.simulation_tick)
+			mark_int("push-repressed1",repress_applied_tick)
+		if role!=1 and repress_applied_tick<0 and FileAccess.file_exists(sync.path_join("push-repressed1")):
+			repress_applied_tick=read_mark_int("push-repressed1")
+		if repress_applied_tick>=0 and response_ticks.any(func(tick: int): return tick>repress_applied_tick):
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"real bodies enter authoritative peer contact")
 	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
-	if role==1:
-		check(release_applied_at>=0 and repress_applied,"release and repress are both server-applied")
-	check(repress_applied and response_ticks.size()>responses_before_repress,
+	check(release_applied_tick>=0 and repress_applied_tick>release_applied_tick,
+		"release and repress are both observed on authoritative applied-control boundaries")
+	check(response_ticks.any(func(tick: int): return tick>repress_applied_tick),
 		"push release repress produces a later distinct physical knockback")
 	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
 	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
@@ -326,7 +339,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
 	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
 		"strongest_response_delta_mm_s":strongest_response,
-		"release_applied_before_repress":((release_applied_at>=0 and repress_applied) if role==1 else repress_applied),
+		"release_applied_tick":release_applied_tick,"repress_applied_tick":repress_applied_tick,
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
 	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
 	report.store_string(JSON.stringify(contact_results))
