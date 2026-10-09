@@ -175,10 +175,11 @@ func run() -> void:
 	steps(20)
 	var owner_body: Dictionary = Fixtures.physics("kotone").body
 	var peer_body: Dictionary = Fixtures.physics("yuna").body
-	var contact_center := int(peer.motion.position_mm) - int(owner_body.collision_width_mm + peer_body.collision_width_mm) / 2
+	var contact_center := int(peer.motion.position_mm) - int((int(owner_body.collision_width_mm) + int(peer_body.collision_width_mm)) / 2)
 	check(platform._peer_proxies.has("p2") and platform._predicted_contacts.has("p2"),"native mixed-profile peer proxy predicts physical collision")
 	var proxy_shape: CollisionShape2D = platform._peer_proxies.p2.get_child(0)
-	check(proxy_shape.shape.size == Vector2(2.88,12.4) and proxy_shape.position == Vector2(0.0,-6.2),
+	check(is_equal_approx(proxy_shape.shape.size.x,2.88) and is_equal_approx(proxy_shape.shape.size.y,12.4)
+		and is_equal_approx(proxy_shape.position.x,0.0) and is_equal_approx(proxy_shape.position.y,-6.2),
 		"Yuna proxy uses her selected 360x1550-mm body")
 	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=contact_center+1,
 		"owner cannot predict through narrower Yuna collider")
