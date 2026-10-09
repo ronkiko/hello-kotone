@@ -79,10 +79,12 @@ func screenshot(label: String) -> void:
 func mark(label: String) -> void:
 	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
 	file.store_string("ready")
+	file.close()
 
 func mark_int(label: String, value: int) -> void:
 	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
 	file.store_string(str(value))
+	file.close()
 
 func read_mark_int(label: String) -> int:
 	var path := sync.path_join(label)
