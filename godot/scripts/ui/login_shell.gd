@@ -115,7 +115,12 @@ func _render() -> void:
 		status_label = _label("")
 	if not Preworld.error.is_empty():
 		var info: Dictionary = Preworld.error
-		status_label.text = "%s: %s" % [info.phase, ERRORS.get(info.code, "The request failed. Refresh or sign in again.")]
+		var phase := str(info.phase)
+		var code := str(info.code)
+		var detail := str(ERRORS.get(code, "The request failed. Refresh or sign in again."))
+		status_label.text = "%s: %s" % [phase, detail]
+		if OS.is_debug_build():
+			status_label.text = "%s [%s]: %s" % [phase, code, detail]
 		if info.get("outcome_unknown", false):
 			status_label.text += " Outcome unknown. Nothing will be repeated automatically."
 	else:
