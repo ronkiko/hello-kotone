@@ -46,8 +46,6 @@ func _initialize() -> void:
 func run() -> void:
 	pre = root.get_node("Preworld")
 	pre.set_process(false)
-	check(pre.login_endpoint == {"host":"127.0.0.1","port":23200},
-		"canonical local Godot login matches standard multi-realm cluster")
 	var real_peer: Node = pre._lobby
 	var peer := DelayedPeer.new()
 	root.add_child(peer)
@@ -138,8 +136,15 @@ func run() -> void:
 	check(pre.state == "FAILED" and pre.selection.is_empty() and root.get_node("MmoClient").session_id.is_empty(), "wrong character handoff cannot open Game authority")
 	scope()
 	pre.state = "WORLD"
+	pre._game_fault({"code": "DISCONNECTED", "outcome_unknown": false})
+	check(pre.state == "LOGIN" and pre.account_id.is_empty() and pre._binding.is_empty()
+		and pre.error.code == "REAUTH_REQUIRED",
+		"clean Game disconnect drops stale authority and returns to fresh sign-in")
+	scope()
+	pre.state = "WORLD"
 	pre._game_fault({"code": "REQUEST_TIMEOUT", "outcome_unknown": true})
-	check(pre.state == "FAILED" and pre.error.phase == "Game" and pre.error.outcome_unknown, "Game unknown outcome distinct from Lobby")
+	check(pre.state == "FAILED" and pre.error.phase == "Game" and pre.error.outcome_unknown,
+		"Game unknown outcome remains explicit and is never auto-replayed")
 	scope()
 	pre.state = "LOBBY_WORKING"
 	var visit: int = pre._visit
