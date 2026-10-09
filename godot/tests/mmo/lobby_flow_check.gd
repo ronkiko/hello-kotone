@@ -258,9 +258,12 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var contact_at := -1
 	var reverse_after_contact := 0
 	var max_reverse_mm := 0.0
+	var release_sent := false
+	var release_applied_at := -1
+	var repress_sent := false
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 	if role==1: client.set_control(1,1)
-	var deadline := Time.get_ticks_msec()+10000
+	var deadline := Time.get_ticks_msec()+12000
 	while Time.get_ticks_msec()<deadline:
 		var frame_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
 		var response_tick := int(frame_sample.get("contact_response_tick",0))
@@ -279,15 +282,28 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 			reverse_after_contact+=1
 			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
 		before=rendered
-		# Keep the pusher held long enough for the 2x target knockback to separate
-		# the bodies, brake, and create at least one later physical re-contact.
-		if contact_at>=0 and Time.get_ticks_msec()-contact_at>2500 and response_ticks.size()>=2:
+		# Exercise the actual player sequence: first impact -> applied release ->
+		# short release interval -> repress. Same-contact force transmission is
+		# covered by the server kernel; this TLS path proves a later real impact
+		# still reaches both owner and observer after the control cycle.
+		if role==1 and response_ticks.size()>=1 and not release_sent:
+			client.set_control(0,1)
+			release_sent=true
+		if role==1 and release_sent and release_applied_at<0 and client._server_input.drive==0:
+			release_applied_at=Time.get_ticks_msec()
+		if role==1 and release_applied_at>=0 and not repress_sent 			and Time.get_ticks_msec()-release_applied_at>=100:
+			client.set_control(1,1)
+			repress_sent=true
+			mark("push-repressed1")
+		if response_ticks.size()>=2 and (role!=1 or repress_sent):
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"real bodies enter authoritative peer contact")
 	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
-	check(response_ticks.size()>=2,"held push produces later distinct knockback after physical separation and re-contact")
+	if role==1:
+		check(release_applied_at>=0 and repress_sent,"release is server-applied before repress")
+	check(response_ticks.size()>=2,"push release repress produces a later distinct physical knockback")
 	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
 	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
 	check(reverse_after_contact==0,"repeated peer knockback has no periodic owner snap back")
@@ -297,6 +313,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
 	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
 		"strongest_response_delta_mm_s":strongest_response,
+		"release_applied_before_repress":release_applied_at>=0 and repress_sent if role==1 else true,
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
 	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
 	report.store_string(JSON.stringify(contact_results))
