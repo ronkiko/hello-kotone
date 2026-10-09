@@ -28,7 +28,8 @@ func _initialize() -> void:
 	check(owner.shape.size == before_size and owner.position == before_offset,
 		"visual transform cannot mutate collider geometry")
 	check(Collider.install(proxy,b,8.0),"second physical profile installs")
-	check(proxy.shape.size == Vector2(2.88,12.4) and proxy.position == Vector2(0.0,-6.2),
+	check(is_equal_approx(proxy.shape.size.x,2.88) and is_equal_approx(proxy.shape.size.y,12.4)
+		and is_equal_approx(proxy.position.x,0.0) and is_equal_approx(proxy.position.y,-6.2),
 		"different physical dimensions produce different native shape")
 	check(not Collider.install(proxy,{"collision_width_mm":0,"collision_height_mm":1550},8.0)
 		and proxy.disabled and proxy.shape == null,"invalid geometry fails closed")
