@@ -1,17 +1,19 @@
 # Login & Loading shell — v3.main.5.02
 
 `project.godot` starts `scenes/mmo/login.tscn`. Nickname defaults to `player1`;
-the local development Login address is `127.0.0.1:23200`. These are editable
-fields. The default matches the canonical multi-realm `cluster` startup; standalone
-`stand.py` ports may be entered explicitly. Game is discovered
+the local development Login address is `127.0.0.1:24000`. These are editable
+fields, not a second endpoint configuration hidden in code. Game is discovered
 from the validated Login response.
 
 Connect explicitly starts the existing MmoClient wire flow. Fields/Connect are
 disabled while connecting; Cancel closes the connection. Status text follows
 CONNECTING_LOGIN → AUTHORIZING → CONNECTING_GAME → ENTERING_WORLD → LOADING_MAP →
 LOADING_STATE → READY. No raw server messages, tickets or session IDs are displayed.
-Failures leave Connect enabled for a manual retry. Lost mutation replies show
-that the server outcome is unknown; the UI never retries automatically.
+Failures leave Connect enabled for a manual retry. A clean Game transport loss
+(for example, restarting the local stand while an old World window is open) drops
+the stale Game/Lobby authority and returns to fresh sign-in; it does not reuse the
+old handoff or replay gameplay requests. Lost/ambiguous operation replies remain
+explicit failures because their server outcome is unknown.
 
 Only `world_ready`, after validated map and state, schedules the World scene.
 The transition checks READY again before replacing the scene so that a late fault
