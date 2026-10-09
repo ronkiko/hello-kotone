@@ -1,7 +1,7 @@
 # Login & Loading shell — v3.main.5.02
 
 `project.godot` starts `scenes/mmo/login.tscn`. Nickname defaults to `player1`;
-the local development Login address is `127.0.0.1:21060`. These are editable
+the local development Login address is `127.0.0.1:24000`. These are editable
 fields, not a second endpoint configuration hidden in code. Game is discovered
 from the validated Login response.
 
