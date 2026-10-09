@@ -284,11 +284,14 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		if response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
 			response_ticks.append(response_tick)
 			strongest_response=maxi(strongest_response,response_delta)
+			# contact_response is emitted only by authoritative peer contact. The
+			# 20-Hz snapshot contact-membership sample may legitimately miss a short
+			# 60-Hz impact, so use the causal response fact for contact occurrence.
+			if contact_at<0:
+				contact_at=Time.get_ticks_msec()
 		var consumed_tick := int(gait.last_contact_response_tick)
 		if consumed_tick>0 and not reaction_ticks.has(consumed_tick):
 			reaction_ticks.append(consumed_tick)
-		if client.world_replica.local_player().contacts.has(remote_id) and contact_at<0:
-			contact_at=Time.get_ticks_msec()
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 		var signed_mm := (rendered-before)*125.0
 		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < -0.1:
@@ -320,11 +323,17 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 			mark_int("push-repressed1",repress_applied_tick)
 		if role!=1 and repress_applied_tick<0 and FileAccess.file_exists(sync.path_join("push-repressed1")):
 			repress_applied_tick=read_mark_int("push-repressed1")
-		if repress_applied_tick>=0 and response_ticks.any(func(tick: int): return tick>repress_applied_tick):
+		var later_response_tick := -1
+		for tick in response_ticks:
+			if tick>repress_applied_tick:
+				later_response_tick=maxi(later_response_tick,tick)
+		# Do not stop the observer window at network arrival. Remote presentation
+		# owns its interpolation delay and must consume that same causal tick first.
+		if later_response_tick>0 and reaction_ticks.has(later_response_tick):
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
-	check(contact_at>=0,"real bodies enter authoritative peer contact")
+	check(contact_at>=0,"authoritative peer contact produces a causal response")
 	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
 	check(release_applied_tick>=0 and repress_applied_tick>release_applied_tick,
 		"release and repress are both observed on authoritative applied-control boundaries")
