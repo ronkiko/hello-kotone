@@ -4,6 +4,7 @@ const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
+const CharacterCollider = preload("res://scripts/presentation/character_collider.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 const PIXELS_PER_METER := 8.0
 const ORIGIN_X := 32.0
@@ -202,12 +203,7 @@ func prediction_diagnostics() -> Dictionary:
 
 func _configure_owner_shape() -> void:
 	if _movement.is_empty(): return
-	var width_px := float(_movement.collision_width_mm) * PIXELS_PER_METER / 1000.0
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(width_px, float(_movement.collision_height_mm) * PIXELS_PER_METER / 1000.0)
-	character_collision.shape = shape
-	character_collision.disabled = false
-	character_collision.position = Vector2(0.0, -shape.size.y / 2.0)
+	CharacterCollider.install(character_collision, _movement, PIXELS_PER_METER)
 
 func _install_world_bounds() -> void:
 	for node in _bound_nodes:
@@ -539,13 +535,8 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 			proxy.collision_mask = 0
 			proxy.set_meta("contact_id", id)
 			var collision := CollisionShape2D.new()
-			var shape := RectangleShape2D.new()
 			var body: Dictionary = Protocol.selected_physics(_movement, _view.players[id]).body
-			var width := float(body.collision_width_mm) * PIXELS_PER_METER / 1000.0
-			var height := float(body.collision_height_mm) * PIXELS_PER_METER / 1000.0
-			shape.size = Vector2(width,height)
-			collision.shape = shape
-			collision.position.y = -height/2.0
+			CharacterCollider.install(collision, body, PIXELS_PER_METER)
 			proxy.add_child(collision)
 			add_child(proxy)
 			_peer_proxies[id] = proxy
