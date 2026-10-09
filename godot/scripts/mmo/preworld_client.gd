@@ -13,7 +13,7 @@ var roster := {}
 var catalog := {}
 var selection := {}
 var availability := {}
-var login_endpoint := {"host": "127.0.0.1", "port": 23200}
+var login_endpoint := {"host": "127.0.0.1", "port": 24000}
 var profile := "trusted_local_dev"
 var username := "dev1"
 var trusted_ca: X509Certificate
@@ -297,8 +297,20 @@ func _lobby_lost(code: String) -> void:
 	_failure("Lobby", code, unknown)
 
 func _game_fault(info: Dictionary) -> void:
-	if state == "WORLD":
-		_failure("Game", info.code, info.get("outcome_unknown", false))
+	if state != "WORLD":
+		return
+	var unknown := bool(info.get("outcome_unknown", false))
+	var code := str(info.get("code", "DISCONNECTED"))
+	# A clean transport loss (the usual local-stand restart case) cannot reuse the
+	# old Game/Lobby authority. Drop it immediately and present a fresh sign-in
+	# instead of leaving a dead World visit on the generic failure page.
+	if not unknown and code in ["DISCONNECTED", "CONNECT_FAILED", "CONNECT_TIMEOUT",
+			"FRAME_TIMEOUT", "READ_FAILED", "WRITE_FAILED", "WRITE_TIMEOUT", "REQUEST_TIMEOUT"]:
+		logout_account()
+		error = {"phase": "Game", "code": "REAUTH_REQUIRED", "outcome_unknown": false}
+		changed.emit()
+		return
+	_failure("Game", code, unknown)
 
 func _game_reply(op: String, data: Dictionary) -> void:
 	if op == "logout" and state == "WORLD":
