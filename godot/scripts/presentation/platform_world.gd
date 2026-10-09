@@ -288,7 +288,12 @@ func _physics_process(delta: float) -> void:
 		var target_offset := _blend_start_offset_x * (_blend_remaining / 0.1)
 		var offset_delta := target_offset-visual_layer.position.x
 		var integrated_delta := character_root.position.x-before_step
-		if offset_delta*integrated_delta < 0.0:
+		if absf(integrated_delta) <= 0.000001:
+			# A stopped authoritative body has no same-direction displacement budget.
+			# Hold the presentation residue until later motion can absorb it instead
+			# of manufacturing a visible/logical reverse step at rest.
+			offset_delta = 0.0
+		elif offset_delta*integrated_delta < 0.0:
 			# Convergence cannot cancel more than this interval's forward motion.
 			offset_delta = signf(offset_delta)*minf(absf(offset_delta),absf(integrated_delta))
 		visual_layer.position.x += offset_delta
