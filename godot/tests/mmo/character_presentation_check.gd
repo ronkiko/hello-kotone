@@ -39,6 +39,8 @@ func run() -> void:
 		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
 		check(platform._movement.mass_g == physical.body.mass_g and platform._movement.top_speed_mm_s == physical.motor.top_speed_mm_s, model + " predictor uses selected server profile")
 		check(is_equal_approx(platform.character_collision.shape.size.x, physical.body.collision_width_mm * 8.0/1000.0), model + " native owner width from body")
+		var collider_size: Vector2 = platform.character_collision.shape.size
+		var collider_offset: Vector2 = platform.character_collision.position
 		var bad_view := view.duplicate(true)
 		bad_view.players.p1.physics.motor_profile_id = "missing"
 		check(not platform.project(document,bad_view), model + " unknown actuator binding fails closed")
@@ -112,6 +114,9 @@ func run() -> void:
 				model + " duplicate response tick cannot restart reaction twice")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
+		check(platform.character_collision.shape.size == collider_size
+			and platform.character_collision.position == collider_offset,
+			model + " walk idle and contact reaction never mutate physical collider")
 	# Direct helpers are total on malformed resources; package loading rejects them.
 	var malformed := AnimatedSprite2D.new()
 	malformed.sprite_frames = SpriteFrames.new()
