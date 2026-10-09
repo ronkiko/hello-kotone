@@ -150,9 +150,10 @@ func run() -> void:
 	sent(3,-1)
 	steps(1)
 	var response := sample(9200,3,9200,platform._pixel_to_server_mm(platform.character_root.position.x)+337)
+	response.contacts = ["p2"]
 	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,"contact_response_contacts":["p2"]})
 	platform._apply_authoritative_motion(response,false)
-	check(platform._correction_class == "snap", "physical response stays an authority barrier inside profile blend budget")
+	check(platform._correction_class == "snap", "current physical contact stays an authority barrier inside profile blend budget")
 
 	reset()
 	var owner := Fixtures.player()

@@ -453,8 +453,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		if _blend_remaining > 0.0:
 			_blend_start_offset_x = visual_layer.position.x * (0.1 / _blend_remaining)
 		_correction_class = "blend" if _blend_remaining > 0.0 else "none"
-	elif not force_snap and error_mm <= blend_budget_mm and motion.contacts.is_empty() \
-			and int(motion.get("contact_delta_velocity_mm_s", 0)) == 0:
+	elif not force_snap and error_mm <= blend_budget_mm and motion.contacts.is_empty():
 		visual_layer.position.x = before_render_x - character_root.position.x
 		_blend_start_offset_x = visual_layer.position.x
 		_blend_remaining = 0.1
