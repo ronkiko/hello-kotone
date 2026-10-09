@@ -162,6 +162,9 @@ func run() -> void:
 	peer.nickname="peer"
 	peer.character.character_id="p2"
 	peer.character.display_name="peer"
+	peer.character.appearance_payload = {"character_model_id":"yuna","body_variant_id":"standard",
+		"face_style_id":"soft","hair_style_id":"bob","hair_color_id":"rose"}
+	peer.physics = Fixtures.binding("yuna")
 	peer.motion.position_mm=50450
 	platform.project(Fixtures.MAP,{"epoch":"e1","map":{"map_id":Fixtures.MAP.map_id,"content_version":1,"content_hash":Fixtures.MAP.content_hash},
 		"players":{"p1":owner,"p2":peer},"local_player_id":"p1","confirmed_local_position_mm":50000})
@@ -170,8 +173,15 @@ func run() -> void:
 	await physics_frame
 	sent(1,1)
 	steps(20)
-	check(platform._peer_proxies.has("p2") and platform._predicted_contacts.has("p2"),"native peer proxy predicts physical collision")
-	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=50051,"owner cannot predict through stationary peer")
+	var owner_body: Dictionary = Fixtures.physics("kotone").body
+	var peer_body: Dictionary = Fixtures.physics("yuna").body
+	var contact_center := int(peer.motion.position_mm) - int(owner_body.collision_width_mm + peer_body.collision_width_mm) / 2
+	check(platform._peer_proxies.has("p2") and platform._predicted_contacts.has("p2"),"native mixed-profile peer proxy predicts physical collision")
+	var proxy_shape: CollisionShape2D = platform._peer_proxies.p2.get_child(0)
+	check(proxy_shape.shape.size == Vector2(2.88,12.4) and proxy_shape.position == Vector2(0.0,-6.2),
+		"Yuna proxy uses her selected 360x1550-mm body")
+	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=contact_center+1,
+		"owner cannot predict through narrower Yuna collider")
 	platform.remote_players.p2.timeline._samples.back().received_usec=Time.get_ticks_usec()-250000
 	platform._update_peer_proxies(0.0)
 	check(platform._peer_proxies.p2.collision_layer==0,"stale hint disables ghost collider after200ms")
