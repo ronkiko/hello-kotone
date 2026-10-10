@@ -330,6 +330,10 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 	var acceleration := force * PIXELS_PER_METER / float(_movement.mass_g)
 	character_root.velocity.x = move_toward(character_root.velocity.x, target_speed, acceleration * delta)
 	character_root.velocity.y = 0.0
+	# Peer proxies are geometric occupancy for prediction, not infinite-mass
+	# physics authorities. Native slide constrains position, while the server Zone
+	# remains the only owner of mass/contact velocity response.
+	var intended_velocity_x := character_root.velocity.x
 	character_root.move_and_slide()
 	var contacts: Array[String] = []
 	for index in range(character_root.get_slide_collision_count()):
@@ -347,6 +351,11 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 	_predicted_contacts = contacts
 	if contacts.has("wall_min") or contacts.has("wall_max"):
 		character_root.velocity.x = 0.0
+	elif not contacts.is_empty():
+		# Do not let StaticBody2D proxy semantics silently turn another player into
+		# an infinite-mass wall. Keep the locally integrated motor velocity until
+		# the next authoritative server sample supplies the real mass-aware result.
+		character_root.velocity.x = intended_velocity_x
 
 func _track_local_control(control: Dictionary) -> void:
 	var semantics := {"drive":control.drive,"facing":control.facing}
@@ -460,31 +469,6 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		_blend_remaining = 0.1
 		_correction_class = "blend"
 		_prediction_metrics.small_blends += 1
-	elif not force_snap and error_mm <= blend_budget_mm and not motion.contacts.is_empty():
-		# Contact remains a physical authority barrier: the CharacterBody snaps to
-		# the server result immediately. But when our own held drive caused the
-		# contact and the server response only slowed that pusher, do not expose
-		# the prediction correction as a visible backwards recoil. Keep the old
-		# rendered position in the presentation layer and absorb the bounded lead
-		# only through later same-direction motion.
-		var control: Dictionary = MmoClient.prediction_control_state()
-		var drive := int(control.get("drive", 0))
-		var response_delta := int(motion.get("contact_delta_velocity_mm_s", 0))
-		var offset := before_render_x - character_root.position.x
-		var pusher_slowdown := drive != 0 and drive == int(motion.get("facing", 0)) \
-			and response_delta < 0 and offset * float(drive) > 0.0
-		if pusher_slowdown:
-			visual_layer.position.x = offset
-			_blend_start_offset_x = offset
-			_blend_remaining = 0.1
-			_correction_class = "contact_blend"
-			_prediction_metrics.small_blends += 1
-		else:
-			visual_layer.position.x = 0.0
-			_blend_remaining = 0.0
-			character_root.reset_physics_interpolation()
-			_correction_class = "snap"
-			_prediction_metrics.snaps += 1
 	else:
 		visual_layer.position.x = 0.0
 		_blend_remaining = 0.0
