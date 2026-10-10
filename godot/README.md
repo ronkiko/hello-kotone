@@ -132,6 +132,16 @@ numerical residues do not restart a visual blend on each sample. Native
 100 ms / 250 mm; after 200 ms without a sample they stop colliding. Leave,
 suspension and scope changes fence this state. No client collision becomes authority.
 
+Impact damage presentation is independently configurable in `project.godot`:
+`[presentation] damage_numbers_enabled=true` and
+`damage_number_stagger_seconds=0.04`. Each accepted server
+`motion_frame` damage fact is enqueued at ingress into a per-character FIFO
+before motion interpolation. The renderer accepts only the scored integer
+and frozen world point, produces one rising/fading 2-second number per item,
+and never discards earlier numbers to enforce a display count limit.
+See [multiplayer presentation](docs/multiplayer-presentation.md) for the
+distinction between this client FIFO and coalesced server publication.
+
 Remote characters use an eight-sample timeline on the server's 60-Hz
 `simulation_tick`, rendered 100 ms behind the latest sample. Only authoritative
 position, velocity and facing are interpolated. Extrapolation is velocity-only and
