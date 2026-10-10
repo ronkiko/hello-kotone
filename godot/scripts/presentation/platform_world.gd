@@ -397,7 +397,11 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	_last_applied_control_seq = applied_seq
 	_prediction_metrics.last_applied_control_seq = applied_seq
 	_gait.try_contact_reaction(sprite, _local_model_id, motion)
-	impact_numbers.show_impact(motion, Appearance.display_height_px(_local_model_id if not _local_model_id.is_empty() else "kotone"))
+	var model_for_damage: String = _local_model_id if not _local_model_id.is_empty() else "kotone"
+	var impact_height: float = Appearance.display_height_px(model_for_damage)
+	var impact_point := character_root.to_global(Vector2(visual_layer.position.x,
+		-clampf(impact_height * 0.7, 36.0, 80.0)))
+	impact_numbers.show_impact(motion, impact_point)
 	var mapped_ordinal := 0
 	if force_snap:
 		_prediction_ordinal = 0
