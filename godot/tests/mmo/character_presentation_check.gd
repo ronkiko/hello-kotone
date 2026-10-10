@@ -90,32 +90,36 @@ func run() -> void:
 			var received_damage := damage_response.duplicate(true)
 			received_damage["player_id"] = "p2"
 			received_damage["position_mm"] = int(remote.motion.position_mm)
-			var damage_packet := {"event":"motion_frame", "data":{"players":[received_damage]}}
-			platform._queue_impact_display(damage_packet)
-			check(remote_node.impact_numbers.get_child_count() == 1
-				and remote_node.impact_numbers.get_child(0).text == "-8",
-				"remote impact displays server score immediately upon frame arrival")
-			platform._queue_impact_display(damage_packet)
-			check(remote_node.impact_numbers.get_child_count() == 1
-				and remote_node.impact_numbers._pending.is_empty(),
-				"repeated server impact tick cannot enqueue duplicate damage")
+			var first_hit := {"event":"motion_frame","data":{"players":[received_damage]}}
+			platform._queue_impact_display(first_hit)
+			check(platform.impact_numbers.get_child_count() == 1
+				and platform.impact_numbers.get_child(0).text == "-8",
+				"one global renderer displays remote damage immediately")
+			platform._queue_impact_display(first_hit)
+			check(platform.impact_numbers.get_child_count() == 1,
+				"ingress deduplicates repeated remote hit tick")
 			remote_node.render_at(remote_node.position.x, damage_response, 0.016)
-			check(remote_node.impact_numbers.get_child_count() == 1,
-				"remote interpolation cannot enqueue or evict damage numbers")
+			check(platform.impact_numbers.get_child_count() == 1,
+				"remote gait interpolation cannot spawn duplicate damage")
+			var local_hit := received_damage.duplicate(true)
+			local_hit["player_id"] = "p1"
+			local_hit["contact_damage"] = 4
+			local_hit["contact_impact_impulse_g_mm_s"] = 20000000
+			local_hit["position_mm"] = 52000
+			platform._queue_impact_display({"event":"motion_frame",
+				"data":{"players":[local_hit]}})
+			check(platform.impact_numbers.get_child_count() == 2
+				and platform.impact_numbers.get_child(1).text == "-4",
+				"another character with same impact tick is independently displayed")
 			var next_damage := received_damage.duplicate(true)
 			next_damage["contact_response_tick"] = 13
 			next_damage["contact_damage"] = 5
 			next_damage["contact_impact_impulse_g_mm_s"] = 25000000
-			platform._queue_impact_display({"event":"motion_frame","data":{"players":[next_damage]}})
-			check(remote_node.impact_numbers._pending.size() == 1
-				and remote_node.impact_numbers.get_child_count() == 1,
-				"second accepted impact is FIFO queued before delayed rendering")
-			remote_node.impact_numbers._process(0.041)
-			check(remote_node.impact_numbers._pending.is_empty()
-				and remote_node.impact_numbers.get_child_count() == 2
-				and remote_node.impact_numbers.get_child(0).text == "-8"
-				and remote_node.impact_numbers.get_child(1).text == "-5",
-				"remote FIFO dispatches every received damage number in order")
+			platform._queue_impact_display({"event":"motion_frame",
+				"data":{"players":[next_damage]}})
+			check(platform.impact_numbers.get_child_count() == 3
+				and platform.impact_numbers.get_child(2).text == "-5",
+				"second accepted remote hit renders immediately without a per-character FIFO")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
 			contact_player.contacts = ["p1"]
@@ -125,8 +129,10 @@ func run() -> void:
 			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
 			remote_node.set_suspended(true)
 			check(remote_node.gait.last_contact_response_tick == 0 and remote_node.timeline._responses.is_empty(), "visit suspension clears causal response scope")
-			check(remote_node.impact_numbers.last_impact_tick == 0 and remote_node.impact_numbers._pending.is_empty(),
-				"visit suspension discards stale floating damage numbers")
+			# Damage rendering is owned by World, not the remote character.
+			check(platform.impact_numbers.get_parent() == platform
+				and not remote_node.has_node("ImpactNumbers"),
+				"only one global damage renderer exists for all players")
 			remote_node.set_suspended(false)
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
