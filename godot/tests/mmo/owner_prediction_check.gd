@@ -153,7 +153,50 @@ func run() -> void:
 	response.contacts = ["p2"]
 	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,"contact_response_contacts":["p2"]})
 	platform._apply_authoritative_motion(response,false)
-	check(platform._correction_class == "snap", "current physical contact stays an authority barrier inside profile blend budget")
+	check(platform._correction_class == "snap", "target knockback contact remains an immediate presentation authority snap")
+
+	reset()
+	# Yuna is the faster pusher. Native peer prediction can run slightly ahead
+	# before the authoritative mixed-mass contact sample arrives. Physics must
+	# snap to authority, but the rendered owner/camera must not visibly recoil.
+	fast = Fixtures.player()
+	fast.physics = Fixtures.binding("yuna")
+	fast.character.appearance_payload = {"character_model_id":"yuna","body_variant_id":"standard",
+		"face_style_id":"soft","hair_style_id":"bob","hair_color_id":"rose"}
+	var kotone_peer := fast.duplicate(true)
+	kotone_peer.player_id = "p2"
+	kotone_peer.nickname = "kotone"
+	kotone_peer.character.character_id = "p2"
+	kotone_peer.character.display_name = "kotone"
+	kotone_peer.character.appearance_payload = {"character_model_id":"kotone","body_variant_id":"standard",
+		"face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}
+	kotone_peer.physics = Fixtures.binding("kotone")
+	kotone_peer.motion.position_mm = 50500
+	platform.project(Fixtures.MAP,{"epoch":"yuna-push","map":{"map_id":Fixtures.MAP.map_id,
+		"content_version":1,"content_hash":Fixtures.MAP.content_hash},
+		"players":{"p1":fast,"p2":kotone_peer},"local_player_id":"p1","confirmed_local_position_mm":50000})
+	reset()
+	sent(1,1)
+	steps(4)
+	var before_contact_render := platform.character_root.position.x + platform.visual_layer.position.x
+	var pusher_contact := sample(9004,1,9001,
+		platform._pixel_to_server_mm(platform.character_root.position.x)-180,1750,["p2"])
+	pusher_contact.merge({"contact_delta_velocity_mm_s":-2450,"contact_response_tick":9004,
+		"contact_response_facing":1,"contact_response_contacts":["p2"]})
+	platform._apply_authoritative_motion(pusher_contact,false)
+	check(platform._correction_class == "contact_blend",
+		"Yuna pusher slowdown keeps physical contact authority without visible recoil")
+	check(platform.character_root.position.x + platform.visual_layer.position.x >= before_contact_render - 0.000001,
+		"Yuna pusher render never jumps backwards at authoritative contact")
+	var pusher_reverse_steps := 0
+	for interval in range(20):
+		var before_pusher := platform.character_root.position.x + platform.visual_layer.position.x
+		platform._physics_process(DT)
+		platform._process(DT)
+		if platform.character_root.position.x + platform.visual_layer.position.x < before_pusher - 0.0008:
+			pusher_reverse_steps += 1
+	check(pusher_reverse_steps == 0,
+		"Yuna pusher absorbs contact correction monotonically instead of bouncing backwards")
 
 	reset()
 	# A rebase can leave a subpixel presentation lead after the physical body
