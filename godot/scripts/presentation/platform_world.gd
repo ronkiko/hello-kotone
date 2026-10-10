@@ -157,7 +157,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
 	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
 		_owner_scope = owner_scope
-		damage_effects.clear()
+		damage_effects.call(&"clear")
 		_clear_peer_proxies()
 		_local_player_id = view.local_player_id
 		_position_installed = true
@@ -193,7 +193,7 @@ func set_suspended(value: bool) -> void:
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
 		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
-		damage_effects.clear()
+		damage_effects.call(&"clear")
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		node.set_suspended(value)
@@ -258,7 +258,7 @@ func _on_damage_resolved(event: Dictionary) -> void:
 	var height_px: float = Appearance.display_height_px(model)
 	var point := to_global(Vector2(server_to_pixel(float(event.position_mm)),
 		FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0)))
-	damage_effects.show_damage(int(event.damage), point)
+	damage_effects.call(&"show_damage", int(event.damage), point)
 
 func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 	for player in snapshot.get("players", []):
