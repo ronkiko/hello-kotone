@@ -36,7 +36,7 @@ func run() -> void:
 	gait.update(sprite, -3, -3, -1, 0.1)
 	check(sprite.animation == &"idle_left" and not sprite.flip_h, "zero rendered displacement selects prepared directional idle")
 	var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
-		"contact_response_tick":5,"contact_response_contacts":["p2"]}
+		"contact_response_tick":5,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 	check(gait.try_contact_reaction(sprite, "yuna", push)
 		and sprite.animation == &"stumble_right2" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
 	check(not gait.try_contact_reaction(sprite,"yuna",push),"same physical response tick cannot replay reaction")
