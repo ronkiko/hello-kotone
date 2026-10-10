@@ -44,8 +44,12 @@ Peer contact and a nonzero server-computed contact-induced velocity change are
 published separately from ordinary contact membership. The sample retains the
 response tick, facing at the response, and peer IDs through the next 20-Hz frame.
 The remote timeline exposes that cause only after its delayed cursor reaches the
-response tick. For the installed Yuna model, a sufficiently strong rightward push
-from behind can play the prepared non-looping `stumble_back` SpriteFrames reaction (mirrored for left-facing back impacts; `stumble_front` awaits authored frames).
+response tick. For the installed Yuna model, a sufficiently strong server-confirmed shove
+is classified relative to the receiver: impact motion matching response-time
+facing is `back`, and opposing it is `front`. `back` plays the prepared
+non-looping `stumble_back` frames for both world directions (presentation-only
+mirroring for left-facing receivers); `stumble_front` awaits its own authored
+frames and must not borrow the back reaction.
 No animation identity crosses the wire, wall contact cannot trigger it, and the
 reaction never changes body physics or position.
 
