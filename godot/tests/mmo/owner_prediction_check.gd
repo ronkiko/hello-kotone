@@ -57,7 +57,7 @@ func run() -> void:
 	var before: float = platform.character_root.position.x
 	platform._apply_authoritative_motion(sample(9501,1,9500,50006,266),false)
 	check(platform._prediction_history.size()==2,"explicit seq boundary maps two applied intervals despite server ahead500")
-	check(absf(platform.character_root.position.x-before)*125.0<=2,"expected transport lead is not positional divergence")
+	check(absf(platform.character_root.position.x-before)*(1000.0 / platform.pixels_per_meter)<=2,"expected transport lead is not positional divergence")
 	check(platform._prediction_ordinal==4,"server marker cannot advance local clock")
 	check(not client.prediction_control_state().has("control_seq"),"unsent controls have no speculative network sequence")
 	reset()
@@ -231,8 +231,8 @@ func run() -> void:
 	var contact_center := int(peer.motion.position_mm) - int((int(owner_body.collision_width_mm) + int(peer_body.collision_width_mm)) / 2)
 	check(platform._peer_proxies.has("p2") and platform._predicted_contacts.has("p2"),"native mixed-profile peer proxy predicts physical collision")
 	var proxy_shape: CollisionShape2D = platform._peer_proxies.p2.get_child(0)
-	check(is_equal_approx(proxy_shape.shape.size.x,2.88) and is_equal_approx(proxy_shape.shape.size.y,12.4)
-		and is_equal_approx(proxy_shape.position.x,0.0) and is_equal_approx(proxy_shape.position.y,-6.2),
+	check(is_equal_approx(proxy_shape.shape.size.x,17.28) and is_equal_approx(proxy_shape.shape.size.y,74.4)
+		and is_equal_approx(proxy_shape.position.x,0.0) and is_equal_approx(proxy_shape.position.y,-37.2),
 		"Yuna proxy uses her selected 360x1550-mm body")
 	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=contact_center+1,
 		"owner cannot predict through narrower Yuna collider")
