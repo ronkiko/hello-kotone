@@ -9,7 +9,7 @@ func _ready() -> void:
 func show_damage(amount: int, world_position: Vector2) -> void:
 	if not display_enabled or amount <= 0:
 		return
-	var number: Label = NUMBER_SCENE.instantiate()
+	var number: Node2D = NUMBER_SCENE.instantiate()
 	add_child(number)
 	number.show_number(amount, world_position)
 
