@@ -358,6 +358,79 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	await screenshot("real-peer-push")
 	return true
 
+func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
+	# After Kotone->Yuna, Yuna is on the right. Drive her left into stationary
+	# Kotone: this is the exact inverse role that manual acceptance exposed.
+	client.set_control(0,-1)
+	if not await wait_until(func(): return client._server_input.drive==0 and client.state=="READY" \
+		and client.world_replica.local_player().motion.velocity_mm_s==0 \
+		and client.world_replica.local_player().motion.facing==-1,
+		"inverse push stationary left-facing baseline"): return false
+	mark("inverse-push-ready%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("inverse-push-ready%d" % (3-role))),
+		"both peers ready for Yuna pusher inverse case"): return false
+	var yuna_id: String = client.player_id if role==2 else remote_id
+	var kotone_id: String = client.player_id if role==1 else remote_id
+	var yuna_renderer: Node = world.platform if role==2 else world.platform.remote_players[remote_id]
+	var yuna_gait: RefCounted = yuna_renderer._gait if role==2 else yuna_renderer.gait
+	var players: Dictionary = client.world_replica.view().players
+	check(int(players[yuna_id].motion.position_mm) > int(players[kotone_id].motion.position_mm),
+		"inverse case starts with Yuna physically right of Kotone")
+	var reaction_tick_before := int(yuna_gait.last_contact_response_tick)
+	var saw_kotone_shove := false
+	var saw_yuna_contact_response := false
+	var yuna_wrong_shove_sources := 0
+	var reverse_steps := 0
+	var contact_at := -1
+	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
+		if role==2 else world.platform.remote_players[remote_id].visual_x
+	if role==2:
+		check(client.set_control(-1,-1),"Yuna pusher left drive accepted")
+	var deadline := Time.get_ticks_msec()+10000
+	while Time.get_ticks_msec()<deadline:
+		var yuna_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
+		var kotone_sample: Dictionary = client.world_replica.latest_frame_sample(kotone_id)
+		var yuna_tick := int(yuna_sample.get("contact_response_tick",0))
+		var yuna_sources: Array = yuna_sample.get("contact_shove_sources",[])
+		var kotone_sources: Array = kotone_sample.get("contact_shove_sources",[])
+		if yuna_tick>0 and int(yuna_sample.get("contact_delta_velocity_mm_s",0))!=0:
+			saw_yuna_contact_response=true
+			if contact_at<0: contact_at=Time.get_ticks_msec()
+		if not yuna_sources.is_empty():
+			yuna_wrong_shove_sources += 1
+		if kotone_sources.has(yuna_id):
+			saw_kotone_shove=true
+			if contact_at<0: contact_at=Time.get_ticks_msec()
+		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
+			if role==2 else world.platform.remote_players[remote_id].visual_x
+		var signed_mm := -(rendered-before)*125.0
+		if contact_at>=0 and signed_mm < -0.1:
+			reverse_steps += 1
+		before=rendered
+		if saw_kotone_shove and Time.get_ticks_msec()-contact_at>350:
+			break
+		await process_frame
+	if role==2:
+		client.set_control(0,-1)
+	check(saw_kotone_shove,"Yuna pusher creates authoritative shove on Kotone target")
+	check(saw_yuna_contact_response,"Yuna pusher still receives ordinary mass/contact response fact")
+	check(yuna_wrong_shove_sources==0,"Yuna pusher is never labeled as shove recipient")
+	check(int(yuna_gait.last_contact_response_tick)==reaction_tick_before,
+		"Yuna pusher never consumes her own contact response as stumble reaction")
+	check(reverse_steps==0,"Yuna pusher render never moves opposite to held left drive after contact")
+	mark("inverse-push-stopped%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("inverse-push-stopped%d" % (3-role))),
+		"both peers finish Yuna pusher inverse case"): return false
+	if role==2 and not await wait_until(func(): return client._server_input.drive==0 \
+		and client.world_replica.local_player().motion.velocity_mm_s==0,
+		"Yuna pusher authoritative stop"): return false
+	contact_results["yuna_pusher"]={"saw_target_shove":saw_kotone_shove,
+		"saw_pusher_response":saw_yuna_contact_response,"wrong_shove_sources":yuna_wrong_shove_sources,
+		"reaction_tick_before":reaction_tick_before,"reaction_tick_after":int(yuna_gait.last_contact_response_tick),
+		"reverse_steps":reverse_steps}
+	await screenshot("yuna-pushes-kotone")
+	return true
+
 func _run() -> void:
 	client = root.get_node("MmoClient")
 	pre = root.get_node("Preworld")
@@ -492,6 +565,7 @@ func _run() -> void:
 	for direction in [-1, 1]:
 		if not await verify_remote_idle(world, remote_id, direction): quit(1); return
 	if not await verify_peer_push(world,remote_id): quit(1); return
+	if not await verify_yuna_pushes_kotone(world,remote_id): quit(1); return
 	world.input_adapter.set_physics_process(false)
 	var before: int = client.world_replica.local_player().motion.position_mm
 	check(client.set_control(1, 1), "held input sent")
