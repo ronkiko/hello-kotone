@@ -10,15 +10,13 @@ func reset() -> void:
 	last_impact_tick = 0
 	# Every popup owns its tween. Queueing the popup for deletion also cancels
 	# its tween, including its completion callback.
-	for label in _visible:
+	for label in _visible.duplicate():
 		_retire_popup(label)
 	_visible.clear()
 
 func _retire_popup(label: Label) -> void:
-	if not is_instance_valid(label):
-		return
 	_visible.erase(label)
-	if not label.is_queued_for_deletion():
+	if is_instance_valid(label) and not label.is_queued_for_deletion():
 		label.queue_free()
 
 func show_impact(motion: Dictionary, character_height_px: float) -> bool:
