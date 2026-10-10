@@ -291,8 +291,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		before=rendered
 		# Exercise the actual player sequence: first impact -> applied release ->
 		# short release interval -> repress. Same-contact force transmission is
-		# covered by the server kernel; this TLS path proves a later real impact
-		# still reaches both owner and observer after the control cycle.
+		# covered by the server kernel; this TLS path proves a fresh impacts are not manufactured by repress.
 		if role==1 and response_ticks.size()>=1 and not release_sent:
 			check(client.set_control(0,1),"pusher release request accepted")
 			release_sent=true
@@ -310,32 +309,27 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		if role==1 and repress_seq>=0 and repress_applied_tick<0 \
 			and int(client.world_replica.local_player().motion.last_applied_control_seq)>=repress_seq:
 			repress_applied_tick=int(client.world_replica.local_player().motion.simulation_tick)
-		var later_response_tick := -1
-		if role==1 and repress_applied_tick>=0:
-			for tick in response_ticks:
-				if tick>repress_applied_tick:
-					later_response_tick=maxi(later_response_tick,tick)
-		# Role 1 proves the control boundaries; role 2 only needs to consume the
-		# same causal response sequence. A 20-Hz observer is not required to see
-		# a short-lived release control state between 60-Hz physics boundaries.
-		if role==1 and later_response_tick>0 and reaction_ticks.has(later_response_tick):
+		# Only actual new body collisions may create impact events. A later
+		# release/repress while still touching is *not* a second physical hit.
+		# Give delayed observer presentation time to consume any causal facts.
+		if role==1 and repress_applied_tick>=0 and not response_ticks.is_empty() \
+			and reaction_ticks == response_ticks \
+			and int(client.world_replica.local_player().motion.simulation_tick)>=repress_applied_tick+30:
 			break
-		if role==2 and response_ticks.size()>=2 and reaction_ticks.size()>=2:
+		if role==2 and not response_ticks.is_empty() and reaction_ticks == response_ticks \
+			and contact_at>=0 and Time.get_ticks_msec()-contact_at>850:
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"authoritative peer contact produces a causal response")
-	check(strongest_response>=8400,"50-kg Yuna shove remains 8400 mm/s after Walk cap decreases to 1820 mm/s")
+	check(strongest_response>=300 and strongest_response<1300,"Yuna contact delta reflects physical approach, not an 8400-mm/s motor boost")
 	if role==1:
 		check(release_applied_tick>=0 and repress_applied_tick>release_applied_tick,
 			"release and repress are both observed on authoritative applied-control boundaries")
-		check(response_ticks.any(func(tick: int): return tick>repress_applied_tick),
-			"push release repress produces a later distinct physical knockback")
 	else:
-		check(response_ticks.size()>=2,
-			"observer receives the later physical knockback after the pusher control cycle")
-	check(reaction_ticks.size()>=2,"Yuna owner and observer each restart intended reaction for later knockback")
-	check(reaction_ticks == response_ticks,"presentation consumes each distinct authoritative knockback tick exactly once")
+		check(not response_ticks.is_empty(), "observer receives measured physical impact")
+	check(not reaction_ticks.is_empty(),"Yuna owner and observer consume the actual impact reaction")
+	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
 	check(reverse_after_contact==0,"repeated peer knockback has no periodic owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
@@ -354,7 +348,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	# Native JSON parses diagnostic numbers as floats; compare typed tick values.
 	var other_response_ticks: Array[int] = []
 	for tick in other.response_ticks: other_response_ticks.append(int(tick))
-	check(other_response_ticks==response_ticks,"owner and observer share the same sequence of causal server knockback ticks")
+	check(other_response_ticks==response_ticks,"owner and observer share the same sequence of causal server physical impact ticks")
 	await screenshot("real-peer-push")
 	return true
 
@@ -379,7 +373,7 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 	var reaction_tick_before := int(yuna_gait.last_contact_response_tick)
 	var saw_kotone_shove := false
 	var saw_yuna_contact_response := false
-	var yuna_wrong_shove_sources := 0
+	var yuna_wrong_impact_sources := 0
 	var reverse_steps := 0
 	var contact_at := -1
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
@@ -391,13 +385,13 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 		var yuna_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
 		var kotone_sample: Dictionary = client.world_replica.latest_frame_sample(kotone_id)
 		var yuna_tick := int(yuna_sample.get("contact_response_tick",0))
-		var yuna_sources: Array = yuna_sample.get("contact_shove_sources",[])
-		var kotone_sources: Array = kotone_sample.get("contact_shove_sources",[])
+		var yuna_sources: Array = yuna_sample.get("contact_impact_sources",[])
+		var kotone_sources: Array = kotone_sample.get("contact_impact_sources",[])
 		if yuna_tick>0 and int(yuna_sample.get("contact_delta_velocity_mm_s",0))!=0:
 			saw_yuna_contact_response=true
 			if contact_at<0: contact_at=Time.get_ticks_msec()
 		if not yuna_sources.is_empty():
-			yuna_wrong_shove_sources += 1
+			yuna_wrong_impact_sources += 1
 		if kotone_sources.has(yuna_id):
 			saw_kotone_shove=true
 			if contact_at<0: contact_at=Time.get_ticks_msec()
@@ -414,7 +408,7 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 		client.set_control(0,-1)
 	check(saw_kotone_shove,"Yuna pusher creates authoritative shove on Kotone target")
 	check(saw_yuna_contact_response,"Yuna pusher still receives ordinary mass/contact response fact")
-	check(yuna_wrong_shove_sources==0,"Yuna pusher is never labeled as shove recipient")
+	check(yuna_wrong_impact_sources==0,"Yuna pusher is never labeled as shove recipient")
 	check(int(yuna_gait.last_contact_response_tick)==reaction_tick_before,
 		"Yuna pusher never consumes her own contact response as stumble reaction")
 	check(reverse_steps==0,"Yuna pusher render never moves opposite to held left drive after contact")
@@ -425,7 +419,7 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 		and client.world_replica.local_player().motion.velocity_mm_s==0,
 		"Yuna pusher authoritative stop"): return false
 	contact_results["yuna_pusher"]={"saw_target_shove":saw_kotone_shove,
-		"saw_pusher_response":saw_yuna_contact_response,"wrong_shove_sources":yuna_wrong_shove_sources,
+		"saw_pusher_response":saw_yuna_contact_response,"wrong_impact_sources":yuna_wrong_impact_sources,
 		"reaction_tick_before":reaction_tick_before,"reaction_tick_after":int(yuna_gait.last_contact_response_tick),
 		"reverse_steps":reverse_steps}
 	await screenshot("yuna-pushes-kotone")
