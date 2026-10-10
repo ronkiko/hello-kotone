@@ -251,6 +251,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	mark("push-ready%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-ready%d" % (3-role))),"both push baselines ready"): return false
 	var yuna_id: String = client.player_id if role==2 else remote_id
+	var pusher_id: String = client.player_id if role==1 else remote_id
 	var renderer: Node = world.platform if role==2 else world.platform.remote_players[remote_id]
 	var gait: RefCounted = renderer._gait if role==2 else renderer.gait
 	var response_ticks: Array[int] = []
@@ -272,7 +273,8 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		var frame_sample: Dictionary = client.world_replica.latest_frame_sample(yuna_id)
 		var response_tick := int(frame_sample.get("contact_response_tick",0))
 		var response_delta := int(frame_sample.get("contact_delta_velocity_mm_s",0))
-		if response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
+		var physical_sources: Array = frame_sample.get("contact_impact_sources",[])
+		if physical_sources.has(pusher_id) and response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
 			response_ticks.append(response_tick)
 			strongest_response=maxi(strongest_response,response_delta)
 			# contact_response is emitted only by authoritative peer contact. The
@@ -291,7 +293,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		before=rendered
 		# Exercise the actual player sequence: first impact -> applied release ->
 		# short release interval -> repress. Same-contact force transmission is
-		# covered by the server kernel; this TLS path proves a fresh impacts are not manufactured by repress.
+		# covered by the server kernel; repress does not synthesize a hit.
 		if role==1 and response_ticks.size()>=1 and not release_sent:
 			check(client.set_control(0,1),"pusher release request accepted")
 			release_sent=true
@@ -314,10 +316,10 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		# Give delayed observer presentation time to consume any causal facts.
 		if role==1 and repress_applied_tick>=0 and not response_ticks.is_empty() \
 			and reaction_ticks == response_ticks \
-			and int(client.world_replica.local_player().motion.simulation_tick)>=repress_applied_tick+30:
+			and contact_at>=0 and Time.get_ticks_msec()-contact_at>1400:
 			break
 		if role==2 and not response_ticks.is_empty() and reaction_ticks == response_ticks \
-			and contact_at>=0 and Time.get_ticks_msec()-contact_at>850:
+			and contact_at>=0 and Time.get_ticks_msec()-contact_at>1400:
 			break
 		await process_frame
 	if role==1: client.set_control(0,1)
@@ -330,7 +332,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		check(not response_ticks.is_empty(), "observer receives measured physical impact")
 	check(not reaction_ticks.is_empty(),"Yuna owner and observer consume the actual impact reaction")
 	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
-	check(reverse_after_contact==0,"repeated peer knockback has no periodic owner snap back")
+	check(reverse_after_contact==0,"physical peer contact has no periodic owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
 	if not await wait_until(func(): return client.world_replica.local_player().motion.velocity_mm_s==0 \
