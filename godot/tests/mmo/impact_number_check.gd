@@ -11,7 +11,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var effects: Node2D = EffectsScene.instantiate()
+	var effects: Node2D = EffectsScene.instantiate() as Node2D
 	root.add_child(effects)
 	effects.set("display_enabled", true)
 	var left := Vector2(240, 96)
@@ -20,8 +20,8 @@ func _run() -> void:
 	effects.call(&"show_damage", 12, right)
 	check(effects.get_child_count() == 2,
 		"same world presenter accepts multiple characters without FIFO delay")
-	var first: Node2D = effects.get_child(0)
-	var second: Node2D = effects.get_child(1)
+	var first: Node2D = effects.get_child(0) as Node2D
+	var second: Node2D = effects.get_child(1) as Node2D
 	check(first.global_position == left and second.global_position == right,
 		"hit origins are fixed world positions, independent from character motion")
 	check((first.get_node("Label") as Label).text == "-8" and (second.get_node("Label") as Label).text == "-12",
