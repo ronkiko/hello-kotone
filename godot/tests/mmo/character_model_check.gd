@@ -56,7 +56,7 @@ func run() -> void:
 	for no_response in [{"contacts":["p2"]},{"contacts":["wall_max"]},{"velocity_mm_s":3000}]:
 		check(not gait.try_contact_reaction(sprite,"yuna",no_response),"touch wall or motor without server response never stumbles")
 	check(sprite.sprite_frames.get_frame_count(&"stumble_back")==8 and not sprite.sprite_frames.get_animation_loop(&"stumble_back"),"intended reaction has eight non-looping authored frames")
-	check(not sprite.sprite_frames.has_animation(&"stumble_front"),"front impact art is not yet authored")
+	check(not sprite.sprite_frames.has_animation(&"stumble_front") and not sprite.sprite_frames.has_animation(&"stumble_right2"),"front art deferred and obsolete world-side animation removed")
 	var left_back := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
 		"contact_response_tick":6,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 	check(Gait.impact_side(left_back) == &"back" and gait.try_contact_reaction(sprite, "yuna", left_back)
