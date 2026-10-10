@@ -30,8 +30,8 @@ func try_contact_reaction(sprite: AnimatedSprite2D, character_model_id: String, 
 	var response_tick := int(motion.get("contact_response_tick", 0))
 	var response_facing := int(motion.get("contact_response_facing", 0))
 	var contacts: Variant = motion.get("contact_response_contacts", [])
-	if response_tick <= last_contact_response_tick or abs(delta_velocity) < MIN_PUSH_DELTA_MM_S \
-		or response_facing not in [-1, 1] or not contacts is Array or contacts.is_empty():
+	if response_tick <= last_contact_response_tick or delta_velocity < MIN_PUSH_DELTA_MM_S \
+		or response_facing != 1 or not contacts is Array or contacts.is_empty():
 		return false
 	if character_model_id != "yuna" or sprite == null or sprite.sprite_frames == null \
 		or not sprite.sprite_frames.has_animation(PUSH_REACTION) \
@@ -45,10 +45,6 @@ func try_contact_reaction(sprite: AnimatedSprite2D, character_model_id: String, 
 	stop_elapsed = 0.0
 	idle_elapsed = 0.0
 	sprite.stop()
-	# stumble_right2 is the authored rightward sequence. The physical response
-	# delta is signed, so a leftward shove uses the same fixed-canvas sequence
-	# mirrored in presentation only; collider/body state is untouched.
-	sprite.flip_h = delta_velocity < 0
 	sprite.animation = PUSH_REACTION
 	sprite.set_frame_and_progress(0, 0.0)
 	sprite.play()
