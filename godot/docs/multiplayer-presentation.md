@@ -64,40 +64,40 @@ interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolati
 and [advanced physics interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/advanced_physics_interpolation.html).
 
 
-Impact damage numbers are a separate cosmetic presentation from gait. The
-server `motion_frame` supplies `contact_impact_impulse_g_mm_s` (g·mm/s) and
-`contact_damage` (game-card-scored integer), associated with
-`contact_response_tick` and `contact_impact_sources`. Once a frame has
-passed protocol validation, `PlatformWorld` enqueues its received damage
-facts immediately from `motion_received`, **before** owner prediction or
-remote interpolation can overwrite position samples.
+Impact damage numbers are cosmetic and separate from gait. The authoritative
+server `motion_frame` contains `contact_impact_impulse_g_mm_s` and
+`contact_damage`, with receiver ID, causal `contact_response_tick` and
+`contact_impact_sources`. Godot consumes each accepted `motion_frame` at
+`WorldReplica.motion_received` ingress, **before** owner prediction or
+remote interpolation can overwrite motion samples.
 
-Each character has an independent `ImpactNumber` FIFO. The dispatcher
-accepts a damage amount and a frozen world-space position derived from the
-server event; it renders the first number immediately and staggers subsequent
-numbers by 40 ms. New events do NOT evict already rendered numbers or pending
-queue entries. `render_number(amount, world_position)` owns no physics,
-network or deduplication decisions. Each popup owns its own Tween and removes
-itself 2 seconds after its individual render start; moving characters do not
-drag old numbers along. Event ticks are deduplicated per character and scope.
-Only a scene/scope reset may clear an unfinished queue and its visuals.
+The entire world has exactly **one** `ImpactNumber` render component
+owned by `PlatformWorld`, not one renderer/queue per character. Ingress
+validates impact provenance and deduplicates causal ticks keyed by player ID
+within the current world scope. It converts the event's server position to
+a fixed world-space impact point and directly calls
+`render_number(amount, world_position)`. This renderer does not know the
+player ID, server tick, impact source or physics details.
 
-Project config in `godot/project.godot`:
+**There is no damage FIFO, stagger, cooldown, visible-count cap or eviction.**
+Each newly accepted damage event is displayed immediately when received.
+Each label owns a two-second rising/fading Tween and frees itself at completion,
+independently of any later events; old numbers do not follow walking characters.
+Only scene/visit scope changes discard remaining visual effects.
+
+Project config (`godot/project.godot`):
 
 ```ini
 [presentation]
 damage_numbers_enabled=true
-damage_number_stagger_seconds=0.04
 ```
 
-Turning `damage_numbers_enabled` off suppresses this optional visual
-presentation, never server-side damage or collision. No client HP mutation,
-no invented impulse, no local damage formula; authoritative card score
-arrives through the existing telemetry contract. Missing `stumble_front`
-art cannot suppress a valid damage number.
+Disabling visual numbers does not affect server collision physics, damage
+scoring or transport. The client never changes HP or derives damage locally.
+Missing `stumble_front` art cannot suppress a damage number.
 
-**Wire limitation:** the 20-Hz server `motion_frame` currently coalesces
-multiple contact facts between publications. This client FIFO preserves
-*every accepted published damage fact*, not physical impacts that were never
-delivered. A future durable HP/combat system needs ordered non-coalescing
-server events; it must not rely on the visual FIFO as a lossless damage ledger.
+**Transport limitation:** the 20-Hz server `motion_frame` currently coalesces
+some physical contact facts between publications. This immediate client
+renderer visualizes *every accepted published damage fact*, but cannot
+recover collisions never transmitted by the server. A reliable HP/combat
+ledger would require ordered, lossless server events.
