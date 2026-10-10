@@ -20,6 +20,11 @@ func _initialize() -> void:
 	check(owner.position == Vector2(0.0,-6.88),"ground pivot centers rectangle half-height upward")
 	check(proxy.shape.size == owner.shape.size and proxy.position == owner.position,
 		"owner and peer proxy geometry are identical for one body profile")
+	var body := CharacterBody2D.new()
+	body.safe_margin = 0.0
+	check(body.safe_margin == 0.0,
+		"owner native contact has no client-only recovery inflation beyond server dimensions")
+	body.free()
 	var before_size: Vector2 = owner.shape.size
 	var before_offset: Vector2 = owner.position
 	var visual := Node2D.new()
