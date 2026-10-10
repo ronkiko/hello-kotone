@@ -255,6 +255,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var renderer: Node = world.platform if role==2 else world.platform.remote_players[remote_id]
 	var gait: RefCounted = renderer._gait if role==2 else renderer.gait
 	var response_ticks: Array[int] = []
+	var damage_values: Array[int] = []
 	var reaction_ticks: Array[int] = []
 	var strongest_response := 0
 	var contact_at := -1
@@ -276,6 +277,11 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		var physical_sources: Array = frame_sample.get("contact_impact_sources",[])
 		if physical_sources.has(pusher_id) and response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
 			response_ticks.append(response_tick)
+			var impulse := int(frame_sample.get("contact_impact_impulse_g_mm_s", 0))
+			var damage := int(frame_sample.get("contact_damage", 0))
+			check(impulse > 0 and damage > 0 and damage <= 9999,
+				"authoritative contact supplies bounded impulse and scored damage")
+			damage_values.append(damage)
 			strongest_response=maxi(strongest_response,response_delta)
 			# contact_response is emitted only by authoritative peer contact. The
 			# 20-Hz snapshot contact-membership sample may legitimately miss a short
@@ -332,6 +338,8 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		check(not response_ticks.is_empty(), "observer receives measured physical impact")
 	check(not reaction_ticks.is_empty(),"Yuna owner and observer consume the actual impact reaction")
 	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
+	check(renderer.impact_numbers.last_impact_tick == response_ticks.back(),
+		"owner and observer damage popup consumed same causal impact tick")
 	check(reverse_after_contact==0,"physical peer contact has no periodic owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
@@ -339,6 +347,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		and renderer.sprite.animation==Appearance.idle_animation(1),"reaction returns to normal directional idle"): return false
 	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
 		"strongest_response_delta_mm_s":strongest_response,
+		"damage_values":damage_values,
 		"release_applied_tick":release_applied_tick if role==1 else null,
 		"repress_applied_tick":repress_applied_tick if role==1 else null,
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
@@ -351,6 +360,9 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var other_response_ticks: Array[int] = []
 	for tick in other.response_ticks: other_response_ticks.append(int(tick))
 	check(other_response_ticks==response_ticks,"owner and observer share the same sequence of causal server physical impact ticks")
+	var peer_damage_values: Array[int] = []
+	for amount in other.damage_values: peer_damage_values.append(int(amount))
+	check(peer_damage_values == damage_values, "owner and observer display identical authoritative impact damage")
 	await screenshot("real-peer-push")
 	return true
 
