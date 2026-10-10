@@ -4,7 +4,7 @@ const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
-const ImpactNumber = preload("res://scripts/presentation/impact_number.gd")
+const DamageEffectsScene: PackedScene = preload("res://scenes/mmo/damage_effects.tscn")
 const CharacterCollider = preload("res://scripts/presentation/character_collider.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 var pixels_per_meter: float = Appearance.world_pixels_per_meter()
@@ -56,9 +56,7 @@ var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulati
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
-var impact_numbers := ImpactNumber.new()
-# Ingress dedup belongs to World; the renderer sees neither players nor ticks.
-var _last_damage_tick_by_player: Dictionary = {}
+var damage_effects: Node2D = DamageEffectsScene.instantiate()
 var _local_model_id := ""
 
 func _ready() -> void:
@@ -97,8 +95,7 @@ func _ready() -> void:
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
 	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	character_root.add_child(visual_layer)
-	impact_numbers.name = "ImpactNumbers"
-	add_child(impact_numbers)
+	add_child(damage_effects)
 	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
 	Appearance.Library.install(sprite, "kotone")
@@ -122,7 +119,7 @@ func _ready() -> void:
 	MmoClient.control_sent.connect(_record_sent_control)
 	MmoClient.input_rejected.connect(_discard_rejected_control)
 	MmoClient.world_replica.motion_received.connect(_queue_owner_motion)
-	MmoClient.world_replica.motion_received.connect(_queue_impact_display)
+	MmoClient.world_replica.damage_resolved.connect(_on_damage_resolved)
 	MmoClient.world_replica.authoritative_snapshot_received.connect(_queue_snapshot_motion)
 	project(_map, _view, _display_x)
 
@@ -160,8 +157,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
 	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
 		_owner_scope = owner_scope
-		_last_damage_tick_by_player.clear()
-		impact_numbers.reset()
+		damage_effects.clear()
 		_clear_peer_proxies()
 		_local_player_id = view.local_player_id
 		_position_installed = true
@@ -250,27 +246,20 @@ func _queue_owner_motion(event: Dictionary) -> void:
 			_pending_owner_motion["simulation_tick"] = event.data.simulation_tick
 			return
 
-func _queue_impact_display(event: Dictionary) -> void:
-	# Ingress owns identity, causal dedup and event validation. The renderer
-	# only gets a number and the point where the hit actually occurred.
-	# This runs for every accepted motion_frame before motion interpolation.
-	if _suspended or not _position_installed or event.get("event") != "motion_frame":
+func _on_damage_resolved(event: Dictionary) -> void:
+	# Validated once by WorldReplica. Rendering has no replay cache or network
+	# semantics; the same handler serves local and remote target entities.
+	if _suspended or not _position_installed:
 		return
-	for sample in event.get("data", {}).get("players", []):
-		var id := str(sample.get("player_id", ""))
-		var tick := int(sample.get("contact_response_tick", 0))
-		if not _view.get("players", {}).has(id) or tick <= int(_last_damage_tick_by_player.get(id, 0)):
-			continue
-		var damage := int(sample.get("contact_damage", 0))
-		if damage <= 0 or int(sample.get("contact_impact_impulse_g_mm_s", 0)) <= 0 \
-				or sample.get("contact_impact_sources", []).is_empty():
-			continue
-		_last_damage_tick_by_player[id] = tick
-		var model := str(_view.players[id].character.appearance_payload.character_model_id)
-		var height_px: float = Appearance.display_height_px(model)
-		var point := to_global(Vector2(server_to_pixel(float(sample.position_mm)),
-			FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0)))
-		impact_numbers.render_number(damage, point)
+	var target: String = str(event.target_entity_id)
+	var players: Dictionary = _view.get("players", {})
+	if not players.has(target):
+		return
+	var model: String = str(players[target].character.appearance_payload.character_model_id)
+	var height_px: float = Appearance.display_height_px(model)
+	var point := to_global(Vector2(server_to_pixel(float(event.position_mm)),
+		FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0)))
+	damage_effects.show_damage(int(event.damage), point)
 
 func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 	for player in snapshot.get("players", []):
