@@ -60,7 +60,7 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 	var response_facing: Variant = motion.get("contact_response_facing", 0)
 	var response_tick: Variant = motion.get("contact_response_tick", 0)
 	var response_contacts_value: Variant = motion.get("contact_response_contacts", [])
-	var shove_sources_value: Variant = motion.get("contact_shove_sources", [])
+	var impact_sources_value: Variant = motion.get("contact_impact_sources", [])
 	if typeof(tick) != TYPE_INT or int(tick) < 0 or typeof(position) != TYPE_INT \
 		or typeof(velocity) != TYPE_INT or typeof(facing) != TYPE_INT or int(facing) not in [-1, 1] \
 		or not contacts_value is Array or typeof(response_delta) != TYPE_INT \
@@ -68,7 +68,7 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 		or int(response_facing) not in [-1, 0, 1] or typeof(response_tick) != TYPE_INT \
 		or int(response_tick) < 0 or int(response_tick) > int(tick) \
 		or not response_contacts_value is Array or response_contacts_value.size() > 63 \
-		or not shove_sources_value is Array or shove_sources_value.size() > 63:
+		or not impact_sources_value is Array or impact_sources_value.size() > 63:
 		return "ignored"
 	var contacts: Array = contacts_value.duplicate()
 	contacts.sort()
@@ -79,11 +79,11 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 	for contact in response_contacts:
 		if not Protocol.token(contact) or contact in ["wall_min", "wall_max"]:
 			return "ignored"
-	var shove_sources: Array = shove_sources_value.duplicate()
-	shove_sources.sort()
-	if shove_sources != shove_sources_value:
+	var impact_sources: Array = impact_sources_value.duplicate()
+	impact_sources.sort()
+	if impact_sources != impact_sources_value:
 		return "ignored"
-	for source in shove_sources:
+	for source in impact_sources:
 		if not Protocol.token(source):
 			return "ignored"
 	var has_response := int(response_delta) != 0
@@ -98,7 +98,7 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 		"contact_response_facing": int(response_facing),
 		"contact_response_tick": int(response_tick),
 		"contact_response_contacts": response_contacts,
-		"contact_shove_sources": shove_sources}
+		"contact_impact_sources": impact_sources}
 	if _samples.is_empty():
 		_append(next)
 		_metrics.accepted += 1
@@ -207,7 +207,7 @@ func _append(sample: Dictionary) -> void:
 			"contact_delta_velocity_mm_s":int(sample.contact_delta_velocity_mm_s),
 			"contact_response_facing":int(sample.contact_response_facing),
 			"contact_response_contacts":sample.contact_response_contacts.duplicate(),
-			"contact_shove_sources":sample.contact_shove_sources.duplicate()})
+			"contact_impact_sources":sample.contact_impact_sources.duplicate()})
 		while _responses.size() > MAX_SAMPLES: _responses.pop_front()
 	_samples.append(sample)
 	while _samples.size() > MAX_SAMPLES:
@@ -237,11 +237,11 @@ func _with_contact_response(state: Dictionary, render_tick: float) -> Dictionary
 		response = sample
 	if response.is_empty():
 		state.merge({"contact_delta_velocity_mm_s": 0, "contact_response_facing": 0,
-			"contact_response_tick": 0, "contact_response_contacts": [], "contact_shove_sources": []}, true)
+			"contact_response_tick": 0, "contact_response_contacts": [], "contact_impact_sources": []}, true)
 	else:
 		state.merge({"contact_delta_velocity_mm_s": int(response.contact_delta_velocity_mm_s),
 			"contact_response_facing": int(response.contact_response_facing),
 			"contact_response_tick": response_tick,
 			"contact_response_contacts": response.contact_response_contacts.duplicate(),
-			"contact_shove_sources": response.contact_shove_sources.duplicate()}, true)
+			"contact_impact_sources": response.contact_impact_sources.duplicate()}, true)
 	return state
