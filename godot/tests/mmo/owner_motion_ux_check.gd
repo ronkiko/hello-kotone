@@ -124,7 +124,7 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 		for _render in range(3):
 			platform._process(DT/3.0)
 			var sub_rendered: float = platform.character_root.position.x+platform.visual_layer.position.x
-			var sub_signed := direction*(sub_rendered-before)*125.0
+			var sub_signed := direction*(sub_rendered-before)*(1000.0 / platform.pixels_per_meter)
 			if ordinal>=12 and sub_signed < -0.1:
 				reverse_steps+=1
 				reverse_mm=maxf(reverse_mm,-sub_signed)
