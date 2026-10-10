@@ -54,7 +54,10 @@ static func pose(sprite: AnimatedSprite2D, walking: bool, facing: int, index: in
 		return
 	# Gait owns progression from displacement. Native playback stays paused so a
 	# blocked/stale world cannot advance legs independently of rendered movement.
+	# Directional idle/walk art is authored on both sides; clear any transient
+	# mirror used by a one-sided cosmetic reaction before returning to locomotion.
 	sprite.pause()
+	sprite.flip_h = false
 	sprite.animation = animation
 	sprite.frame = posmod(index, count)
 
