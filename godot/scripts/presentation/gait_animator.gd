@@ -1,10 +1,10 @@
 extends RefCounted
 ## Presentation reacts to the receiver-relative impact side, never world left/right.
-## Signed shove delta and receiver facing are authoritative facts from one server tick.
+## Physics reports actual mass/velocity contact response, source and receiver facing.
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const BACK_REACTION := &"stumble_back"
 const FRONT_REACTION := &"stumble_front"
-const MIN_SHOVE_DELTA_MM_S := 300
+const MIN_IMPACT_DELTA_MM_S := 300
 
 var cycle_pixels := 24.0
 var walk_distance := 0.0
@@ -20,12 +20,12 @@ static func impact_side(motion: Dictionary) -> StringName:
 	var response_tick := int(motion.get("contact_response_tick", 0))
 	var response_facing := int(motion.get("contact_response_facing", 0))
 	var contacts: Variant = motion.get("contact_response_contacts", [])
-	var shove_sources: Variant = motion.get("contact_shove_sources", [])
-	if response_tick <= 0 or absi(delta_velocity) < MIN_SHOVE_DELTA_MM_S \
+	var impact_sources: Variant = motion.get("contact_impact_sources", [])
+	if response_tick <= 0 or absi(delta_velocity) < MIN_IMPACT_DELTA_MM_S \
 		or response_facing not in [-1, 1] or not contacts is Array or contacts.is_empty() \
-		or not shove_sources is Array or shove_sources.is_empty():
+		or not impact_sources is Array or impact_sources.is_empty():
 		return &""
-	# A physical shove in the direction the receiver faces comes from behind.
+	# A true collision impact in the direction the receiver faces comes from behind.
 	# World X is only used to orient/mirror the sprite, not to select its action.
 	return &"back" if (delta_velocity > 0) == (response_facing > 0) else &"front"
 
