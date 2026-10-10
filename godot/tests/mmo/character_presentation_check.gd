@@ -55,7 +55,8 @@ func run() -> void:
 		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
 		if model == "yuna":
 			var remote_node: Node = platform.remote_players.p2
-			var physical_response := {"contact_delta_velocity_mm_s":8400,"contact_response_tick":12,"contact_response_facing":1,"contact_response_contacts":["p1"]}
+			var physical_response := {"contact_delta_velocity_mm_s":8400,"contact_response_tick":12,"contact_response_facing":1,
+				"contact_response_contacts":["p1"],"contact_shove_sources":["p1"]}
 			check(remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "remote starts received mass-aware reaction")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
@@ -97,7 +98,7 @@ func run() -> void:
 		var push_gait := Gait.new()
 		push_gait.reset(own, 1)
 		var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
-			"contact_response_tick":7,"contact_response_contacts":["p2"]}
+			"contact_response_tick":7,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 		var reaction_started: bool = push_gait.try_contact_reaction(own, model, push)
 		if model == "yuna":
 			check(reaction_started and own.animation == &"stumble_right2" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
@@ -105,7 +106,7 @@ func run() -> void:
 			check(own.animation == &"stumble_right2", model + " reaction holds over gait until SpriteFrames completes it")
 			own.set_frame_and_progress(4, 0.5)
 			var second_push := {"contact_delta_velocity_mm_s":6000,"contact_response_facing":1,
-				"contact_response_tick":8,"contact_response_contacts":["p2"]}
+				"contact_response_tick":8,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 			check(push_gait.try_contact_reaction(own, model, second_push)
 				and own.animation == &"stumble_right2" and own.frame == 0
 				and push_gait.last_contact_response_tick == 8,
@@ -113,11 +114,17 @@ func run() -> void:
 			check(not push_gait.try_contact_reaction(own, model, second_push),
 				model + " duplicate response tick cannot restart reaction twice")
 			var opposite_push := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":1,
-				"contact_response_tick":9,"contact_response_contacts":["p2"]}
+				"contact_response_tick":9,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 			check(not push_gait.try_contact_reaction(own, model, opposite_push),
 				model + " opposite-sign response is not the authored rightward stumble reaction")
 			check(push_gait.last_contact_response_tick == 8,
 				model + " rejected opposite-sign response cannot consume its causal tick")
+			var pusher_slowdown := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
+				"contact_response_tick":10,"contact_response_contacts":["p2"],"contact_shove_sources":[]}
+			check(not push_gait.try_contact_reaction(own, model, pusher_slowdown),
+				model + " generic pusher contact slowdown is not a received shove reaction")
+			check(push_gait.last_contact_response_tick == 8,
+				model + " non-shove contact response cannot consume Yuna reaction tick")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
 		check(platform.character_collision.shape.size == collider_size
