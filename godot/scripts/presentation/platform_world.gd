@@ -57,6 +57,8 @@ var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulati
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
 var impact_numbers := ImpactNumber.new()
+# Ingress dedup belongs to World; the renderer sees neither players nor ticks.
+var _last_damage_tick_by_player: Dictionary = {}
 var _local_model_id := ""
 
 func _ready() -> void:
@@ -96,7 +98,7 @@ func _ready() -> void:
 	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	character_root.add_child(visual_layer)
 	impact_numbers.name = "ImpactNumbers"
-	character_root.add_child(impact_numbers)
+	add_child(impact_numbers)
 	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
 	Appearance.Library.install(sprite, "kotone")
@@ -158,6 +160,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
 	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
 		_owner_scope = owner_scope
+		_last_damage_tick_by_player.clear()
 		impact_numbers.reset()
 		_clear_peer_proxies()
 		_local_player_id = view.local_player_id
@@ -194,6 +197,7 @@ func set_suspended(value: bool) -> void:
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
 		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
+		_last_damage_tick_by_player.clear()
 		impact_numbers.reset()
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
@@ -247,24 +251,26 @@ func _queue_owner_motion(event: Dictionary) -> void:
 			return
 
 func _queue_impact_display(event: Dictionary) -> void:
-	# Presentation consumes each accepted motion_frame at ingress, *before*
-	# owner prediction or remote interpolation can coalesce motion samples.
+	# Ingress owns identity, causal dedup and event validation. The renderer
+	# only gets a number and the point where the hit actually occurred.
+	# This runs for every accepted motion_frame before motion interpolation.
 	if _suspended or not _position_installed or event.get("event") != "motion_frame":
 		return
 	for sample in event.get("data", {}).get("players", []):
-		if int(sample.get("contact_damage", 0)) <= 0:
-			continue
 		var id := str(sample.get("player_id", ""))
-		if not _view.get("players", {}).has(id):
+		var tick := int(sample.get("contact_response_tick", 0))
+		if not _view.get("players", {}).has(id) or tick <= int(_last_damage_tick_by_player.get(id, 0)):
 			continue
+		var damage := int(sample.get("contact_damage", 0))
+		if damage <= 0 or int(sample.get("contact_impact_impulse_g_mm_s", 0)) <= 0 \
+				or sample.get("contact_impact_sources", []).is_empty():
+			continue
+		_last_damage_tick_by_player[id] = tick
 		var model := str(_view.players[id].character.appearance_payload.character_model_id)
 		var height_px: float = Appearance.display_height_px(model)
-		var point := Vector2(server_to_pixel(float(sample.position_mm)),
-			FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0))
-		if id == _local_player_id:
-			impact_numbers.show_impact(sample, point)
-		elif remote_players.has(id):
-			remote_players[id].impact_numbers.show_impact(sample, point)
+		var point := to_global(Vector2(server_to_pixel(float(sample.position_mm)),
+			FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0)))
+		impact_numbers.render_number(damage, point)
 
 func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 	for player in snapshot.get("players", []):
