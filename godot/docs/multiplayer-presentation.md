@@ -64,40 +64,34 @@ interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolati
 and [advanced physics interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/advanced_physics_interpolation.html).
 
 
-Impact damage numbers are cosmetic and separate from gait. The authoritative
-server `motion_frame` contains `contact_impact_impulse_g_mm_s` and
-`contact_damage`, with receiver ID, causal `contact_response_tick` and
-`contact_impact_sources`. Godot consumes each accepted `motion_frame` at
-`WorldReplica.motion_received` ingress, **before** owner prediction or
-remote interpolation can overwrite motion samples.
+Damage display is a **standard Godot scene**, not a custom event queue.
 
-The entire world has exactly **one** `ImpactNumber` render component
-owned by `PlatformWorld`, not one renderer/queue per character. Ingress
-validates impact provenance and deduplicates causal ticks keyed by player ID
-within the current world scope. It converts the event's server position to
-a fixed world-space impact point and directly calls
-`render_number(amount, world_position)`. This renderer does not know the
-player ID, server tick, impact source or physics details.
+* Server `damage_resolved` is an ordered, non-coalesced gameplay fact,
+  independent of the 20-Hz `motion_frame` used for interpolation.
+* `WorldReplica` validates the packet, checks its scope, target/source
+  entity membership and event sequence, then emits
+  `signal damage_resolved(event)`. All network/ordering logic ends there.
+* The world-owned presenter `DamageEffects.tscn` subscribes through
+  `PlatformWorld` and converts the server contact `position_mm` into the
+  SubViewport's world coordinates. It receives only damage amount and point.
+* Each call instantiates `DamageNumber.tscn` via `PackedScene.instantiate()`.
+  Its `Label` and `AnimationPlayer` are edited in the Godot scene itself;
+  the animation floats and fades for 2 seconds and
+  `animation_finished` calls `queue_free()`. No project timers,
+  `Tween`, FIFOs, per-character managers, delays or visible-count caps.
+* The only config toggle is
+  `[presentation] damage_numbers_enabled=true` in `project.godot`.
+  Turning it off disables visuals, not server physics or damage scoring.
+* `motion_frame` retains mass-aware signed contact reaction fields for
+  `stumble_back` / future `stumble_front`; damage score and impulse are
+  no longer in the movement packet. One physical hit can produce an
+  animation cue and a separate reliable damage event.
+* HP is a **future authoritative card-owned entity attribute**, not a
+  visual number accumulator. A future health bar uses
+  `TextureProgressBar` updated from replicated HP state/snapshots. No
+  `hp -= damage` in Godot and no current HP mutation.
 
-**There is no damage FIFO, stagger, cooldown, visible-count cap or eviction.**
-Each newly accepted damage event is displayed immediately when received.
-Each label owns a two-second rising/fading Tween and frees itself at completion,
-independently of any later events; old numbers do not follow walking characters.
-Only scene/visit scope changes discard remaining visual effects.
-
-Project config (`godot/project.godot`):
-
-```ini
-[presentation]
-damage_numbers_enabled=true
-```
-
-Disabling visual numbers does not affect server collision physics, damage
-scoring or transport. The client never changes HP or derives damage locally.
-Missing `stumble_front` art cannot suppress a damage number.
-
-**Transport limitation:** the 20-Hz server `motion_frame` currently coalesces
-some physical contact facts between publications. This immediate client
-renderer visualizes *every accepted published damage fact*, but cannot
-recover collisions never transmitted by the server. A reliable HP/combat
-ledger would require ordered, lossless server events.
+Transport ordering is handled by the existing Python MMO observation
+connection; `MultiplayerSpawner`, `MultiplayerSynchronizer`, and Godot
+RPC are *not* used because this project's server is not a Godot
+MultiplayerAPI peer.
