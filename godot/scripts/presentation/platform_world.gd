@@ -56,7 +56,7 @@ var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulati
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
-var damage_effects: Node2D = DamageEffectsScene.instantiate()
+var damage_effects: Node2D = DamageEffectsScene.instantiate() as Node2D
 var _local_model_id := ""
 
 func _ready() -> void:
