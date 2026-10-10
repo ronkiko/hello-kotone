@@ -84,10 +84,11 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 	if impact_sources != impact_sources_value:
 		return "ignored"
 	for source in impact_sources:
-		if not Protocol.token(source):
+		if not Protocol.token(source) or not source in response_contacts:
 			return "ignored"
 	var has_response := int(response_delta) != 0
-	if has_response != (not response_contacts.is_empty()) \
+	if (not impact_sources.is_empty() and not has_response) \
+		or has_response != (not response_contacts.is_empty()) \
 		or has_response != (int(response_facing) in [-1, 1]) \
 		or has_response != (int(response_tick) > 0):
 		return "ignored"
