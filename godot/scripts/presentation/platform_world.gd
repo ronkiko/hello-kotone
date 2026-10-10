@@ -6,7 +6,7 @@ const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
 const CharacterCollider = preload("res://scripts/presentation/character_collider.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
-const PIXELS_PER_METER := 8.0
+var pixels_per_meter: float = Appearance.world_pixels_per_meter()
 const ORIGIN_X := 32.0
 const FLOOR_Y := 104.0
 const TILE_SIZE := 16
@@ -125,7 +125,7 @@ func set_movement_rules(rules: Dictionary) -> bool:
 	return true
 
 func server_to_pixel(position_mm: float) -> float:
-	return ORIGIN_X + (float(position_mm) / 1000.0 - float(_map.min_x) / float(_map.units_per_meter)) * PIXELS_PER_METER
+	return ORIGIN_X + (float(position_mm) / 1000.0 - float(_map.min_x) / float(_map.units_per_meter)) * pixels_per_meter
 
 func project(document: Dictionary, view: Dictionary, _unused: Variant = null) -> bool:
 	if _movement.is_empty() or not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")): return false
@@ -141,7 +141,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	_view = view.duplicate(true)
 	if map_changed:
 		_install_world_bounds()
-	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * PIXELS_PER_METER
+	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * pixels_per_meter
 	var local: Dictionary = players[view.local_player_id]
 	var local_physics := Protocol.selected_physics(_movement, local)
 	_movement.merge(local_physics.body, true)
@@ -165,7 +165,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	if _local_model_id != local.character.appearance_payload.character_model_id:
 		_local_model_id = local.character.appearance_payload.character_model_id
 		_gait.reset(sprite, int(local.motion.facing))
-	_gait.configure(float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0)
+	_gait.configure(float(_movement.top_speed_mm_s) * pixels_per_meter / 1000.0)
 	local_label.position.y = FLOOR_Y - Appearance.display_height_px(local.character.appearance_payload.character_model_id) - 18
 	_sync_players()
 	_reframe()
@@ -206,7 +206,7 @@ func prediction_diagnostics() -> Dictionary:
 
 func _configure_owner_shape() -> void:
 	if _movement.is_empty(): return
-	CharacterCollider.install(character_collision, _movement, PIXELS_PER_METER)
+	CharacterCollider.install(character_collision, _movement, pixels_per_meter)
 
 func _install_world_bounds() -> void:
 	for node in _bound_nodes:
@@ -217,7 +217,7 @@ func _install_world_bounds() -> void:
 	for edge in [{"name": "wall_min", "map_x": _map.min_x}, {"name": "wall_max", "map_x": _map.max_x}]:
 		var wall := StaticBody2D.new()
 		wall.name = str(edge.name)
-		wall.position = Vector2(ORIGIN_X + (float(edge.map_x - _map.min_x) / float(_map.units_per_meter)) * PIXELS_PER_METER, FLOOR_Y)
+		wall.position = Vector2(ORIGIN_X + (float(edge.map_x - _map.min_x) / float(_map.units_per_meter)) * pixels_per_meter, FLOOR_Y)
 		wall.collision_layer = 1
 		wall.collision_mask = 0
 		wall.set_meta("contact_id", edge.name)
@@ -314,7 +314,7 @@ func _process(delta: float) -> void:
 	if _position_installed:
 		local_label.position.x = character_root.position.x + visual_layer.position.x - local_label.size.x / 2.0
 		var control: Dictionary = MmoClient.prediction_control_state()
-		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / PIXELS_PER_METER),
+		var predicted_motion := {"velocity_mm_s": roundi(character_root.velocity.x * 1000.0 / pixels_per_meter),
 			"facing": control.facing}
 		if _suspended: sprite.pause()
 		else: _gait.update(sprite, 0.0, _gait_displacement, int(predicted_motion.facing), delta)
@@ -328,9 +328,9 @@ func _process(delta: float) -> void:
 			node.render_at(server_to_pixel(float(remote_motion.position_mm)), remote_motion, delta)
 
 func _integrate_control(control: Dictionary, delta: float) -> void:
-	var target_speed := float(control.drive) * float(_movement.top_speed_mm_s) * PIXELS_PER_METER / 1000.0
+	var target_speed := float(control.drive) * float(_movement.top_speed_mm_s) * pixels_per_meter / 1000.0
 	var force := float(_movement.drive_force_mN if control.drive != 0 else _movement.brake_force_mN)
-	var acceleration := force * PIXELS_PER_METER / float(_movement.mass_g)
+	var acceleration := force * pixels_per_meter / float(_movement.mass_g)
 	character_root.velocity.x = move_toward(character_root.velocity.x, target_speed, acceleration * delta)
 	character_root.velocity.y = 0.0
 	# Peer proxies are geometric occupancy for prediction, not infinite-mass
@@ -441,7 +441,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	_peer_lead_ticks = replay.size()
 	_peer_anchor_ordinal = _prediction_ordinal
 	character_root.position.x = server_to_pixel(int(motion.position_mm))
-	character_root.velocity = Vector2(float(motion.velocity_mm_s) * PIXELS_PER_METER / 1000.0, 0.0)
+	character_root.velocity = Vector2(float(motion.velocity_mm_s) * pixels_per_meter / 1000.0, 0.0)
 	_predicted_contacts.assign(motion.contacts)
 	var replay_index := 0
 	for entry in replay:
@@ -480,7 +480,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		if not force_snap: _prediction_metrics.snaps += 1
 
 func _pixel_to_server_mm(pixel_x: float) -> int:
-	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / PIXELS_PER_METER) * 1000.0)
+	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / pixels_per_meter) * 1000.0)
 
 func _fence_prediction() -> void:
 	if _prediction_fenced: return
@@ -553,7 +553,7 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 			proxy.set_meta("contact_id", id)
 			var collision := CollisionShape2D.new()
 			var body: Dictionary = Protocol.selected_physics(_movement, _view.players[id]).body
-			CharacterCollider.install(collision, body, PIXELS_PER_METER)
+			CharacterCollider.install(collision, body, pixels_per_meter)
 			proxy.add_child(collision)
 			add_child(proxy)
 			_peer_proxies[id] = proxy
@@ -576,7 +576,7 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 		else:
 			peer_mm = minf(peer_mm, owner_mm - separation_mm)
 		proxy.position = Vector2(server_to_pixel(peer_mm), FLOOR_Y)
-		proxy.constant_linear_velocity = Vector2(float(hint.velocity_mm_s)*PIXELS_PER_METER/1000.0,0)
+		proxy.constant_linear_velocity = Vector2(float(hint.velocity_mm_s)*pixels_per_meter/1000.0,0)
 
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0
@@ -627,7 +627,7 @@ func ruler_marks() -> Array[Dictionary]:
 	var marks: Array[Dictionary] = []
 	if _map.is_empty():
 		return marks
-	var pixels_per_unit := PIXELS_PER_METER / float(_map.units_per_meter)
+	var pixels_per_unit := pixels_per_meter / float(_map.units_per_meter)
 	var step := 1
 	while float(step) * pixels_per_unit < 8.0:
 		step *= 10
@@ -656,7 +656,7 @@ func _draw_ruler() -> void:
 	var high := minf(left + width, ORIGIN_X + world_length)
 	var font := ThemeDB.fallback_font
 	var confirmed := server_to_pixel(_view.confirmed_local_position_mm)
-	var cell_width := PIXELS_PER_METER / float(_map.units_per_meter)
+	var cell_width := pixels_per_meter / float(_map.units_per_meter)
 	var cell_left := maxf(ORIGIN_X, confirmed - cell_width / 2.0)
 	var cell_right := minf(ORIGIN_X + world_length, confirmed + cell_width / 2.0)
 	ruler.draw_rect(Rect2(low, FLOOR_Y, high - low, 12), Color("172c39"))
