@@ -74,7 +74,7 @@ static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 		previous = contact
 	previous = ""
 	for source in value.contact_shove_sources:
-		if not token(source) or source <= previous or not value.contact_response_contacts.has(source): return false
+		if not token(source) or source <= previous or source == value.player_id: return false
 		previous = source
 	var has_response := int(value.contact_delta_velocity_mm_s) != 0
 	if has_response != (not value.contact_response_contacts.is_empty()) \
