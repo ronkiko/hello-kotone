@@ -111,7 +111,7 @@ func run() -> void:
 			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
 			remote_node.set_suspended(true)
 			check(remote_node.gait.last_contact_response_tick == 0 and remote_node.timeline._responses.is_empty(), "visit suspension clears causal response scope")
-			check(remote_node.impact_numbers.last_impact_tick == 0 and remote_node.impact_numbers._visible.is_empty(),
+			check(remote_node.impact_numbers.last_impact_tick == 0 and remote_node.impact_numbers._pending.is_empty(),
 				"visit suspension discards stale floating damage numbers")
 			remote_node.set_suspended(false)
 		var position: Vector2 = platform.character_root.position
