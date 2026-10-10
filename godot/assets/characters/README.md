@@ -74,8 +74,8 @@ uses a reviewed plan for one pose and performs a single uniform source transform
 
 Required animations are `idle_left`, `idle_right`, `walk_left`, `walk_right`.
 This rule applies to prepared directional **walk/idle** art: no runtime mirroring
-or missing-view fallback for locomotion. Receiver-relative impact actions are
-semantic `stumble_back` / future `stumble_front`; the current Yuna `stumble_back`
+or missing-view fallback for locomotion. Receiver-relative impact actions use server-measured contact impulse and
+`contact_impact_sources`; they are semantic `stumble_back` / future `stumble_front`; the current Yuna `stumble_back`
 asset may mirror horizontally as a presentation-only transform when she faces left.
 Asymmetric models must supply independent directional locomotion source poses.
 
