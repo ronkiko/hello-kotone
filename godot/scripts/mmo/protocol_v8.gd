@@ -54,14 +54,15 @@ static func motion(value: Variant) -> bool:
 
 static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "control_started_tick", "contacts", \
-		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts"]) \
+		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts", "contact_shove_sources"]) \
 		or not token(value.player_id) or not integer(value.position_mm, -1000000000, 1000000000) \
 		or not integer(value.velocity_mm_s, -50000, 50000) or not integer(value.facing, -1, 1) or value.facing not in [-1, 1] \
 		or not integer(value.last_applied_control_seq) or not integer(value.control_started_tick, 0, frame_tick) or not value.contacts is Array or value.contacts.size() > 65 \
 		or not integer(value.contact_delta_velocity_mm_s, -100000, 100000) \
 		or not integer(value.contact_response_facing, -1, 1) \
 		or not integer(value.contact_response_tick, 0, frame_tick) \
-		or not value.contact_response_contacts is Array or value.contact_response_contacts.size() > 63:
+		or not value.contact_response_contacts is Array or value.contact_response_contacts.size() > 63 \
+		or not value.contact_shove_sources is Array or value.contact_shove_sources.size() > 63:
 		return false
 	var previous := ""
 	for contact in value.contacts:
@@ -71,6 +72,10 @@ static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	for contact in value.contact_response_contacts:
 		if not token(contact) or contact in ["wall_min", "wall_max"] or contact <= previous: return false
 		previous = contact
+	previous = ""
+	for source in value.contact_shove_sources:
+		if not token(source) or source <= previous or not value.contact_response_contacts.has(source): return false
+		previous = source
 	var has_response := int(value.contact_delta_velocity_mm_s) != 0
 	if has_response != (not value.contact_response_contacts.is_empty()) \
 		or has_response != (int(value.contact_response_facing) in [-1, 1]) \
