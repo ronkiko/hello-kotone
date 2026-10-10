@@ -34,10 +34,10 @@ func project(player: Dictionary, confirmed_pixel: float, scope: String, received
 	var motion: Dictionary = player.motion.duplicate(true)
 	motion["contacts"] = player.get("contacts", []).duplicate()
 	for key in ["contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick",
-			"contact_response_contacts", "contact_shove_sources"]:
+			"contact_response_contacts", "contact_impact_sources"]:
 		if latest_frame_sample.has(key):
 			motion[key] = latest_frame_sample[key].duplicate(true) \
-				if key in ["contact_response_contacts", "contact_shove_sources"] else latest_frame_sample[key]
+				if key in ["contact_response_contacts", "contact_impact_sources"] else latest_frame_sample[key]
 	var update_result: String = timeline.push_sample(scope, motion, received_usec, top_speed_mm_s)
 	_target_x = confirmed_pixel
 	if update_result != "ignored":
