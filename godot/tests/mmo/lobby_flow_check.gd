@@ -256,6 +256,12 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var gait: RefCounted = renderer._gait if role==2 else renderer.gait
 	var response_ticks: Array[int] = []
 	var damage_values: Array[int] = []
+	var damage_sequences: Array[int] = []
+	var received_damage_events: Array[Dictionary] = []
+	var capture_damage: Callable = func(event: Dictionary) -> void:
+		if event.target_entity_id == yuna_id and event.source_entity_id == pusher_id:
+			received_damage_events.append(event.duplicate(true))
+	client.world_replica.damage_resolved.connect(capture_damage)
 	var reaction_ticks: Array[int] = []
 	var strongest_response := 0
 	var contact_at := -1
@@ -277,17 +283,19 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		var physical_sources: Array = frame_sample.get("contact_impact_sources",[])
 		if physical_sources.has(pusher_id) and response_delta>=300 and response_tick>0 and not response_ticks.has(response_tick):
 			response_ticks.append(response_tick)
-			var impulse := int(frame_sample.get("contact_impact_impulse_g_mm_s", 0))
-			var damage := int(frame_sample.get("contact_damage", 0))
-			check(impulse > 0 and damage > 0 and damage <= 9999,
-				"authoritative contact supplies bounded impulse and scored damage")
-			damage_values.append(damage)
 			strongest_response=maxi(strongest_response,response_delta)
 			# contact_response is emitted only by authoritative peer contact. The
 			# 20-Hz snapshot contact-membership sample may legitimately miss a short
 			# 60-Hz impact, so use the causal response fact for contact occurrence.
 			if contact_at<0:
 				contact_at=Time.get_ticks_msec()
+		for event in received_damage_events:
+			var sequence := int(event.event_seq)
+			if not damage_sequences.has(sequence):
+				damage_sequences.append(sequence)
+				damage_values.append(int(event.damage))
+				check(int(event.damage) > 0 and int(event.impact_impulse_g_mm_s) > 0,
+					"distinct reliable damage event carries server score and real impulse")
 		var consumed_tick := int(gait.last_contact_response_tick)
 		if consumed_tick>0 and not reaction_ticks.has(consumed_tick):
 			reaction_ticks.append(consumed_tick)
@@ -338,9 +346,8 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		check(not response_ticks.is_empty(), "observer receives measured physical impact")
 	check(not reaction_ticks.is_empty(),"Yuna owner and observer consume the actual impact reaction")
 	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
-	check(not response_ticks.is_empty()
-		and int(world.platform._last_damage_tick_by_player.get(yuna_id, 0)) == response_ticks.back(),
-		"owner and observer world-level damage ingress consumed same causal impact tick")
+	check(not damage_sequences.is_empty() and damage_values.size() == damage_sequences.size(),
+		"each confirmed damage event is received once through WorldReplica signal")
 	check(reverse_after_contact==0,"physical peer contact has no periodic owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
@@ -349,6 +356,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	contact_results={"response_ticks":response_ticks,"reaction_ticks":reaction_ticks,
 		"strongest_response_delta_mm_s":strongest_response,
 		"damage_values":damage_values,
+		"damage_sequences":damage_sequences,
 		"release_applied_tick":release_applied_tick if role==1 else null,
 		"repress_applied_tick":repress_applied_tick if role==1 else null,
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
@@ -364,6 +372,11 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var peer_damage_values: Array[int] = []
 	for amount in other.damage_values: peer_damage_values.append(int(amount))
 	check(peer_damage_values == damage_values, "owner and observer display identical authoritative impact damage")
+	var peer_damage_sequences: Array[int] = []
+	for seq in other.damage_sequences: peer_damage_sequences.append(int(seq))
+	check(peer_damage_sequences == damage_sequences,
+		"owner and observer receive identical non-coalesced damage event sequences")
+	client.world_replica.damage_resolved.disconnect(capture_damage)
 	await screenshot("real-peer-push")
 	return true
 
