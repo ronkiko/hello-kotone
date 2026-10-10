@@ -181,7 +181,7 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var movement_deadline := Time.get_ticks_msec() + 5000
 	while Time.get_ticks_usec()-start_usec<1000000 and Time.get_ticks_msec()<movement_deadline:
 		var owner_x: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
-		var signed_mm := direction*(owner_x-owner_previous)*125.0
+		var signed_mm: float = direction*(owner_x-owner_previous)*(1000.0 / Appearance.world_pixels_per_meter())
 		if ux_trace.size()<1500: ux_trace.append(world.platform.prediction_diagnostics().merged({"signed_delta_mm":signed_mm}))
 		if signed_mm < -0.1:
 			negative_steps+=1
@@ -205,7 +205,7 @@ func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var release_deadline := Time.get_ticks_msec()+1000
 	while Time.get_ticks_msec()<release_deadline:
 		var owner_x: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
-		var signed_mm := direction*(owner_x-owner_previous)*125.0
+		var signed_mm: float = direction*(owner_x-owner_previous)*(1000.0 / Appearance.world_pixels_per_meter())
 		if ux_trace.size()<1500: ux_trace.append(world.platform.prediction_diagnostics().merged({"signed_delta_mm":signed_mm}))
 		if signed_mm < -0.1:
 			negative_steps+=1
@@ -284,7 +284,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		if consumed_tick>0 and not reaction_ticks.has(consumed_tick):
 			reaction_ticks.append(consumed_tick)
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
-		var signed_mm := (rendered-before)*125.0
+		var signed_mm: float = (rendered-before)*(1000.0 / Appearance.world_pixels_per_meter())
 		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < -0.1:
 			reverse_after_contact+=1
 			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
@@ -325,7 +325,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		await process_frame
 	if role==1: client.set_control(0,1)
 	check(contact_at>=0,"authoritative peer contact produces a causal response")
-	check(strongest_response>=8400,"50-kg Yuna contact response reaches twice her 4200-mm/s locomotion cap")
+	check(strongest_response>=8400,"50-kg Yuna shove remains 8400 mm/s after Walk cap decreases to 1820 mm/s")
 	if role==1:
 		check(release_applied_tick>=0 and repress_applied_tick>release_applied_tick,
 			"release and repress are both observed on authoritative applied-control boundaries")
@@ -403,7 +403,7 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 			if contact_at<0: contact_at=Time.get_ticks_msec()
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
 			if role==2 else world.platform.remote_players[remote_id].visual_x
-		var signed_mm := -(rendered-before)*125.0
+		var signed_mm: float = -(rendered-before)*(1000.0 / Appearance.world_pixels_per_meter())
 		if contact_at>=0 and signed_mm < -0.1:
 			reverse_steps += 1
 		before=rendered
