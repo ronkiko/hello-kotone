@@ -66,10 +66,38 @@ and [advanced physics interpolation](https://docs.godotengine.org/en/4.7/tutoria
 
 Impact damage numbers are a separate cosmetic presentation from gait. The
 server `motion_frame` supplies `contact_impact_impulse_g_mm_s` (g·mm/s) and
-`contact_damage` (game-card-scored integer), associated with the existing
-`contact_response_tick` and `contact_impact_sources`. Each owner/remote
-character uses a reusable `ImpactNumber` overlay above its physical root:
-`-N` rises/fades for 2 seconds, max 4 concurrent popups, no replay of a tick,
-reset on realm scope/session suspension. Missing `stumble_front` art does not
-suppress a valid damage number. No client HP mutation, no invented impulse or
-local damage formula; authoritative card score arrives in telemetry.
+`contact_damage` (game-card-scored integer), associated with
+`contact_response_tick` and `contact_impact_sources`. Once a frame has
+passed protocol validation, `PlatformWorld` enqueues its received damage
+facts immediately from `motion_received`, **before** owner prediction or
+remote interpolation can overwrite position samples.
+
+Each character has an independent `ImpactNumber` FIFO. The dispatcher
+accepts a damage amount and a frozen world-space position derived from the
+server event; it renders the first number immediately and staggers subsequent
+numbers by 40 ms. New events do NOT evict already rendered numbers or pending
+queue entries. `render_number(amount, world_position)` owns no physics,
+network or deduplication decisions. Each popup owns its own Tween and removes
+itself 2 seconds after its individual render start; moving characters do not
+drag old numbers along. Event ticks are deduplicated per character and scope.
+Only a scene/scope reset may clear an unfinished queue and its visuals.
+
+Project config in `godot/project.godot`:
+
+```ini
+[presentation]
+damage_numbers_enabled=true
+damage_number_stagger_seconds=0.04
+```
+
+Turning `damage_numbers_enabled` off suppresses this optional visual
+presentation, never server-side damage or collision. No client HP mutation,
+no invented impulse, no local damage formula; authoritative card score
+arrives through the existing telemetry contract. Missing `stumble_front`
+art cannot suppress a valid damage number.
+
+**Wire limitation:** the 20-Hz server `motion_frame` currently coalesces
+multiple contact facts between publications. This client FIFO preserves
+*every accepted published damage fact*, not physical impacts that were never
+delivered. A future durable HP/combat system needs ordered non-coalescing
+server events; it must not rely on the visual FIFO as a lossless damage ledger.
