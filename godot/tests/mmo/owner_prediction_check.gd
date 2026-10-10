@@ -243,8 +243,8 @@ func run() -> void:
 	platform.remote_players.p2.timeline._samples.back().position_mm = 		platform._pixel_to_server_mm(platform.character_root.position.x)
 	platform.remote_players.p2.timeline._samples.back().received_usec = Time.get_ticks_usec()
 	platform._update_peer_proxies(0.0)
-	var proxy_center_mm := platform._pixel_to_server_mm(platform._peer_proxies.p2.position.x)
-	var owner_center_mm := platform._pixel_to_server_mm(platform.character_root.position.x)
+	var proxy_center_mm: int = platform._pixel_to_server_mm(platform._peer_proxies.p2.position.x)
+	var owner_center_mm: int = platform._pixel_to_server_mm(platform.character_root.position.x)
 	check(proxy_center_mm >= owner_center_mm + int((int(owner_body.collision_width_mm)
 		+ int(peer_body.collision_width_mm)) / 2),
 		"peer proxy refresh cannot teleport inside owner collider")
