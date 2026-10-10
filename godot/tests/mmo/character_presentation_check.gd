@@ -87,13 +87,21 @@ func run() -> void:
 			var damage_response := physical_response.duplicate(true)
 			damage_response["contact_impact_impulse_g_mm_s"] = 37900000
 			damage_response["contact_damage"] = 8
-			remote_node.render_at(remote_node.position.x, damage_response, 0.016)
+			var received_damage := damage_response.duplicate(true)
+			received_damage["player_id"] = "p2"
+			received_damage["position_mm"] = int(remote.motion.position_mm)
+			var damage_packet := {"event":"motion_frame", "data":{"players":[received_damage]}}
+			platform._queue_impact_display(damage_packet)
 			check(remote_node.impact_numbers.get_child_count() == 1
 				and remote_node.impact_numbers.get_child(0).text == "-8",
-				"remote impact draws measured server damage at the character root")
+				"remote impact displays server score immediately upon frame arrival")
+			platform._queue_impact_display(damage_packet)
+			check(remote_node.impact_numbers.get_child_count() == 1
+				and remote_node.impact_numbers._pending.is_empty(),
+				"repeated server impact tick cannot enqueue duplicate damage")
 			remote_node.render_at(remote_node.position.x, damage_response, 0.016)
 			check(remote_node.impact_numbers.get_child_count() == 1,
-				"repeated remote render does not duplicate impact number")
+				"remote interpolation cannot enqueue or evict damage numbers")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
 			contact_player.contacts = ["p1"]
