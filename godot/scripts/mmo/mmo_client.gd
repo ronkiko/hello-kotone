@@ -236,7 +236,27 @@ func _on_frame(frame: PackedByteArray) -> void:
 		_fail("UNSUPPORTED_VERSION", true) if Protocol.version_error(message) else _fail("INVALID_MESSAGE")
 		return
 	if message.get("type") == "event":
-		if session_id.is_empty() or not Protocol.event(message):
+		if session_id.is_empty():
+			push_error("MMO event received without an active session; event_type=%s" % str(message.get("event", "?")))
+			_fail("INVALID_EVENT")
+			return
+		if not Protocol.event(message):
+			# No payload values or character identities in logs. Structural keys
+			# distinguish a stale 8.10 damage-in-motion server from malformed
+			# new gameplay events without weakening strict wire validation.
+			var data: Variant = message.get("data", {})
+			var detail := ""
+			if data is Dictionary:
+				var keys: Array = data.keys()
+				keys.sort()
+				detail = " data_fields=" + str(keys)
+				if message.get("event") == "motion_frame":
+					var players: Variant = data.get("players", [])
+					if players is Array and not players.is_empty() and players[0] is Dictionary:
+						var frame_fields: Array = players[0].keys()
+						frame_fields.sort()
+						detail += " sample_fields=" + str(frame_fields)
+			push_error("MMO rejected malformed event_type=%s%s" % [str(message.get("event", "?")), detail])
 			_fail("INVALID_EVENT")
 			return
 		if message.event == "joined" and not _production_player(message.data.player):
