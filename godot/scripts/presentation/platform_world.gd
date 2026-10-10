@@ -193,8 +193,7 @@ func set_suspended(value: bool) -> void:
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
 		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
-		_last_damage_tick_by_player.clear()
-		impact_numbers.reset()
+		damage_effects.clear()
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		node.set_suspended(value)
