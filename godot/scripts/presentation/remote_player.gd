@@ -79,9 +79,6 @@ func render_at(pixel_x: float, motion: Dictionary, delta: float) -> void:
 		return
 	var model_id := str(_appearance_payload.get("character_model_id", ""))
 	gait.try_contact_reaction(sprite, model_id, motion)
-	var impact_height: float = Appearance.display_height_px(model_id)
-	var impact_point := to_global(Vector2(0.0, -clampf(impact_height * 0.7, 36.0, 80.0)))
-	impact_numbers.show_impact(motion, impact_point)
 	gait.update(sprite, before_render_x, position.x, int(motion.get("facing", 1)), delta)
 
 func set_suspended(value: bool) -> void:
