@@ -54,7 +54,8 @@ static func motion(value: Variant) -> bool:
 
 static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "control_started_tick", "contacts", \
-		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts", "contact_impact_sources"]) \
+		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts", "contact_impact_sources",
+		"contact_impact_impulse_g_mm_s", "contact_damage"]) \
 		or not token(value.player_id) or not integer(value.position_mm, -1000000000, 1000000000) \
 		or not integer(value.velocity_mm_s, -50000, 50000) or not integer(value.facing, -1, 1) or value.facing not in [-1, 1] \
 		or not integer(value.last_applied_control_seq) or not integer(value.control_started_tick, 0, frame_tick) or not value.contacts is Array or value.contacts.size() > 65 \
@@ -62,7 +63,9 @@ static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 		or not integer(value.contact_response_facing, -1, 1) \
 		or not integer(value.contact_response_tick, 0, frame_tick) \
 		or not value.contact_response_contacts is Array or value.contact_response_contacts.size() > 63 \
-		or not value.contact_impact_sources is Array or value.contact_impact_sources.size() > 63:
+		or not value.contact_impact_sources is Array or value.contact_impact_sources.size() > 63 \
+		or not integer(value.contact_impact_impulse_g_mm_s, 0, 50000000000) \
+		or not integer(value.contact_damage, 0, 9999):
 		return false
 	var previous := ""
 	for contact in value.contacts:
@@ -76,6 +79,11 @@ static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	for source in value.contact_impact_sources:
 		if not token(source) or source <= previous or source == value.player_id or not source in value.contact_response_contacts: return false
 		previous = source
+	var impulse := int(value.contact_impact_impulse_g_mm_s)
+	# Damage conversion belongs solely to the server card policy; Godot validates
+	# the bounded telemetry shape, not the scoring formula.
+	if (value.contact_impact_sources.is_empty() != (impulse == 0)) \
+		or (impulse == 0 and int(value.contact_damage) != 0): return false
 	var has_response := int(value.contact_delta_velocity_mm_s) != 0
 	if (not value.contact_impact_sources.is_empty() and not has_response) \
 		or has_response != (not value.contact_response_contacts.is_empty()) \
