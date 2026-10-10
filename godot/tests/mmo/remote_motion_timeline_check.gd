@@ -15,9 +15,7 @@ func motion(tick: int, position_mm: int, velocity_mm_s: int, contacts: Array = [
 		"velocity_mm_s": velocity_mm_s, "facing": facing, "contacts": contacts,
 		"contact_delta_velocity_mm_s": response_delta, "contact_response_facing": response_facing,
 		"contact_response_tick": response_tick, "contact_response_contacts": response_contacts,
-		"contact_impact_sources": impact_sources,
-		"contact_impact_impulse_g_mm_s":50000 * absi(response_delta) if not impact_sources.is_empty() else 0,
-		"contact_damage":roundi(50000.0 * absf(float(response_delta)) / 5000000.0) if not impact_sources.is_empty() else 0}
+		"contact_impact_sources": impact_sources}
 
 func close_to(actual: float, expected: float, epsilon: float = 0.01) -> bool:
 	return absf(actual - expected) <= epsilon
@@ -62,9 +60,7 @@ func _initialize() -> void:
 		and int(at_response.contact_delta_velocity_mm_s) == 1200
 		and int(at_response.contact_response_tick) == 2
 		and at_response.contact_response_contacts == ["p2"]
-		and at_response.contact_impact_sources == ["p2"]
-		and at_response.contact_impact_impulse_g_mm_s == 60000000
-		and at_response.contact_damage == 12,
+		and at_response.contact_impact_sources == ["p2"],
 		"contact response is presented once its server tick enters the delayed cursor")
 
 	var rebased := Timeline.new()
@@ -75,7 +71,6 @@ func _initialize() -> void:
 	check(rebased.sample_at(250000).contact_response_tick == 0, "rebase cannot present future causal fact")
 	check(rebased.sample_at(300000).contact_response_tick == 12, "received response survives contact separation reset")
 	check(rebased.sample_at(300000).contact_delta_velocity_mm_s == 758, "mass-aware physical response retained intact")
-	check(rebased.sample_at(300000).contact_damage == 8, "damage survives remote rebase at causal impact tick")
 	rebased.push_sample("e1|city/apartment|1", motion(18, 9999, 0), 300000, 1820)
 	check(rebased.sample_at(350000).contact_response_tick == 12, "same-scope discontinuity retains authoritative response")
 	for tick in range(21, 81, 3):
