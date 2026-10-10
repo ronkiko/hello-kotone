@@ -84,42 +84,34 @@ func run() -> void:
 			var physical_response := {"contact_delta_velocity_mm_s":758,"contact_response_tick":12,"contact_response_facing":1,
 				"contact_response_contacts":["p1"],"contact_impact_sources":["p1"]}
 			check(remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "remote starts received mass-aware reaction")
-			var damage_response := physical_response.duplicate(true)
-			damage_response["contact_impact_impulse_g_mm_s"] = 37900000
-			damage_response["contact_damage"] = 8
-			var received_damage := damage_response.duplicate(true)
-			received_damage["player_id"] = "p2"
-			received_damage["position_mm"] = int(remote.motion.position_mm)
-			var first_hit := {"event":"motion_frame","data":{"players":[received_damage]}}
-			platform._queue_impact_display(first_hit)
-			check(platform.impact_numbers.get_child_count() == 1
-				and platform.impact_numbers.get_child(0).text == "-8",
-				"one global renderer displays remote damage immediately")
-			platform._queue_impact_display(first_hit)
-			check(platform.impact_numbers.get_child_count() == 1,
-				"ingress deduplicates repeated remote hit tick")
-			remote_node.render_at(remote_node.position.x, damage_response, 0.016)
-			check(platform.impact_numbers.get_child_count() == 1,
-				"remote gait interpolation cannot spawn duplicate damage")
-			var local_hit := received_damage.duplicate(true)
-			local_hit["player_id"] = "p1"
-			local_hit["contact_damage"] = 4
-			local_hit["contact_impact_impulse_g_mm_s"] = 20000000
-			local_hit["position_mm"] = 52000
-			platform._queue_impact_display({"event":"motion_frame",
-				"data":{"players":[local_hit]}})
-			check(platform.impact_numbers.get_child_count() == 2
-				and platform.impact_numbers.get_child(1).text == "-4",
-				"another character with same impact tick is independently displayed")
-			var next_damage := received_damage.duplicate(true)
-			next_damage["contact_response_tick"] = 13
-			next_damage["contact_damage"] = 5
-			next_damage["contact_impact_impulse_g_mm_s"] = 25000000
-			platform._queue_impact_display({"event":"motion_frame",
-				"data":{"players":[next_damage]}})
-			check(platform.impact_numbers.get_child_count() == 3
-				and platform.impact_numbers.get_child(2).text == "-5",
-				"second accepted remote hit renders immediately without a per-character FIFO")
+			var hit := {"event_id":"damage_1","event_seq":1,"zone_generation":1,
+				"simulation_tick":12,"target_entity_id":"p2","source_entity_id":"p1",
+				"damage":8,"impact_impulse_g_mm_s":37900000,
+				"position_mm":int(remote.motion.position_mm),"cause":"body_collision"}
+			platform._on_damage_resolved(hit)
+			check(platform.damage_effects.get_child_count() == 1,
+				"global DamageEffects instantiates one native scene for remote hit")
+			var effect: Node2D = platform.damage_effects.get_child(0)
+			check(effect.has_node("Label") and effect.has_node("AnimationPlayer")
+				and effect.get_node("Label").text == "-8",
+				"DamageNumber.tscn provides authored Label and AnimationPlayer")
+			check(effect.get_node("AnimationPlayer").is_playing(),
+				"native AnimationPlayer drives the two-second rising fade")
+			var other_hit := hit.duplicate(true)
+			other_hit.target_entity_id = "p1"
+			other_hit.source_entity_id = "p2"
+			other_hit.event_id = "damage_2"
+			other_hit.event_seq = 2
+			other_hit.position_mm = 52000
+			other_hit.damage = 4
+			other_hit.impact_impulse_g_mm_s = 20000000
+			platform._on_damage_resolved(other_hit)
+			check(platform.damage_effects.get_child_count() == 2
+				and platform.damage_effects.get_child(1).get_node("Label").text == "-4",
+				"one world-owned effects presenter renders different targets immediately")
+			remote_node.render_at(remote_node.position.x, physical_response, 0.016)
+			check(platform.damage_effects.get_child_count() == 2,
+				"remote gait timeline no longer creates damage numbers")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
 			contact_player.contacts = ["p1"]
@@ -129,10 +121,9 @@ func run() -> void:
 			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
 			remote_node.set_suspended(true)
 			check(remote_node.gait.last_contact_response_tick == 0 and remote_node.timeline._responses.is_empty(), "visit suspension clears causal response scope")
-			# Damage rendering is owned by World, not the remote character.
-			check(platform.impact_numbers.get_parent() == platform
-				and not remote_node.has_node("ImpactNumbers"),
-				"only one global damage renderer exists for all players")
+			check(platform.damage_effects.get_parent() == platform
+				and not remote_node.has_node("DamageEffects"),
+				"only one scene-based effects presenter exists for all players")
 			remote_node.set_suspended(false)
 		var position: Vector2 = platform.character_root.position
 		var gait := Gait.new()
