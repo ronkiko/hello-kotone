@@ -60,7 +60,7 @@ func _initialize() -> void:
 	var frame_player := {"player_id":"p1", "position_mm":1000, "velocity_mm_s":0, "facing":1,
 		"last_applied_control_seq":1,"control_started_tick":0, "contacts":[], "contact_delta_velocity_mm_s":0,
 		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[],
-		"contact_impact_sources":[]}
+		"contact_impact_sources":[],"contact_impact_impulse_g_mm_s":0,"contact_damage":0}
 	check(Protocol.motion_frame_player(frame_player, 4), "empty physical response is explicit and valid")
 	var response := frame_player.duplicate(true)
 	response.contact_delta_velocity_mm_s = 1200
@@ -68,10 +68,18 @@ func _initialize() -> void:
 	response.contact_response_tick = 3
 	response.contact_response_contacts = ["p2"]
 	response.contact_impact_sources = ["p2"]
+	response.contact_impact_impulse_g_mm_s = 60000000
+	response.contact_damage = 12
 	check(Protocol.motion_frame_player(response, 4), "measured physical impact fact is valid")
 	var forged := response.duplicate(true)
 	forged.contact_impact_sources = ["not_a_contact"]
 	check(not Protocol.motion_frame_player(forged, 4), "impact source requires real contact")
+	forged = response.duplicate(true)
+	forged.contact_damage = 9999
+	check(Protocol.motion_frame_player(forged, 4), "client does not duplicate server card damage scoring policy")
+	forged = response.duplicate(true)
+	forged.contact_impact_impulse_g_mm_s = 0
+	check(not Protocol.motion_frame_player(forged, 4), "positive damage requires actual impact impulse")
 	forged = response.duplicate(true)
 	forged.contact_shove_sources = ["p2"]
 	check(not Protocol.motion_frame_player(forged, 4), "obsolete motor-knockback wire is rejected")
