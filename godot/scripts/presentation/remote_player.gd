@@ -53,7 +53,7 @@ func project(player: Dictionary, confirmed_pixel: float, scope: String, received
 		_appearance_payload = payload.duplicate(true)
 		gait.reset(sprite, int(motion.get("facing", 1)))
 	identity.position.y = -Appearance.display_height_px(payload.character_model_id) - 18
-	gait.configure(float(top_speed_mm_s) * 8.0 / 1000.0)
+	gait.configure(float(top_speed_mm_s) * Appearance.world_pixels_per_meter() / 1000.0)
 	if update_result == "seeded":
 		gait.reset(sprite, int(motion.get("facing", 1)))
 	elif update_result == "reset":
