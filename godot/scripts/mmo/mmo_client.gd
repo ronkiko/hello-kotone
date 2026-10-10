@@ -273,6 +273,16 @@ func _on_frame(frame: PackedByteArray) -> void:
 		event_received.emit(message.duplicate(true))
 		return
 	if not Protocol.response(message):
+		# World rules are the explicit game-card compatibility checkpoint.
+		# Never defer a mixed damage-event schema failure until the first
+		# motion_frame, where it would look like a random INVALID_EVENT.
+		if message.get("op") == "world_rules" and message.get("status") == "ok":
+			var rules_data: Variant = message.get("data", {})
+			if rules_data is Dictionary and rules_data.get("movement") is Dictionary \
+					and rules_data.movement.get("gameplay_events_schema", "") != "ordered_damage_resolved_v1":
+				push_error("MMO world_rules incompatible: ordered_damage_resolved_v1 required; restart/update the server and Godot client as one pair")
+				_fail("UNSUPPORTED_VERSION", true)
+				return
 		_fail("INVALID_MESSAGE")
 		return
 	if message.status == "error" and message.request_id == null:
