@@ -314,6 +314,13 @@ func _on_frame(frame: PackedByteArray) -> void:
 		_fail("REALM_IDENTITY_MISMATCH")
 		return
 	if op == "enter":
+		# Gameplay events can arrive immediately after enter, before world_rules.
+		# Negotiate the card capability here, not on the first motion packet.
+		var bootstrap_capabilities: Variant = message.data.bootstrap.get("capabilities", [])
+		if not bootstrap_capabilities is Array or not bootstrap_capabilities.has("damage_resolved_v1"):
+			push_error("MMO enter incompatible: server lacks damage_resolved_v1. Restart/update both server and Godot clients together.")
+			_fail("UNSUPPORTED_VERSION", true)
+			return
 		# Bind realm authority before reducer signals expose any zone projection.
 		if message.data.player_id != _expected_character.get("character_id") or message.data.bootstrap.identity != _expected_identity or not _production_snapshot(message.data.snapshot) or not world_session.bind(message.data.bootstrap):
 			_fail("REALM_BOOTSTRAP_MISMATCH")
