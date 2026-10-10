@@ -40,8 +40,11 @@ frames from actual displayed displacement. It does not read held input to decide
 whether the character walks. A server impulse can move a character with drive at
 zero; a stationary body settles to its facing-specific idle.
 
-Peer contact and a nonzero server-computed contact-induced velocity change are
-published separately from ordinary contact membership. The sample retains the
+A new closing peer impact produces a measured server mass/velocity contact
+change with `contact_impact_sources` identifying the physically struck body;
+ordinary pusher deceleration has no impact-source marker, and held contact
+motor force never manufactures an impact. This replaces the prior motor-owned
+knockback velocity. Contact facts are published separately from membership. The sample retains the
 response tick, facing at the response, and peer IDs through the next 20-Hz frame.
 The remote timeline exposes that cause only after its delayed cursor reaches the
 response tick. For the installed Yuna model, a sufficiently strong server-confirmed shove
