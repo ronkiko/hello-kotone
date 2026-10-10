@@ -120,6 +120,7 @@ func _ready() -> void:
 	MmoClient.control_sent.connect(_record_sent_control)
 	MmoClient.input_rejected.connect(_discard_rejected_control)
 	MmoClient.world_replica.motion_received.connect(_queue_owner_motion)
+	MmoClient.world_replica.motion_received.connect(_queue_impact_display)
 	MmoClient.world_replica.authoritative_snapshot_received.connect(_queue_snapshot_motion)
 	project(_map, _view, _display_x)
 
@@ -244,6 +245,26 @@ func _queue_owner_motion(event: Dictionary) -> void:
 			_pending_owner_motion = sample.duplicate(true)
 			_pending_owner_motion["simulation_tick"] = event.data.simulation_tick
 			return
+
+func _queue_impact_display(event: Dictionary) -> void:
+	# Presentation consumes each accepted motion_frame at ingress, *before*
+	# owner prediction or remote interpolation can coalesce motion samples.
+	if _suspended or not _position_installed or event.get("event") != "motion_frame":
+		return
+	for sample in event.get("data", {}).get("players", []):
+		if int(sample.get("contact_damage", 0)) <= 0:
+			continue
+		var id := str(sample.get("player_id", ""))
+		if not _view.get("players", {}).has(id):
+			continue
+		var model := str(_view.players[id].character.appearance_payload.character_model_id)
+		var height_px: float = Appearance.display_height_px(model)
+		var point := Vector2(server_to_pixel(float(sample.position_mm)),
+			FLOOR_Y - clampf(height_px * 0.7, 36.0, 80.0))
+		if id == _local_player_id:
+			impact_numbers.show_impact(sample, point)
+		elif remote_players.has(id):
+			remote_players[id].impact_numbers.show_impact(sample, point)
 
 func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 	for player in snapshot.get("players", []):
@@ -397,11 +418,6 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	_last_applied_control_seq = applied_seq
 	_prediction_metrics.last_applied_control_seq = applied_seq
 	_gait.try_contact_reaction(sprite, _local_model_id, motion)
-	var model_for_damage: String = _local_model_id if not _local_model_id.is_empty() else "kotone"
-	var impact_height: float = Appearance.display_height_px(model_for_damage)
-	var impact_point := character_root.to_global(Vector2(visual_layer.position.x,
-		-clampf(impact_height * 0.7, 36.0, 80.0)))
-	impact_numbers.show_impact(motion, impact_point)
 	var mapped_ordinal := 0
 	if force_snap:
 		_prediction_ordinal = 0
