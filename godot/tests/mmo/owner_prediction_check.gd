@@ -151,10 +151,10 @@ func run() -> void:
 	steps(1)
 	var response := sample(9200,3,9200,platform._pixel_to_server_mm(platform.character_root.position.x)+337)
 	response.contacts = ["p2"]
-	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,
-		"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]})
+	response.merge({"contact_delta_velocity_mm_s":758,"contact_response_tick":9200,"contact_response_facing":1,
+		"contact_response_contacts":["p2"],"contact_impact_sources":["p2"]})
 	platform._apply_authoritative_motion(response,false)
-	check(platform._correction_class == "snap", "target knockback contact remains an immediate presentation authority snap")
+	check(platform._correction_class == "snap", "target impact contact remains an immediate presentation authority snap")
 
 	reset()
 	# Peer prediction owns geometry only. It must prevent overlap without
