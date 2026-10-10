@@ -84,7 +84,7 @@ func push_sample(scope: String, motion: Dictionary, received_usec: int, top_spee
 	if shove_sources != shove_sources_value:
 		return "ignored"
 	for source in shove_sources:
-		if not Protocol.token(source) or not response_contacts.has(source):
+		if not Protocol.token(source):
 			return "ignored"
 	var has_response := int(response_delta) != 0
 	if has_response != (not response_contacts.is_empty()) \
