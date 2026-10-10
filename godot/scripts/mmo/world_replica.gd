@@ -3,8 +3,10 @@ extends RefCounted
 
 signal changed
 signal motion_received(event: Dictionary)
+signal damage_resolved(event: Dictionary)
 signal authoritative_snapshot_received(snapshot: Dictionary)
 var _frame_seq := 0
+var _damage_event_seq := 0
 var _zone_generation := 1
 var _simulation_tick := -1
 
@@ -40,6 +42,7 @@ func latest_frame_sample(player_id: String) -> Dictionary:
 
 func clear() -> void:
 	_frame_seq = 0
+	_damage_event_seq = 0
 	_zone_generation = 1
 	_simulation_tick = -1
 	world_session.clear()
@@ -65,6 +68,7 @@ func start(value: Dictionary, local_id: String, nickname: String) -> bool:
 	if not _valid_snapshot(value, local_id, nickname):
 		return _reject("INVALID_BASELINE")
 	_latest_frame_samples.clear()
+	_damage_event_seq = 0
 	_local_id = local_id
 	_nickname = nickname
 	_commit(value)
@@ -132,6 +136,17 @@ func apply_event(value: Dictionary) -> bool:
 		return _reject("WRONG_EPOCH")
 	if value.zone_id != _snapshot.map.map_id:
 		return _reject("WRONG_ZONE")
+	if value.event == "damage_resolved":
+		var data: Dictionary = value.data
+		if data.zone_generation != _zone_generation or data.event_seq <= _damage_event_seq:
+			return _reject("STALE_DAMAGE_EVENT")
+		if not _players.has(data.target_entity_id) or not _players.has(data.source_entity_id):
+			return _reject("DAMAGE_ENTITY_NOT_PRESENT")
+		# Ordered on the existing connection; successful admission, not a
+		# per-renderer cache, is responsible for rejecting stale gameplay events.
+		_damage_event_seq = data.event_seq
+		damage_resolved.emit(data.duplicate(true))
+		return true
 	if value.event == "motion_frame":
 		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision \
 			or value.data.simulation_tick < _simulation_tick:
