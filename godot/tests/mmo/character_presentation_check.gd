@@ -43,6 +43,9 @@ func run() -> void:
 		check(platform.project(document,view), model + " current character projection")
 		if not platform.remote_players.has("p2"): continue
 		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
+		check(physical.physics_profile_revision == "hello_kotone_physics_v3"
+			and physical.motor.motor_profile_id == model + "_motor_v2",
+			model + " accepts only refreshed walk motor binding")
 		check(platform._movement.mass_g == physical.body.mass_g and platform._movement.top_speed_mm_s == physical.motor.top_speed_mm_s, model + " predictor uses selected server profile")
 		check(is_equal_approx(platform.pixels_per_meter, Appearance.world_pixels_per_meter())
 			and is_equal_approx(platform.pixels_per_meter, 48.0),
@@ -84,7 +87,8 @@ func run() -> void:
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
 			contact_player.contacts = ["p1"]
-			remote_node.project(contact_player,remote_node.position.x,"e1|city/apartment|1",50000,4200)
+			remote_node.project(contact_player,remote_node.position.x,"e1|city/apartment|1",50000,
+				int(physical.motor.top_speed_mm_s))
 			check(remote_node.gait.last_contact_response_tick == 12 and other.animation == Gait.PUSH_REACTION, "position rebase preserves consumed event and playing reaction")
 			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
 			remote_node.set_suspended(true)
