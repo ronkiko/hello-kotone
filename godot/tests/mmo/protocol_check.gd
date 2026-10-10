@@ -60,7 +60,7 @@ func _initialize() -> void:
 	var frame_player := {"player_id":"p1", "position_mm":1000, "velocity_mm_s":0, "facing":1,
 		"last_applied_control_seq":1,"control_started_tick":0, "contacts":[], "contact_delta_velocity_mm_s":0,
 		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[],
-		"contact_impact_sources":[],"contact_impact_impulse_g_mm_s":0,"contact_damage":0}
+		"contact_impact_sources":[]}
 	check(Protocol.motion_frame_player(frame_player, 4), "empty physical response is explicit and valid")
 	var response := frame_player.duplicate(true)
 	response.contact_delta_velocity_mm_s = 1200
@@ -68,21 +68,32 @@ func _initialize() -> void:
 	response.contact_response_tick = 3
 	response.contact_response_contacts = ["p2"]
 	response.contact_impact_sources = ["p2"]
-	response.contact_impact_impulse_g_mm_s = 60000000
-	response.contact_damage = 12
 	check(Protocol.motion_frame_player(response, 4), "measured physical impact fact is valid")
 	var forged := response.duplicate(true)
 	forged.contact_impact_sources = ["not_a_contact"]
 	check(not Protocol.motion_frame_player(forged, 4), "impact source requires real contact")
 	forged = response.duplicate(true)
-	forged.contact_damage = 9999
-	check(Protocol.motion_frame_player(forged, 4), "client does not duplicate server card damage scoring policy")
-	forged = response.duplicate(true)
-	forged.contact_impact_impulse_g_mm_s = 0
-	check(not Protocol.motion_frame_player(forged, 4), "positive damage requires actual impact impulse")
-	forged = response.duplicate(true)
 	forged.contact_shove_sources = ["p2"]
 	check(not Protocol.motion_frame_player(forged, 4), "obsolete motor-knockback wire is rejected")
+	var hit := {"protocol_version":8,"type":"event","event":"damage_resolved","epoch":"e1",
+		"zone_id":"city/apartment","revision":4,"data":{
+		"event_id":"damage_1","event_seq":1,"zone_generation":1,
+		"simulation_tick":4,"target_entity_id":"p1","source_entity_id":"p2",
+		"position_mm":50000,"impact_impulse_g_mm_s":37900000,
+		"damage":8,"cause":"body_collision"}}
+	check(Protocol.event(hit), "separate damage event structurally valid")
+	var invalid_hit := hit.duplicate(true)
+	invalid_hit.data.event_id = "damage_2"
+	check(not Protocol.event(invalid_hit), "mismatched causal ID rejected")
+	invalid_hit = hit.duplicate(true)
+	invalid_hit.data.source_entity_id = "p1"
+	check(not Protocol.event(invalid_hit), "self-sourced damage forbidden")
+	invalid_hit = hit.duplicate(true)
+	invalid_hit.data.cause = "motor_knockback"
+	check(not Protocol.event(invalid_hit), "artificial scripted damage cause rejected")
+	invalid_hit = hit.duplicate(true)
+	invalid_hit.data.damage = 10000
+	check(not Protocol.event(invalid_hit), "out-of-range gameplay damage rejected")
 	response.contact_response_tick = 5
 	check(not Protocol.motion_frame_player(response, 4), "future contact response tick rejected")
 	response = frame_player.duplicate(true)
