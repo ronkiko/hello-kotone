@@ -102,6 +102,15 @@ func _initialize() -> void:
 	var fixtures = preload("res://tests/mmo/replica_check.gd")
 	var rules := fixtures.rules()
 	check(Protocol.movement(rules), "bounded profile bootstrap")
+	var legacy_rules := rules.duplicate(true)
+	legacy_rules.erase("gameplay_events_schema")
+	check(not Protocol.movement(legacy_rules),
+		"old world_rules lacking ordered damage event schema fails at handshake")
+	legacy_rules = rules.duplicate(true)
+	legacy_rules.gameplay_events_schema = "damage_in_motion_v0"
+	check(not Protocol.movement(legacy_rules),
+		"wrong gameplay event contract cannot start a mixed-version world")
+
 	for model in ["kotone", "yuna"]:
 		var p := fixtures.player()
 		p.character.appearance_payload.character_model_id = model
