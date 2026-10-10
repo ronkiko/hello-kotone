@@ -38,12 +38,24 @@ func run() -> void:
 	var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
 		"contact_response_tick":5,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 	check(gait.try_contact_reaction(sprite, "yuna", push)
-		and sprite.animation == &"stumble_right2" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
+		and sprite.animation == &"stumble_back" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
 	check(not gait.try_contact_reaction(sprite,"yuna",push),"same physical response tick cannot replay reaction")
 	for no_response in [{"contacts":["p2"]},{"contacts":["wall_max"]},{"velocity_mm_s":3000}]:
 		check(not gait.try_contact_reaction(sprite,"yuna",no_response),"touch wall or motor without server response never stumbles")
-	check(sprite.sprite_frames.get_frame_count(&"stumble_right2")==8 and not sprite.sprite_frames.get_animation_loop(&"stumble_right2"),"intended reaction has eight non-looping authored frames")
-	check(not sprite.sprite_frames.has_animation(&"stumble_right"),"superseded reaction removed from shipped resource")
+	check(sprite.sprite_frames.get_frame_count(&"stumble_back")==8 and not sprite.sprite_frames.get_animation_loop(&"stumble_back"),"intended reaction has eight non-looping authored frames")
+	check(not sprite.sprite_frames.has_animation(&"stumble_front"),"front impact art is not yet authored")
+	var left_back := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
+		"contact_response_tick":6,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+	check(Gait.impact_side(left_back) == &"back" and gait.try_contact_reaction(sprite, "yuna", left_back)
+		and sprite.animation == &"stumble_back" and sprite.flip_h,
+		"left-moving back impact reuses mirrored back animation")
+	gait.reset(sprite, -1)
+	check(not sprite.flip_h and sprite.animation == &"idle_left","normal directional art clears reaction mirroring")
+	var front := {"contact_delta_velocity_mm_s":8400,"contact_response_facing":-1,
+		"contact_response_tick":7,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+	check(Gait.impact_side(front) == &"front" and not gait.try_contact_reaction(sprite, "yuna", front)
+		and not sprite.sprite_frames.has_animation(&"stumble_front"),
+		"front impact is semantic and does not counterfeit back art")
 	gait.reset(sprite,1)
 	gait.update(sprite,0,0.4,1,1.0/60.0)
 	gait.update(sprite,0,0,1,1.0/60.0)

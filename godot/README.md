@@ -146,7 +146,7 @@ driven by rendered displacement and authoritative facing; it does not infer faci
 from movement or treat remote drive as known. Motion frames include a bounded
 server-computed peer-contact velocity response with response-time facing, tick and
 peer IDs, retained until publication. It carries no animation state. Yuna's prepared
-rightward `stumble_right2` reaction plays only for an actual sufficiently strong
+receiver-relative `stumble_back` reaction plays only for an actual sufficiently strong
 server contact response from behind; it remains cosmetic and cannot feed back into
 physics.
 

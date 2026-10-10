@@ -89,7 +89,7 @@ func run() -> void:
 			contact_player.contacts = ["p1"]
 			remote_node.project(contact_player,remote_node.position.x,"e1|city/apartment|1",50000,
 				int(physical.motor.top_speed_mm_s))
-			check(remote_node.gait.last_contact_response_tick == 12 and other.animation == Gait.PUSH_REACTION, "position rebase preserves consumed event and playing reaction")
+			check(remote_node.gait.last_contact_response_tick == 12 and other.animation == Gait.BACK_REACTION, "position rebase preserves consumed event and playing reaction")
 			check(not remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "contact rebase does not replay consumed event")
 			remote_node.set_suspended(true)
 			check(remote_node.gait.last_contact_response_tick == 0 and remote_node.timeline._responses.is_empty(), "visit suspension clears causal response scope")
@@ -128,30 +128,46 @@ func run() -> void:
 			"contact_response_tick":7,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 		var reaction_started: bool = push_gait.try_contact_reaction(own, model, push)
 		if model == "yuna":
-			check(reaction_started and own.animation == &"stumble_right2" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
+			check(reaction_started and own.animation == &"stumble_back" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
 			push_gait.update(own, 0, 4, 1, .1)
-			check(own.animation == &"stumble_right2", model + " reaction holds over gait until SpriteFrames completes it")
+			check(own.animation == &"stumble_back", model + " reaction holds over gait until SpriteFrames completes it")
 			own.set_frame_and_progress(4, 0.5)
 			var second_push := {"contact_delta_velocity_mm_s":6000,"contact_response_facing":1,
 				"contact_response_tick":8,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
 			check(push_gait.try_contact_reaction(own, model, second_push)
-				and own.animation == &"stumble_right2" and own.frame == 0
+				and own.animation == &"stumble_back" and own.frame == 0
 				and push_gait.last_contact_response_tick == 8,
 				model + " later authoritative knockback restarts reaction from frame zero")
 			check(not push_gait.try_contact_reaction(own, model, second_push),
 				model + " duplicate response tick cannot restart reaction twice")
-			var opposite_push := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":1,
+			var left_back := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
 				"contact_response_tick":9,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
-			check(not push_gait.try_contact_reaction(own, model, opposite_push),
-				model + " opposite-sign response is not the authored rightward stumble reaction")
-			check(push_gait.last_contact_response_tick == 8,
-				model + " rejected opposite-sign response cannot consume its causal tick")
+			check(Gait.impact_side(left_back) == &"back"
+				and push_gait.try_contact_reaction(own, model, left_back)
+				and own.animation == Gait.BACK_REACTION and own.flip_h
+				and push_gait.last_contact_response_tick == 9,
+				model + " back impact plays the same art mirrored for opposite world direction")
+			push_gait.update(own, 0, -4, -1, .1)
+			check(own.animation == Gait.BACK_REACTION and own.flip_h,
+				model + " mirrored back reaction is not overwritten by walking")
+			var front_impact := {"contact_delta_velocity_mm_s":8400,"contact_response_facing":-1,
+				"contact_response_tick":10,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			check(Gait.impact_side(front_impact) == &"front"
+				and not push_gait.try_contact_reaction(own, model, front_impact)
+				and not own.sprite_frames.has_animation(Gait.FRONT_REACTION),
+				model + " front impact never substitutes the wrong back reaction")
+			check(push_gait.last_contact_response_tick == 9,
+				model + " missing front art does not consume the last played back event")
 			var pusher_slowdown := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
-				"contact_response_tick":10,"contact_response_contacts":["p2"],"contact_shove_sources":[]}
-			check(not push_gait.try_contact_reaction(own, model, pusher_slowdown),
-				model + " generic pusher contact slowdown is not a received shove reaction")
-			check(push_gait.last_contact_response_tick == 8,
-				model + " non-shove contact response cannot consume Yuna reaction tick")
+				"contact_response_tick":11,"contact_response_contacts":["p2"],"contact_shove_sources":[]}
+			check(Gait.impact_side(pusher_slowdown) == &""
+				and not push_gait.try_contact_reaction(own, model, pusher_slowdown),
+				model + " ordinary contact deceleration is not a shove impact")
+			check(push_gait.last_contact_response_tick == 9,
+				model + " non-shove response cannot consume the back reaction")
+			push_gait.reset(own, -1)
+			check(not own.flip_h and own.animation == Appearance.idle_animation(-1),
+				model + " regular authored left idle clears temporary reaction mirroring")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
 		check(platform.character_collision.shape.size == collider_size

@@ -59,7 +59,7 @@ func project(player: Dictionary, confirmed_pixel: float, scope: String, received
 	elif update_result == "reset":
 		# Position barriers do not retire pending/consumed causal response facts.
 		var consumed_tick := gait.last_contact_response_tick
-		if sprite.animation != GaitAnimator.PUSH_REACTION or not sprite.is_playing():
+		if not GaitAnimator.is_contact_reaction(sprite):
 			gait.reset(sprite, int(motion.get("facing", 1)))
 		gait.last_contact_response_tick = consumed_tick
 

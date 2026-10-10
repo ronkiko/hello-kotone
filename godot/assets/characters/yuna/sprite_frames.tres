@@ -20,14 +20,14 @@
 [ext_resource type="Texture2D" path="res://assets/characters/yuna/walk_right/005.png" id="26_swq48"]
 [ext_resource type="Texture2D" path="res://assets/characters/yuna/walk_right/006.png" id="27_ihcf1"]
 [ext_resource type="Texture2D" path="res://assets/characters/yuna/walk_right/007.png" id="28_njsu6"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/000.png" id="29_sr20"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/001.png" id="30_sr21"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/002.png" id="31_sr22"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/003.png" id="32_sr23"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/004.png" id="33_sr24"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/005.png" id="34_sr25"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/006.png" id="35_sr26"]
-[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_right2/007.png" id="36_sr27"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/000.png" id="29_sr20"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/001.png" id="30_sr21"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/002.png" id="31_sr22"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/003.png" id="32_sr23"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/004.png" id="33_sr24"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/005.png" id="34_sr25"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/006.png" id="35_sr26"]
+[ext_resource type="Texture2D" path="res://assets/characters/yuna/stumble_back/007.png" id="36_sr27"]
 
 [resource]
 animations = [{
@@ -79,7 +79,7 @@ animations = [{
 "texture": ExtResource("36_sr27")
 }],
 "loop": 0,
-"name": &"stumble_right2",
+"name": &"stumble_back",
 "speed": 10.0
 }, {
 "frames": [{
