@@ -151,14 +151,15 @@ func run() -> void:
 	steps(1)
 	var response := sample(9200,3,9200,platform._pixel_to_server_mm(platform.character_root.position.x)+337)
 	response.contacts = ["p2"]
-	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,"contact_response_contacts":["p2"]})
+	response.merge({"contact_delta_velocity_mm_s":8400,"contact_response_tick":9200,"contact_response_facing":1,
+		"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]})
 	platform._apply_authoritative_motion(response,false)
 	check(platform._correction_class == "snap", "target knockback contact remains an immediate presentation authority snap")
 
 	reset()
-	# Yuna is the faster pusher. Native peer prediction can run slightly ahead
-	# before the authoritative mixed-mass contact sample arrives. Physics must
-	# snap to authority, but the rendered owner/camera must not visibly recoil.
+	# Peer prediction owns geometry only. It must prevent overlap without
+	# inventing an infinite-mass velocity response that conflicts with the
+	# server's mass-aware multi-body solver.
 	fast = Fixtures.player()
 	fast.physics = Fixtures.binding("yuna")
 	fast.character.appearance_payload = {"character_model_id":"yuna","body_variant_id":"standard",
@@ -171,32 +172,24 @@ func run() -> void:
 	kotone_peer.character.appearance_payload = {"character_model_id":"kotone","body_variant_id":"standard",
 		"face_style_id":"soft","hair_style_id":"short","hair_color_id":"chestnut"}
 	kotone_peer.physics = Fixtures.binding("kotone")
-	kotone_peer.motion.position_mm = 50500
+	kotone_peer.motion.position_mm = 50400
 	platform.project(Fixtures.MAP,{"epoch":"yuna-push","map":{"map_id":Fixtures.MAP.map_id,
 		"content_version":1,"content_hash":Fixtures.MAP.content_hash},
 		"players":{"p1":fast,"p2":kotone_peer},"local_player_id":"p1","confirmed_local_position_mm":50000})
-	reset()
+	platform._update_peer_proxies(0.0)
+	await physics_frame
+	await physics_frame
 	sent(1,1)
-	steps(4)
-	var before_contact_render: float = platform.character_root.position.x + platform.visual_layer.position.x
-	var pusher_contact := sample(9004,1,9001,
-		platform._pixel_to_server_mm(platform.character_root.position.x)-180,1750,["p2"])
-	pusher_contact.merge({"contact_delta_velocity_mm_s":-2450,"contact_response_tick":9004,
-		"contact_response_facing":1,"contact_response_contacts":["p2"]})
-	platform._apply_authoritative_motion(pusher_contact,false)
-	check(platform._correction_class == "contact_blend",
-		"Yuna pusher slowdown keeps physical contact authority without visible recoil")
-	check(platform.character_root.position.x + platform.visual_layer.position.x >= before_contact_render - 0.000001,
-		"Yuna pusher render never jumps backwards at authoritative contact")
-	var pusher_reverse_steps := 0
-	for interval in range(20):
-		var before_pusher: float = platform.character_root.position.x + platform.visual_layer.position.x
-		platform._physics_process(DT)
-		platform._process(DT)
-		if platform.character_root.position.x + platform.visual_layer.position.x < before_pusher - 0.0008:
-			pusher_reverse_steps += 1
-	check(pusher_reverse_steps == 0,
-		"Yuna pusher absorbs contact correction monotonically instead of bouncing backwards")
+	steps(12)
+	var yuna_body: Dictionary = Fixtures.physics("yuna").body
+	var kotone_body: Dictionary = Fixtures.physics("kotone").body
+	var yuna_contact_center := int(kotone_peer.motion.position_mm) \
+		- int((int(yuna_body.collision_width_mm) + int(kotone_body.collision_width_mm)) / 2)
+	check(platform._predicted_contacts.has("p2"), "Yuna owner prediction reaches Kotone geometric peer constraint")
+	check(platform._pixel_to_server_mm(platform.character_root.position.x) <= yuna_contact_center + 1,
+		"geometry-only peer constraint still prevents owner penetration")
+	check(platform.character_root.velocity.x > 0.0,
+		"peer proxy cannot manufacture infinite-mass stop/recoil velocity for Yuna")
 
 	reset()
 	# A rebase can leave a subpixel presentation lead after the physical body
