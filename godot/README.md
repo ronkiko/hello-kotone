@@ -147,8 +147,10 @@ from movement or treat remote drive as known. Motion frames include a bounded
 server-computed peer-contact velocity response with response-time facing, tick and
 peer IDs, retained until publication. It carries no animation state. Yuna's prepared
 receiver-relative `stumble_back` reaction plays only for an actual sufficiently strong
-server contact response from behind; it remains cosmetic and cannot feed back into
-physics.
+server contact response from behind, independent of world-left/right;
+left-facing back impacts mirror the existing reaction frames. A distinct
+`stumble_front` animation is deferred until its art exists. Reactions remain
+cosmetic and cannot feed back into physics.
 
 See [Current Realm Lobby flow](docs/realm-lobby.md). Shared roadmap and validation
 runner are in the neighboring `ai_research` repository. Previous Series 5/6 docs
