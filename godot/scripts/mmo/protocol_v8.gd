@@ -54,8 +54,7 @@ static func motion(value: Variant) -> bool:
 
 static func motion_frame_player(value: Variant, frame_tick: int) -> bool:
 	if not fields(value, ["player_id", "position_mm", "velocity_mm_s", "facing", "last_applied_control_seq", "control_started_tick", "contacts", \
-		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts", "contact_impact_sources",
-		]) \
+		"contact_delta_velocity_mm_s", "contact_response_facing", "contact_response_tick", "contact_response_contacts", "contact_impact_sources"]) \
 		or not token(value.player_id) or not integer(value.position_mm, -1000000000, 1000000000) \
 		or not integer(value.velocity_mm_s, -50000, 50000) or not integer(value.facing, -1, 1) or value.facing not in [-1, 1] \
 		or not integer(value.last_applied_control_seq) or not integer(value.control_started_tick, 0, frame_tick) or not value.contacts is Array or value.contacts.size() > 65 \
