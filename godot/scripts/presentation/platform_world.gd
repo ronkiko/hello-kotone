@@ -460,6 +460,31 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		_blend_remaining = 0.1
 		_correction_class = "blend"
 		_prediction_metrics.small_blends += 1
+	elif not force_snap and error_mm <= blend_budget_mm and not motion.contacts.is_empty():
+		# Contact remains a physical authority barrier: the CharacterBody snaps to
+		# the server result immediately. But when our own held drive caused the
+		# contact and the server response only slowed that pusher, do not expose
+		# the prediction correction as a visible backwards recoil. Keep the old
+		# rendered position in the presentation layer and absorb the bounded lead
+		# only through later same-direction motion.
+		var control: Dictionary = MmoClient.prediction_control_state()
+		var drive := int(control.get("drive", 0))
+		var response_delta := int(motion.get("contact_delta_velocity_mm_s", 0))
+		var offset := before_render_x - character_root.position.x
+		var pusher_slowdown := drive != 0 and drive == int(motion.get("facing", 0)) \
+			and response_delta < 0 and offset * float(drive) > 0.0
+		if pusher_slowdown:
+			visual_layer.position.x = offset
+			_blend_start_offset_x = offset
+			_blend_remaining = 0.1
+			_correction_class = "contact_blend"
+			_prediction_metrics.small_blends += 1
+		else:
+			visual_layer.position.x = 0.0
+			_blend_remaining = 0.0
+			character_root.reset_physics_interpolation()
+			_correction_class = "snap"
+			_prediction_metrics.snaps += 1
 	else:
 		visual_layer.position.x = 0.0
 		_blend_remaining = 0.0
