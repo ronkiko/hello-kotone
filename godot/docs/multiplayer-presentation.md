@@ -62,3 +62,14 @@ out networked multiplayer as a case where incoming samples may not align with lo
 physics ticks, making a network timeline a better fit. See [Godot physics
 interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/physics_interpolation_introduction.html)
 and [advanced physics interpolation](https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/advanced_physics_interpolation.html).
+
+
+Impact damage numbers are a separate cosmetic presentation from gait. The
+server `motion_frame` supplies `contact_impact_impulse_g_mm_s` (g·mm/s) and
+`contact_damage` (game-card-scored integer), associated with the existing
+`contact_response_tick` and `contact_impact_sources`. Each owner/remote
+character uses a reusable `ImpactNumber` overlay above its physical root:
+`-N` rises/fades for 2 seconds, max 4 concurrent popups, no replay of a tick,
+reset on realm scope/session suspension. Missing `stumble_front` art does not
+suppress a valid damage number. No client HP mutation, no invented impulse or
+local damage formula; authoritative card score arrives in telemetry.
