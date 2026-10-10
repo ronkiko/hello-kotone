@@ -236,6 +236,21 @@ func run() -> void:
 		"Yuna proxy uses her selected 360x1550-mm body")
 	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=contact_center+1,
 		"owner cannot predict through narrower Yuna collider")
+	# A refreshed remote hint can move toward the owner between publications.
+	# The prediction proxy must preserve body ordering instead of spawning
+	# overlapped and letting Godot recovery kick the local player backwards.
+	var owner_before_proxy_refresh: float = platform.character_root.position.x
+	platform.remote_players.p2.timeline._samples.back().position_mm = 		platform._pixel_to_server_mm(platform.character_root.position.x)
+	platform.remote_players.p2.timeline._samples.back().received_usec = Time.get_ticks_usec()
+	platform._update_peer_proxies(0.0)
+	var proxy_center_mm := platform._pixel_to_server_mm(platform._peer_proxies.p2.position.x)
+	var owner_center_mm := platform._pixel_to_server_mm(platform.character_root.position.x)
+	check(proxy_center_mm >= owner_center_mm + int((int(owner_body.collision_width_mm)
+		+ int(peer_body.collision_width_mm)) / 2),
+		"peer proxy refresh cannot teleport inside owner collider")
+	platform._physics_process(DT)
+	check(platform.character_root.position.x >= owner_before_proxy_refresh - 0.000001,
+		"peer proxy refresh cannot depenetrate owner backwards")
 	platform.remote_players.p2.timeline._samples.back().received_usec=Time.get_ticks_usec()-250000
 	platform._update_peer_proxies(0.0)
 	check(platform._peer_proxies.p2.collision_layer==0,"stale hint disables ghost collider after200ms")
