@@ -38,7 +38,24 @@ func run() -> void:
 		if not platform.remote_players.has("p2"): continue
 		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
 		check(platform._movement.mass_g == physical.body.mass_g and platform._movement.top_speed_mm_s == physical.motor.top_speed_mm_s, model + " predictor uses selected server profile")
-		check(is_equal_approx(platform.character_collision.shape.size.x, physical.body.collision_width_mm * 8.0/1000.0), model + " native owner width from body")
+		check(is_equal_approx(platform.pixels_per_meter, Appearance.world_pixels_per_meter())
+			and is_equal_approx(platform.pixels_per_meter, 48.0),
+			model + " world projection shares sprite metric contract")
+		check(is_equal_approx(platform.character_collision.shape.size.x,
+			physical.body.collision_width_mm * platform.pixels_per_meter / 1000.0),
+			model + " native owner width from body")
+		check(is_equal_approx(platform.character_collision.shape.size.y,
+			physical.body.collision_height_mm * platform.pixels_per_meter / 1000.0)
+			and is_equal_approx(platform.character_collision.shape.size.y, Appearance.display_height_px(model)),
+			model + " displayed body height matches native collider height without scaling server physics")
+		check(platform.character_collision.position == Vector2(0.0,
+			-platform.character_collision.shape.size.y / 2.0),
+			model + " physical ground pivot remains aligned with visual root")
+		check(platform._pixel_to_server_mm(platform.server_to_pixel(50000)) == 50000,
+			model + " canonical metre position survives projection roundtrip")
+		check(is_equal_approx(platform.remote_players.p2.gait.cycle_pixels,
+			physical.motor.top_speed_mm_s * platform.pixels_per_meter / 1000.0),
+			model + " remote gait uses the same projection as owner")
 		var collider_size: Vector2 = platform.character_collision.shape.size
 		var collider_offset: Vector2 = platform.character_collision.position
 		var bad_view := view.duplicate(true)
