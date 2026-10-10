@@ -338,7 +338,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		check(not response_ticks.is_empty(), "observer receives measured physical impact")
 	check(not reaction_ticks.is_empty(),"Yuna owner and observer consume the actual impact reaction")
 	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
-	check(renderer.impact_numbers.last_impact_tick == response_ticks.back(),
+	check(not response_ticks.is_empty() and renderer.impact_numbers.last_impact_tick == response_ticks.back(),
 		"owner and observer damage popup consumed same causal impact tick")
 	check(reverse_after_contact==0,"physical peer contact has no periodic owner snap back")
 	mark("push-stopped%d" % role)
