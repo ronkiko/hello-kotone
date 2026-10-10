@@ -112,6 +112,15 @@ func run() -> void:
 				model + " later authoritative knockback restarts reaction from frame zero")
 			check(not push_gait.try_contact_reaction(own, model, second_push),
 				model + " duplicate response tick cannot restart reaction twice")
+			var left_push := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
+				"contact_response_tick":9,"contact_response_contacts":["p2"]}
+			check(push_gait.try_contact_reaction(own, model, left_push)
+				and own.animation == &"stumble_right2" and own.is_playing() and own.flip_h,
+				model + " signed leftward server response mirrors the authored stumble instead of dropping it")
+			own.stop()
+			push_gait.update(own, 0, 0, -1, .1)
+			check(own.animation == Appearance.idle_animation(-1) and not own.flip_h,
+				model + " authored locomotion clears transient reaction mirror")
 		else:
 			check(not reaction_started, model + " has no Yuna-only contact reaction")
 		check(platform.character_collision.shape.size == collider_size
