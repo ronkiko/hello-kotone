@@ -28,7 +28,6 @@ window/stretch/aspect="keep"
 [presentation]
 
 damage_numbers_enabled=true
-damage_number_stagger_seconds=0.04
 
 [physics]
 
