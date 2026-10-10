@@ -27,9 +27,18 @@ func _run() -> void:
 	check(overlay.show_impact(fact(11, 12, 60000000), 74.4)
 		and overlay.last_impact_tick == 11 and overlay.get_child_count() == 2,
 		"new causal impact displays separately without resetting older animation")
-	for tick in range(12, 22):
-		check(overlay.show_impact(fact(tick, 1, 5000000), 74.4), "new unique hit accepted")
-	check(overlay._visible.size() <= ImpactNumber.MAX_VISIBLE, "active popups are strictly bounded")
+	var early_popup: Label = overlay.get_child(0)
+	# A burst arriving faster than 2 seconds must not leave orphan Tween
+	# callbacks pointing to a freed Label, nor pause Godot on hit 5.
+	for tick in range(12, 44):
+		check(overlay.show_impact(fact(tick, 1, 5000000), 74.4), "unique burst hit accepted")
+	check(overlay._visible.size() == ImpactNumber.MAX_VISIBLE,
+		"burst keeps exactly four live tracked popups")
+	await process_frame
+	check(not is_instance_valid(early_popup),
+		"retiring the oldest label cancels its bound tween")
+	check(overlay.get_child_count() == ImpactNumber.MAX_VISIBLE,
+		"rapid impacts never allocate a fifth active child")
 	await create_timer(2.2).timeout
 	await process_frame
 	check(overlay.get_child_count() == 0, "all popups expire automatically after two seconds")
@@ -37,6 +46,10 @@ func _run() -> void:
 	check(overlay.last_impact_tick == 0 and overlay._visible.is_empty(),
 		"new session clears causal deduplication and popup references")
 	check(overlay.show_impact(fact(1, 3, 15000000), 74.4), "fresh scope can show a new hit")
+	overlay.reset()
+	await process_frame
+	check(overlay.get_child_count() == 0 and overlay._visible.is_empty(),
+		"reset cancels live popup tween without an orphan callback")
 	print(JSON.stringify({"suite":"impact-damage-overlay","checks":checks,
 		"failures":failures,"result":"PASS" if failures.is_empty() else "FAIL"}))
 	quit(0 if failures.is_empty() else 1)
