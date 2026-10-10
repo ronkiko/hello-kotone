@@ -34,6 +34,12 @@ func run() -> void:
 		remote.character.display_name = "remote"
 		remote.nickname = "remote"
 		view.players = {"p1":player,"p2":remote}
+		if model == "kotone":
+			var valid_scale: float = platform.pixels_per_meter
+			platform.pixels_per_meter = 0.0
+			check(not platform.project(document,view),
+				"missing canonical sprite metric refuses projection instead of dividing by zero")
+			platform.pixels_per_meter = valid_scale
 		check(platform.project(document,view), model + " current character projection")
 		if not platform.remote_players.has("p2"): continue
 		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
