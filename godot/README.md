@@ -132,16 +132,17 @@ numerical residues do not restart a visual blend on each sample. Native
 100 ms / 250 mm; after 200 ms without a sample they stop colliding. Leave,
 suspension and scope changes fence this state. No client collision becomes authority.
 
-Impact damage presentation is independently configurable in `project.godot`:
-`[presentation] damage_numbers_enabled=true`. Every accepted server
-`motion_frame` impact is handled immediately at ingress, before motion
-interpolation. One world-owned `ImpactNumber` renderer accepts only the
-server-scored integer and fixed world-space point, and displays all numbers
-immediately without FIFO, time staggering, or a visible-count limit.
-Each label frees itself after its own 2-second fade. The ingress owns
-per-player causal-tick deduplication, not the renderer. See
-[multiplayer presentation](docs/multiplayer-presentation.md) for the
-transport coalescing limitation.
+Impact damage is an ordered `damage_resolved` event independent from
+20-Hz `motion_frame`. `WorldReplica.damage_resolved` is a normal Godot
+signal, and a single world-owned `DamageEffects.tscn` instantiates
+`DamageNumber.tscn` at each server-reported hit point.
+The Label and 2-second rising/fading effect use Godot's
+`AnimationPlayer`/`animation_finished`/`queue_free`, with no custom
+FIFO, delay, visibility cap or character-specific renderer.
+To disable these optional visuals set
+`[presentation] damage_numbers_enabled=false` in `project.godot`;
+the server still resolves and publishes every hit. Current HP is not
+implemented. See [multiplayer presentation](docs/multiplayer-presentation.md).
 
 Remote characters use an eight-sample timeline on the server's 60-Hz
 `simulation_tick`, rendered 100 ms behind the latest sample. Only authoritative
