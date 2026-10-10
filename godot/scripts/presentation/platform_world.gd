@@ -556,7 +556,23 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 			_peer_proxies[id] = proxy
 		var proxy: StaticBody2D = _peer_proxies[id]
 		proxy.collision_layer = 4
-		proxy.position = Vector2(server_to_pixel(float(hint.position_mm)), FLOOR_Y)
+		# A kinematic prediction proxy may be refreshed from a newer remote
+		# sample, but it must never be teleported through the locally predicted
+		# owner. Godot's overlap recovery would otherwise push the owner backwards
+		# and turn a remote sample correction into fake local recoil. Server body
+		# order cannot cross, so clamp only the proxy placement to the minimum
+		# mixed-profile separation on its authoritative side.
+		var peer_body: Dictionary = Protocol.selected_physics(_movement, _view.players[id]).body
+		var owner_mm := float(_pixel_to_server_mm(character_root.position.x))
+		var peer_mm := float(hint.position_mm)
+		var separation_mm := 0.5 * (float(_movement.collision_width_mm) + float(peer_body.collision_width_mm))
+		var owner_authoritative_mm := float(_view.players[_local_player_id].motion.position_mm)
+		var peer_authoritative_mm := float(_view.players[id].motion.position_mm)
+		if peer_authoritative_mm >= owner_authoritative_mm:
+			peer_mm = maxf(peer_mm, owner_mm + separation_mm)
+		else:
+			peer_mm = minf(peer_mm, owner_mm - separation_mm)
+		proxy.position = Vector2(server_to_pixel(peer_mm), FLOOR_Y)
 		proxy.constant_linear_velocity = Vector2(float(hint.velocity_mm_s)*PIXELS_PER_METER/1000.0,0)
 
 func _reframe() -> void:
