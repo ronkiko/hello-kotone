@@ -45,6 +45,8 @@ func run() -> void:
 		"result":"PASS" if failures.is_empty() else "FAIL"}))
 	quit(0 if failures.is_empty() else 1)
 func scenario(model: String, direction: int, delay: int,release_phase: int,nearby_peer: bool,slow_server: bool=false) -> void:
+	# Typed metric conversion: platform is dynamically typed as Node in this test.
+	var mm_per_pixel: float = 1000.0 / Appearance.world_pixels_per_meter()
 	client._clear_session()
 	client.state = "READY"
 	client._world_rules = {"movement":RULES}
@@ -124,13 +126,13 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 		for _render in range(3):
 			platform._process(DT/3.0)
 			var sub_rendered: float = platform.character_root.position.x+platform.visual_layer.position.x
-			var sub_signed := direction*(sub_rendered-before)*(1000.0 / platform.pixels_per_meter)
+			var sub_signed: float = float(direction) * (sub_rendered-before) * mm_per_pixel
 			if ordinal>=12 and sub_signed < -0.1:
 				reverse_steps+=1
 				reverse_mm=maxf(reverse_mm,-sub_signed)
 			before=sub_rendered
 		var rendered: float = platform.character_root.position.x + platform.visual_layer.position.x
-		var signed_mm: float = direction * (rendered-before) * 125.0
+		var signed_mm: float = float(direction) * (rendered-before) * mm_per_pixel
 		if ordinal >= 12 and signed_mm < -0.1:
 			reverse_steps += 1
 			reverse_mm = maxf(reverse_mm,-signed_mm)
