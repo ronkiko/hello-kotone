@@ -100,4 +100,5 @@ static func binding(model: String = "kotone") -> Dictionary:
 
 static func rules() -> Dictionary:
 	return {"physics_hz":60,"publication_hz":20,"control_interval_ms":50,"engage_ms":100,
+		"gameplay_events_schema":"ordered_damage_resolved_v1",
 		"physics_profiles":[physics("kotone"),physics("yuna")]}
