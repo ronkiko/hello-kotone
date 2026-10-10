@@ -91,7 +91,7 @@ func run() -> void:
 			platform._on_damage_resolved(hit)
 			check(platform.damage_effects.get_child_count() == 1,
 				"global DamageEffects instantiates one native scene for remote hit")
-			var effect: Node2D = platform.damage_effects.get_child(0)
+			var effect: Node2D = platform.damage_effects.get_child(0) as Node2D
 			check(effect.has_node("Label") and effect.has_node("AnimationPlayer")
 				and (effect.get_node("Label") as Label).text == "-8",
 				"DamageNumber.tscn provides authored Label and AnimationPlayer")
