@@ -144,8 +144,9 @@ off because its local physics clock does not define network sample time. See
 facing with zero drive and no displacement. Owner and remote SpriteFrames gait is
 driven by rendered displacement and authoritative facing; it does not infer facing
 from movement or treat remote drive as known. Motion frames include a bounded
-server-computed peer-contact velocity response with response-time facing, tick and
-peer IDs, retained until publication. It carries no animation state. Yuna's prepared
+server-computed peer-contact velocity response with response-time facing, tick,
+peer IDs and `contact_impact_sources`, retained until publication. Impact source
+is derived from mass and actual relative velocity, never motor power or held keys. It carries no animation state. Yuna's prepared
 receiver-relative `stumble_back` reaction plays only for an actual sufficiently strong
 server contact response from behind, independent of world-left/right;
 left-facing back impacts mirror the existing reaction frames. A distinct
