@@ -43,8 +43,8 @@ func run() -> void:
 		check(platform.project(document,view), model + " current character projection")
 		if not platform.remote_players.has("p2"): continue
 		var physical := preload("res://tests/mmo/replica_check.gd").physics(model)
-		check(physical.physics_profile_revision == "hello_kotone_physics_v3"
-			and physical.motor.motor_profile_id == model + "_motor_v2",
+		check(physical.physics_profile_revision == "hello_kotone_physics_v4"
+			and physical.motor.motor_profile_id == model + "_motor_v3",
 			model + " accepts only refreshed walk motor binding")
 		check(platform._movement.mass_g == physical.body.mass_g and platform._movement.top_speed_mm_s == physical.motor.top_speed_mm_s, model + " predictor uses selected server profile")
 		check(is_equal_approx(platform.pixels_per_meter, Appearance.world_pixels_per_meter())
@@ -81,8 +81,8 @@ func run() -> void:
 		check(is_equal_approx(platform.remote_players.p2.identity.position.y, -expected_height - 18), model + " remote label follows metric height")
 		if model == "yuna":
 			var remote_node: Node = platform.remote_players.p2
-			var physical_response := {"contact_delta_velocity_mm_s":8400,"contact_response_tick":12,"contact_response_facing":1,
-				"contact_response_contacts":["p1"],"contact_shove_sources":["p1"]}
+			var physical_response := {"contact_delta_velocity_mm_s":758,"contact_response_tick":12,"contact_response_facing":1,
+				"contact_response_contacts":["p1"],"contact_impact_sources":["p1"]}
 			check(remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "remote starts received mass-aware reaction")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
@@ -125,23 +125,23 @@ func run() -> void:
 		var push_gait := Gait.new()
 		push_gait.reset(own, 1)
 		var push := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
-			"contact_response_tick":7,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			"contact_response_tick":7,"contact_response_contacts":["p2"],"contact_impact_sources":["p2"]}
 		var reaction_started: bool = push_gait.try_contact_reaction(own, model, push)
 		if model == "yuna":
 			check(reaction_started and own.animation == &"stumble_back" and own.is_playing(), model + " server contact response selects authored Yuna reaction")
 			push_gait.update(own, 0, 4, 1, .1)
 			check(own.animation == &"stumble_back", model + " reaction holds over gait until SpriteFrames completes it")
 			own.set_frame_and_progress(4, 0.5)
-			var second_push := {"contact_delta_velocity_mm_s":6000,"contact_response_facing":1,
-				"contact_response_tick":8,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			var second_push := {"contact_delta_velocity_mm_s":758,"contact_response_facing":1,
+				"contact_response_tick":8,"contact_response_contacts":["p2"],"contact_impact_sources":["p2"]}
 			check(push_gait.try_contact_reaction(own, model, second_push)
 				and own.animation == &"stumble_back" and own.frame == 0
 				and push_gait.last_contact_response_tick == 8,
-				model + " later authoritative knockback restarts reaction from frame zero")
+				model + " later authoritative impact restarts reaction from frame zero")
 			check(not push_gait.try_contact_reaction(own, model, second_push),
 				model + " duplicate response tick cannot restart reaction twice")
-			var left_back := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
-				"contact_response_tick":9,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			var left_back := {"contact_delta_velocity_mm_s":-758,"contact_response_facing":-1,
+				"contact_response_tick":9,"contact_response_contacts":["p2"],"contact_impact_sources":["p2"]}
 			check(Gait.impact_side(left_back) == &"back"
 				and push_gait.try_contact_reaction(own, model, left_back)
 				and own.animation == Gait.BACK_REACTION and own.flip_h
@@ -150,8 +150,8 @@ func run() -> void:
 			push_gait.update(own, 0, -4, -1, .1)
 			check(own.animation == Gait.BACK_REACTION and own.flip_h,
 				model + " mirrored back reaction is not overwritten by walking")
-			var front_impact := {"contact_delta_velocity_mm_s":8400,"contact_response_facing":-1,
-				"contact_response_tick":10,"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			var front_impact := {"contact_delta_velocity_mm_s":758,"contact_response_facing":-1,
+				"contact_response_tick":10,"contact_response_contacts":["p2"],"contact_impact_sources":["p2"]}
 			check(Gait.impact_side(front_impact) == &"front"
 				and not push_gait.try_contact_reaction(own, model, front_impact)
 				and not own.sprite_frames.has_animation(Gait.FRONT_REACTION),
@@ -159,10 +159,10 @@ func run() -> void:
 			check(push_gait.last_contact_response_tick == 9,
 				model + " missing front art does not consume the last played back event")
 			var pusher_slowdown := {"contact_delta_velocity_mm_s":900,"contact_response_facing":1,
-				"contact_response_tick":11,"contact_response_contacts":["p2"],"contact_shove_sources":[]}
+				"contact_response_tick":11,"contact_response_contacts":["p2"],"contact_impact_sources":[]}
 			check(Gait.impact_side(pusher_slowdown) == &""
 				and not push_gait.try_contact_reaction(own, model, pusher_slowdown),
-				model + " ordinary contact deceleration is not a shove impact")
+				model + " ordinary contact deceleration is not a physical impact")
 			check(push_gait.last_contact_response_tick == 9,
 				model + " non-shove response cannot consume the back reaction")
 			push_gait.reset(own, -1)
