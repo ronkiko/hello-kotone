@@ -124,7 +124,8 @@ static func selected_physics(movement_rules: Dictionary, player_value: Dictionar
 	return {}
 
 static func movement(value: Variant) -> bool:
-	if not fields(value, ["physics_hz", "publication_hz", "control_interval_ms", "engage_ms", "physics_profiles"]) \
+	if not fields(value, ["physics_hz", "publication_hz", "control_interval_ms", "engage_ms", "physics_profiles", "gameplay_events_schema"]) \
+		or value.gameplay_events_schema != "ordered_damage_resolved_v1" \
 		or not integer(value.engage_ms, 1, 1000) or value.physics_hz != 60 or value.publication_hz != 20 \
 		or value.control_interval_ms != 50 or not value.physics_profiles is Array \
 		or value.physics_profiles.is_empty() or value.physics_profiles.size() > 32: return false
