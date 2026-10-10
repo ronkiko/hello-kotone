@@ -59,14 +59,16 @@ func _initialize() -> void:
 	check(not Protocol.response(partial), "partial correlation rejected")
 	var frame_player := {"player_id":"p1", "position_mm":1000, "velocity_mm_s":0, "facing":1,
 		"last_applied_control_seq":1,"control_started_tick":0, "contacts":[], "contact_delta_velocity_mm_s":0,
-		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[]}
+		"contact_response_facing":0, "contact_response_tick":0, "contact_response_contacts":[],
+		"contact_shove_sources":[]}
 	check(Protocol.motion_frame_player(frame_player, 4), "empty physical response is explicit and valid")
 	var response := frame_player.duplicate(true)
 	response.contact_delta_velocity_mm_s = 1200
 	response.contact_response_facing = 1
 	response.contact_response_tick = 3
 	response.contact_response_contacts = ["p2"]
-	check(Protocol.motion_frame_player(response, 4), "bounded peer response fact is valid")
+	response.contact_shove_sources = ["p2"]
+	check(Protocol.motion_frame_player(response, 4), "bounded received-shove response fact is valid")
 	response.contact_response_tick = 5
 	check(not Protocol.motion_frame_player(response, 4), "future contact response tick rejected")
 	response = frame_player.duplicate(true)
