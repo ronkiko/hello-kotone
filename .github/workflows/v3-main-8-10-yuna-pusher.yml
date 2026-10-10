@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/v3-main-8-10-yuna-pusher.yml"
+      - "godot/scripts/presentation/platform_world.gd"
+      - "godot/tests/mmo/owner_prediction_check.gd"
+      - "godot/tests/mmo/character_presentation_check.gd"
 permissions:
   contents: read
 jobs:
