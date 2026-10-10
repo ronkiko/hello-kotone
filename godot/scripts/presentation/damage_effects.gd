@@ -11,7 +11,7 @@ func show_damage(amount: int, world_position: Vector2) -> void:
 		return
 	var number: Node2D = NUMBER_SCENE.instantiate()
 	add_child(number)
-	number.show_number(amount, world_position)
+	number.call(&"show_number", amount, world_position)
 
 func clear() -> void:
 	for effect in get_children():
