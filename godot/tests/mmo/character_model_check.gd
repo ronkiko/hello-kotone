@@ -40,6 +40,19 @@ func run() -> void:
 	check(gait.try_contact_reaction(sprite, "yuna", push)
 		and sprite.animation == &"stumble_back" and sprite.is_playing(), "server peer response starts authored Yuna push reaction")
 	check(not gait.try_contact_reaction(sprite,"yuna",push),"same physical response tick cannot replay reaction")
+	# These are receiver-relative action classes, never world-left/world-right.
+	for impulse_direction in [-1, 1]:
+		for receiver_facing in [-1, 1]:
+			var hit := {"contact_delta_velocity_mm_s":impulse_direction * 8400,
+				"contact_response_facing":receiver_facing,"contact_response_tick":8,
+				"contact_response_contacts":["p2"],"contact_shove_sources":["p2"]}
+			var expected_side := &"back" if impulse_direction == receiver_facing else &"front"
+			check(Gait.impact_side(hit) == expected_side,
+				"semantic impact side depends on receiver orientation, not absolute world X")
+	check(Gait.impact_side({"contact_delta_velocity_mm_s":8400,"contact_response_facing":1,
+		"contact_response_tick":9,"contact_response_contacts":["p2"],"contact_shove_sources":[]}) == &"",
+		"generic pusher slowdown never masquerades as a hit")
+
 	for no_response in [{"contacts":["p2"]},{"contacts":["wall_max"]},{"velocity_mm_s":3000}]:
 		check(not gait.try_contact_reaction(sprite,"yuna",no_response),"touch wall or motor without server response never stumbles")
 	check(sprite.sprite_frames.get_frame_count(&"stumble_back")==8 and not sprite.sprite_frames.get_animation_loop(&"stumble_back"),"intended reaction has eight non-looping authored frames")
