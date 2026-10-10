@@ -128,6 +128,8 @@ func server_to_pixel(position_mm: float) -> float:
 	return ORIGIN_X + (float(position_mm) / 1000.0 - float(_map.min_x) / float(_map.units_per_meter)) * pixels_per_meter
 
 func project(document: Dictionary, view: Dictionary, _unused: Variant = null) -> bool:
+	# No silent pixel-scale fallback when the canonical sprite metric is missing.
+	if pixels_per_meter <= 0.0: return false
 	if _movement.is_empty() or not Protocol.map_definition(document) or not Protocol.map_reference(view.get("map")): return false
 	for key in ["map_id", "content_version", "content_hash"]:
 		if document[key] != view.map[key]: return false
