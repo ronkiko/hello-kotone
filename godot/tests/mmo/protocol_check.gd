@@ -68,7 +68,13 @@ func _initialize() -> void:
 	response.contact_response_tick = 3
 	response.contact_response_contacts = ["p2"]
 	response.contact_impact_sources = ["p2"]
-	check(Protocol.motion_frame_player(response, 4), "bounded received-shove response fact is valid")
+	check(Protocol.motion_frame_player(response, 4), "measured physical impact fact is valid")
+	var forged := response.duplicate(true)
+	forged.contact_impact_sources = ["not_a_contact"]
+	check(not Protocol.motion_frame_player(forged, 4), "impact source requires real contact")
+	forged = response.duplicate(true)
+	forged.contact_shove_sources = ["p2"]
+	check(not Protocol.motion_frame_player(forged, 4), "obsolete motor-knockback wire is rejected")
 	response.contact_response_tick = 5
 	check(not Protocol.motion_frame_player(response, 4), "future contact response tick rejected")
 	response = frame_player.duplicate(true)
