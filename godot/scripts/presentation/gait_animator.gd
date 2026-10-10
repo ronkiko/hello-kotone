@@ -45,6 +45,10 @@ func try_contact_reaction(sprite: AnimatedSprite2D, character_model_id: String, 
 	stop_elapsed = 0.0
 	idle_elapsed = 0.0
 	sprite.stop()
+	# stumble_right2 is the authored rightward sequence. The physical response
+	# delta is signed, so a leftward shove uses the same fixed-canvas sequence
+	# mirrored in presentation only; collider/body state is untouched.
+	sprite.flip_h = delta_velocity < 0
 	sprite.animation = PUSH_REACTION
 	sprite.set_frame_and_progress(0, 0.0)
 	sprite.play()
