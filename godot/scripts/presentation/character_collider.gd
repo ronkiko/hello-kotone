@@ -17,14 +17,27 @@ static func install(collision: CollisionShape2D, body: Dictionary, pixels_per_me
 		return false
 	var size := size_px(body, pixels_per_meter)
 	if size == Vector2.ZERO:
-		collision.disabled = true
-		collision.shape = null
+		# Invalid server geometry fails closed. Repeated invalid snapshots are no-ops.
+		if not collision.disabled:
+			collision.disabled = true
+		if collision.shape != null:
+			collision.shape = null
 		return false
-	var shape := RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
+	# World snapshots can arrive every frame. Keep the native Shape2D resource
+	# stable so Godot physics and the Remote Inspector never see a replacement
+	# collider unless this node has no rectangle yet.
+	var shape := collision.shape as RectangleShape2D
+	if shape == null:
+		shape = RectangleShape2D.new()
+		shape.size = size
+		collision.shape = shape
+	elif shape.size != size:
+		shape.size = size
 	# Character world position is the canonical ground-contact pivot. Rectangle
 	# center therefore sits exactly half its physical height above the ground.
-	collision.position = Vector2(0.0, -size.y / 2.0)
-	collision.disabled = false
+	var center := Vector2(0.0, -size.y / 2.0)
+	if collision.position != center:
+		collision.position = center
+	if collision.disabled:
+		collision.disabled = false
 	return true
