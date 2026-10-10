@@ -15,7 +15,7 @@ func identity(epoch: String = "e1") -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "local", "realm_instance_id": epoch}
 
 func bootstrap(epoch: String = "e1") -> Dictionary:
-	return {"identity": identity(epoch), "capabilities": ["control_set", "logout", "map", "state", "world_rules"]}
+	return {"identity": identity(epoch), "capabilities": ["control_set", "damage_resolved_v1", "logout", "map", "state", "world_rules"]}
 
 func character() -> Dictionary:
 	return {"game_card_id": "hello-kotone", "realm_id": "local", "character_id": "p1", "display_name": "player1", "appearance_schema_version": 2,
@@ -59,6 +59,14 @@ func run() -> void:
 		check(not Protocol.bootstrap(bad), "STRICT_BOOTSTRAP")
 	check(Protocol.bootstrap({"identity": identity(), "capabilities": []}), "GENERIC_EMPTY_CAPABILITIES")
 	check(Protocol.response(reply("enter", entry())), "VALID_V8_ENTER")
+	reset()
+	var stale_server := entry()
+	stale_server.bootstrap.capabilities.erase("damage_resolved_v1")
+	deliver("enter", stale_server)
+	check(client.state == "FAILED" and client.last_error.code == "UNSUPPORTED_VERSION"
+		and client.world_replica.snapshot().is_empty() and not client.world_session.view().active,
+		"STALE_SERVER_REJECTED_BEFORE_FIRST_MOTION_FRAME")
+
 	var old_version := reply("enter", entry())
 	old_version.protocol_version = 5
 	check(not Protocol.response(old_version), "V5_BREAKING_SHAPE_REJECTED")
