@@ -13,6 +13,11 @@ const Library = preload("res://scripts/presentation/character_animation_library.
 # Shared viewport presentation transform; canonical sprite scale remains one.
 const DISPLAY_SCALE := 0.48
 
+static func world_pixels_per_meter() -> float:
+	# The sprite-frame contract defines pixels/centimetre at the canonical
+	# anchor. Physics and movement must use that *same* world projection.
+	return float(Library.FrameContract.canonical_pixels_per_cm()) * 100.0 * DISPLAY_SCALE
+
 static func display_height_px(character_model_id: String) -> float:
 	return float(Library.FrameContract.canonical_height_px(character_model_id)) * DISPLAY_SCALE
 
