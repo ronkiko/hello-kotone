@@ -79,7 +79,10 @@ func _ready() -> void:
 	character_root.name = "CharacterRoot"
 	character_root.position.y = FLOOR_Y
 	character_root.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
-	character_root.safe_margin = 0.001
+	# Server rectangles have exact millimetre extents. A Godot recovery margin
+	# would silently inflate only the client collider and can depenetrate the
+	# owner opposite to motion at peer contact. Native shape contact stays exact.
+	character_root.safe_margin = 0.0
 	character_root.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	character_root.collision_layer = 2
 	character_root.collision_mask = 5
