@@ -114,9 +114,11 @@ func run() -> void:
 				model + " duplicate response tick cannot restart reaction twice")
 			var left_push := {"contact_delta_velocity_mm_s":-8400,"contact_response_facing":-1,
 				"contact_response_tick":9,"contact_response_contacts":["p2"]}
-			check(push_gait.try_contact_reaction(own, model, left_push)
-				and own.animation == &"stumble_right2" and own.is_playing() and own.flip_h,
-				model + " signed leftward server response mirrors the authored stumble instead of dropping it")
+			var left_started := push_gait.try_contact_reaction(own, model, left_push)
+			check(left_started, model + " signed leftward server response starts reaction")
+			check(own.animation == &"stumble_right2", model + " leftward response selects authored stumble sequence")
+			check(own.is_playing(), model + " leftward response plays non-looping reaction")
+			check(own.flip_h, model + " leftward response mirrors rightward authored reaction")
 			own.stop()
 			push_gait.update(own, 0, 0, -1, .1)
 			check(own.animation == Appearance.idle_animation(-1) and not own.flip_h,
