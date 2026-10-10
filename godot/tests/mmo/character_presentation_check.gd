@@ -102,6 +102,20 @@ func run() -> void:
 			remote_node.render_at(remote_node.position.x, damage_response, 0.016)
 			check(remote_node.impact_numbers.get_child_count() == 1,
 				"remote interpolation cannot enqueue or evict damage numbers")
+			var next_damage := received_damage.duplicate(true)
+			next_damage["contact_response_tick"] = 13
+			next_damage["contact_damage"] = 5
+			next_damage["contact_impact_impulse_g_mm_s"] = 25000000
+			platform._queue_impact_display({"event":"motion_frame","data":{"players":[next_damage]}})
+			check(remote_node.impact_numbers._pending.size() == 1
+				and remote_node.impact_numbers.get_child_count() == 1,
+				"second accepted impact is FIFO queued before delayed rendering")
+			remote_node.impact_numbers._process(0.041)
+			check(remote_node.impact_numbers._pending.is_empty()
+				and remote_node.impact_numbers.get_child_count() == 2
+				and remote_node.impact_numbers.get_child(0).text == "-8"
+				and remote_node.impact_numbers.get_child(1).text == "-5",
+				"remote FIFO dispatches every received damage number in order")
 			var contact_player := remote.duplicate(true)
 			contact_player.motion.simulation_tick = 15
 			contact_player.contacts = ["p1"]
