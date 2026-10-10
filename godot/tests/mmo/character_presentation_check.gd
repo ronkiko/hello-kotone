@@ -93,9 +93,9 @@ func run() -> void:
 				"global DamageEffects instantiates one native scene for remote hit")
 			var effect: Node2D = platform.damage_effects.get_child(0)
 			check(effect.has_node("Label") and effect.has_node("AnimationPlayer")
-				and effect.get_node("Label").text == "-8",
+				and (effect.get_node("Label") as Label).text == "-8",
 				"DamageNumber.tscn provides authored Label and AnimationPlayer")
-			check(effect.get_node("AnimationPlayer").is_playing(),
+			check((effect.get_node("AnimationPlayer") as AnimationPlayer).is_playing(),
 				"native AnimationPlayer drives the two-second rising fade")
 			var other_hit := hit.duplicate(true)
 			other_hit.target_entity_id = "p1"
@@ -107,7 +107,7 @@ func run() -> void:
 			other_hit.impact_impulse_g_mm_s = 20000000
 			platform._on_damage_resolved(other_hit)
 			check(platform.damage_effects.get_child_count() == 2
-				and platform.damage_effects.get_child(1).get_node("Label").text == "-4",
+				and (platform.damage_effects.get_child(1).get_node("Label") as Label).text == "-4",
 				"one world-owned effects presenter renders different targets immediately")
 			remote_node.render_at(remote_node.position.x, physical_response, 0.016)
 			check(platform.damage_effects.get_child_count() == 2,
