@@ -4,6 +4,7 @@ const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
+const ImpactNumber = preload("res://scripts/presentation/impact_number.gd")
 const CharacterCollider = preload("res://scripts/presentation/character_collider.gd")
 const TERRAIN = preload("res://assets/mmo/platform.svg")
 var pixels_per_meter: float = Appearance.world_pixels_per_meter()
@@ -55,6 +56,7 @@ var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulati
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
+var impact_numbers := ImpactNumber.new()
 var _local_model_id := ""
 
 func _ready() -> void:
@@ -93,6 +95,8 @@ func _ready() -> void:
 	visual_layer.scale = Vector2.ONE * Appearance.DISPLAY_SCALE
 	visual_layer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
 	character_root.add_child(visual_layer)
+	impact_numbers.name = "ImpactNumbers"
+	character_root.add_child(impact_numbers)
 	sprite = AnimatedSprite2D.new()
 	visual_layer.add_child(sprite)
 	Appearance.Library.install(sprite, "kotone")
@@ -153,6 +157,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var owner_scope := "%s|%s|%d" % [str(view.get("epoch","")),str(view.map.map_id),int(view.get("zone_generation",1))]
 	if not _position_installed or _local_player_id != view.local_player_id or owner_scope != _owner_scope:
 		_owner_scope = owner_scope
+		impact_numbers.reset()
 		_clear_peer_proxies()
 		_local_player_id = view.local_player_id
 		_position_installed = true
@@ -188,6 +193,7 @@ func set_suspended(value: bool) -> void:
 		_blend_start_offset_x = 0.0
 		visual_layer.position.x = 0.0
 		_gait.reset(sprite, int(MmoClient.prediction_control_state().facing))
+		impact_numbers.reset()
 	if sprite != null and value: sprite.pause()
 	for node in remote_players.values():
 		node.set_suspended(value)
@@ -391,6 +397,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	_last_applied_control_seq = applied_seq
 	_prediction_metrics.last_applied_control_seq = applied_seq
 	_gait.try_contact_reaction(sprite, _local_model_id, motion)
+	impact_numbers.show_impact(motion, Appearance.display_height_px(_local_model_id if not _local_model_id.is_empty() else "kotone"))
 	var mapped_ordinal := 0
 	if force_snap:
 		_prediction_ordinal = 0
