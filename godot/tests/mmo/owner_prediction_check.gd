@@ -178,7 +178,7 @@ func run() -> void:
 	reset()
 	sent(1,1)
 	steps(4)
-	var before_contact_render := platform.character_root.position.x + platform.visual_layer.position.x
+	var before_contact_render: float = platform.character_root.position.x + platform.visual_layer.position.x
 	var pusher_contact := sample(9004,1,9001,
 		platform._pixel_to_server_mm(platform.character_root.position.x)-180,1750,["p2"])
 	pusher_contact.merge({"contact_delta_velocity_mm_s":-2450,"contact_response_tick":9004,
@@ -190,7 +190,7 @@ func run() -> void:
 		"Yuna pusher render never jumps backwards at authoritative contact")
 	var pusher_reverse_steps := 0
 	for interval in range(20):
-		var before_pusher := platform.character_root.position.x + platform.visual_layer.position.x
+		var before_pusher: float = platform.character_root.position.x + platform.visual_layer.position.x
 		platform._physics_process(DT)
 		platform._process(DT)
 		if platform.character_root.position.x + platform.visual_layer.position.x < before_pusher - 0.0008:
