@@ -19,7 +19,8 @@ func ready_replica() -> RefCounted:
 func sample(seq: int = 1, revision: int = 5, response_delta: int = 0) -> Dictionary:
 	var p := player()
 	var contact_response_contacts: Array = ["p2"] if response_delta != 0 else []
-	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"control_started_tick":0,"contacts":[],"contact_delta_velocity_mm_s":response_delta,"contact_response_facing":-1 if response_delta != 0 else 0,"contact_response_tick":3 if response_delta != 0 else 0,"contact_response_contacts":contact_response_contacts}]}}
+	var contact_shove_sources: Array = ["p2"] if response_delta != 0 else []
+	return {"protocol_version":8,"type":"event","event":"motion_frame","epoch":"e1","zone_id":MAP.map_id,"revision":revision,"data":{"realm_instance_id":"e1","zone_package_id":MAP.map_id,"zone_generation":1,"frame_seq":seq,"simulation_tick":4,"players":[{"player_id":p.player_id,"position_mm":p.motion.position_mm,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"control_started_tick":0,"contacts":[],"contact_delta_velocity_mm_s":response_delta,"contact_response_facing":-1 if response_delta != 0 else 0,"contact_response_tick":3 if response_delta != 0 else 0,"contact_response_contacts":contact_response_contacts,"contact_shove_sources":contact_shove_sources}]}}
 func _initialize() -> void:
 	var replica := ready_replica()
 	check(replica.apply_event(sample()), "coalesced physics revisions accepted")
