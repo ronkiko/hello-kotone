@@ -269,6 +269,11 @@ func run() -> void:
 	var remote_start_x: float = remote.visual_x
 	var next_client_drive_usec := start_usec
 	while Time.get_ticks_usec() - start_usec < duration_s * 1000000:
+		if not is_instance_valid(world) or pre.state != "WORLD" or client.state in ["FAILED", "DISCONNECTED"]:
+			failures.append("Game client/session left the synchronized profile before completion")
+			stage("client_left_world")
+			finish()
+			return
 		var elapsed_s := float(Time.get_ticks_usec() - start_usec) / 1000000.0
 		var cycle_period := 8.0 if profile == "long_session" else 4.0
 		var cycle := fposmod(elapsed_s, cycle_period)
@@ -375,11 +380,17 @@ func run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func finish() -> void:
+	var game_state: String = client.state if is_instance_valid(client) else "missing"
+	var game_error: Dictionary = client.last_error.duplicate(true) if is_instance_valid(client) else {}
+	var pre_state: String = pre.state if is_instance_valid(pre) else "missing"
+	var pre_error: Dictionary = pre.error.duplicate(true) if is_instance_valid(pre) else {}
 	if client != null and client.state not in ["IDLE", "DISCONNECTED", "FAILED"]:
 		client.disconnect_world()
 	print("S812_GODOT_RESULT " + JSON.stringify({"profile":profile,"role":role,
-		"preworld_state":pre.state if pre != null else "missing",
-		"preworld_error":pre.error if pre != null else {},
-		"game_state":client.state if client != null else "missing",
+		"preworld_state":pre_state,
+		"preworld_error":pre_error,
+		"game_state":game_state,
+		"game_error":game_error,
+		"game_state_after_disconnect":client.state if is_instance_valid(client) else "missing",
 		"failures":failures,"result":"FAIL"}))
 	quit(1)
