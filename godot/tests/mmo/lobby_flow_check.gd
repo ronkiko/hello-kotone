@@ -574,6 +574,7 @@ func _run() -> void:
 	if not await wait_until(func(): return pre.state == "LOBBY" and pre.roster.characters.size() == 1, "create durable character"): quit(1); return
 	var record: Dictionary = pre.roster.characters[0].duplicate(true)
 	check(record.account_id == pre.account_id and record.character_id != pre.account_id and record.appearance_payload == chosen, "account character split and stored appearance")
+	check(button("Resume / take control: " + record.display_name) == null, "roster never exposes a permanent takeover button")
 	await press("1. " + record.display_name)
 	if not await wait_until(func(): return not pre.selection.is_empty(), "select character"): quit(1); return
 	await screenshot("roster")
