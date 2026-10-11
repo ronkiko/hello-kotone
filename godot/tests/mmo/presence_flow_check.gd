@@ -47,12 +47,16 @@ func run() -> void:
 	else:
 		var original := load_mark("avatar")
 		check(pre.roster.characters.size() == 1 and pre.roster.characters[0].character_id == original.player_id, "same owned character in fresh roster")
+		var client_state_before_select: String = client.state
+		var client_requests_before_select: int = client._request_count
 		await pre.select_character(original.player_id)
 		check(pre.state == "LOBBY" and takeover_offers.size() == 1
 			and takeover_offers[0].character_id == original.player_id,
 			"CHARACTER_ONLINE offers explicit takeover for the owned character")
-		check(client.state == "IDLE" and client.player_id.is_empty(),
-			"online rejection never starts takeover before explicit user action")
+		check(client.state == client_state_before_select and client.player_id.is_empty()
+			and client.session_id.is_empty() and client._request_count == client_requests_before_select,
+			"online rejection never starts takeover before explicit user action (state %s → %s, requests %d → %d)" % [
+			client_state_before_select, client.state, client_requests_before_select, client._request_count])
 		await pre.resume_character(original.player_id)
 	if not await wait_for(func(): return client.state == "READY", "world snapshot and new control route"): finish(); return
 	change_scene_to_file("res://scenes/mmo/world.tscn")
