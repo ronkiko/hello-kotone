@@ -340,6 +340,10 @@ func run() -> void:
 				"local_control_sequence": int(local_motion.get("last_applied_control_seq", 0))})
 			next_snapshot_usec += 1000000
 		await process_frame
+	if client.state == "RESYNCING":
+		stage("final_state_request_wait")
+		if not await wait_until(func(): return client.state == "READY",
+			"in-flight state request completes before safe Logout", 10.0): finish(); return
 	stage("loop_finished")
 	await set_drive(0)
 	if not await wait_until(func(): return client._server_input.drive == 0 and client.world_replica.local_player().motion.velocity_mm_s == 0,
