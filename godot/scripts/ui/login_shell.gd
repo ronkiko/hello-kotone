@@ -61,6 +61,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 5)
 	scroll.add_child(column)
 	Preworld.changed.connect(_render)
+	Preworld.takeover_offered.connect(_confirm_takeover)
 	MmoClient.world_ready.connect(_world_ready)
 	MmoClient.state_changed.connect(_game_state)
 	_render()
@@ -187,7 +188,6 @@ func _lobby_page() -> void:
 	_label("%s · Characters %d/%d" % [Preworld.realm.display_name, Preworld.roster.get("characters", []).size(), Preworld.roster.get("slot_limit", 0)], 16)
 	for record in Preworld.roster.get("characters", []):
 		_button("%d. %s" % [record.slot, record.display_name], Preworld.select_character.bind(record.character_id))
-		_button("Resume / take control: " + record.display_name, Preworld.resume_character.bind(record.character_id), Preworld.availability.get("status") == "online")
 	if not Preworld.selection.is_empty():
 		var record: Dictionary = Preworld.selection.character
 		_label("Selected: " + record.display_name)
@@ -200,6 +200,21 @@ func _lobby_page() -> void:
 	_button("Refresh roster", Preworld.refresh_roster)
 	_button("Back to realms", Preworld.back_to_realms)
 	_button("Sign out", Preworld.logout_account)
+
+func _confirm_takeover(character: Dictionary) -> void:
+	# Only a server-confirmed CHARACTER_ONLINE selection opens this prompt.
+	# No permanent takeover action is shown on the character roster.
+	if Preworld.state != "LOBBY": return
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Character is already in the world"
+	dialog.dialog_text = "%s is still in the world. Take control from this window? The previous window will be disconnected." % str(character.display_name)
+	dialog.ok_button_text = "Take control"
+	var character_id: String = str(character.character_id)
+	add_child(dialog)
+	dialog.confirmed.connect(Preworld.resume_character.bind(character_id))
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered()
 
 func _confirm_delete() -> void:
 	var dialog := ConfirmationDialog.new()
