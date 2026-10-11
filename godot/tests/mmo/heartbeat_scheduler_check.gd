@@ -64,11 +64,25 @@ func start() -> void:
 	client._server_input = {"drive":0,"facing":1}
 	client._process(0)
 	check(channel.sent.size() == 2,"ORDINARY_REQUEST_ACTIVITY_DEFERS_PING")
-	for state in ["RESYNCING","MOVING","LOGGING_OUT","FAILED","DISCONNECTED","CONNECTING_GAME"]:
+	client._retirement_deadline = Time.get_ticks_msec() + 20000
+	for state in ["RESYNCING","MOVING","LOGGING_OUT","RETIRING","FAILED","DISCONNECTED","CONNECTING_GAME"]:
 		client.state = state
 		client._last_request_at = -10000
 		client._process(0)
 		check(channel.sent.size() == 2,"NO_PING_IN_"+state)
+	client.logout_pending = true
+	client.state = "READY"
+	client._pending = {"op":"ping", "request_id":"r1"}
+	var retired := response("ping", {})
+	retired.status = "rejected"
+	retired.data = null
+	retired.error = {"code":"NOT_AUTHENTICATED", "message":"retired"}
+	client._on_frame(JSON.stringify(retired).to_utf8_buffer())
+	check(client.state == "RETIRING" and client.logout_pending and client._pending.is_empty(), "RETIRED_HEARTBEAT_WAITS_FOR_DURABILITY")
+	check(not client.set_control(1, 1), "RETIREMENT_CANNOT_REACQUIRE_CONTROL")
+	client._retirement_deadline = 0
+	client._process(0)
+	check(client.state == "FAILED" and client.last_error.code == "OUTCOME_UNKNOWN", "LOST_FINAL_STATUS_IS_UNKNOWN_NOT_SUCCESS")
 	client.disconnect_world()
 	check(client._session_rules.is_empty() and client._scheduled.is_empty() and client._pending.is_empty(),"CLOSE_CLEARS_HEARTBEAT")
 	print(JSON.stringify({"suite":"recovery","result":"PASS" if failures.is_empty() else "FAIL","checks":checks,"failures":failures}))

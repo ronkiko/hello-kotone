@@ -41,6 +41,7 @@ var _trusted_ca: X509Certificate
 var _expected_identity := {}
 var _expected_character := {}
 var logout_pending := false
+var _retirement_deadline := 0
 var _leave_requested := false
 var _channel: RefCounted
 var _world_handoff := ""
@@ -203,6 +204,9 @@ func _process(_delta: float) -> void:
 	if state in ["DISCONNECTED", "FAILED"]:
 		return
 	var now := Time.get_ticks_msec()
+	if state == "RETIRING":
+		if now >= _retirement_deadline: _fail("OUTCOME_UNKNOWN")
+		return
 	if not _pending.is_empty() and now >= _request_deadline:
 		_fail("REQUEST_TIMEOUT")
 		return
@@ -318,6 +322,14 @@ func _on_frame(frame: PackedByteArray) -> void:
 		logout_changed.emit("cancelled")
 		return
 	if message.status != "ok":
+		if logout_pending and message.error.code == "NOT_AUTHENTICATED" and _pending.op in ["ping", "state", "control_set"]:
+			# Retirement fences commands before asynchronous durability finishes.
+			# This rejection is not proof of safe completion: await owner status.
+			_pending = {}
+			_scheduled = {}
+			_retirement_deadline = Time.get_ticks_msec() + request_timeout_ms
+			_set_state("RETIRING")
+			return
 		if _pending.op == "control_set" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
 			var input_code: String = message.error.code
 			_pending = {}
@@ -488,6 +500,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	if _channel != null:
 		_channel.close()
 	logout_pending = false
+	_retirement_deadline = 0
 	_world_handoff = ""
 	_trusted_ca = null
 	_expected_identity = {}
