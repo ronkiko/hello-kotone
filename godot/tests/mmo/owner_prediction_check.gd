@@ -7,11 +7,21 @@ var checks := 0
 var failures: Array = []
 var platform: Node
 var client: Node
+var queued_steps := 0
+signal steps_finished
 class Driver extends Node:
 	var suite: SceneTree
+	var started := false
 	func _physics_process(_delta: float) -> void:
-		set_physics_process(false)
-		suite.run()
+		if not started:
+			started = true
+			suite.run()
+		elif suite.queued_steps > 0:
+			for remote in suite.platform.remote_players.values():
+				if not remote.timeline._samples.is_empty(): remote.timeline._samples.back().received_usec = Time.get_ticks_usec()
+			suite.platform._physics_process(suite.DT)
+			suite.queued_steps -= 1
+			if suite.queued_steps == 0: suite.steps_finished.emit()
 func _initialize() -> void:
 	boot.call_deferred()
 func boot() -> void:
@@ -42,7 +52,8 @@ func reset() -> void:
 	platform._resync_requested = false
 	platform._apply_authoritative_motion(sample(9000,0,0,50000),true)
 func steps(count: int) -> void:
-	for _i in range(count): platform._physics_process(DT)
+	queued_steps = count
+	await steps_finished
 func sent(seq: int,drive: int) -> void:
 	client._desired_input = {"drive":drive,"facing":1}
 	client.control_sent.emit({"control_seq":seq,"drive":drive,"facing":1})
@@ -51,7 +62,7 @@ func run() -> void:
 	reset()
 	check(platform._prediction_ordinal == 0,"snapshot resets local ordinal independently of tick9000")
 	sent(1,1)
-	steps(4)
+	await steps(4)
 	check(platform._prediction_history.size()==4,"every local held interval recorded")
 	check(platform._prediction_history[0].local_ordinal==1,"local ordinal does not inherit server origin")
 	var before: float = platform.character_root.position.x
@@ -62,9 +73,9 @@ func run() -> void:
 	check(not client.prediction_control_state().has("control_seq"),"unsent controls have no speculative network sequence")
 	reset()
 	sent(1,1)
-	steps(5)
+	await steps(5)
 	sent(2,0)
-	steps(2)
+	await steps(2)
 	before=platform.character_root.position.x
 	platform._apply_authoritative_motion(sample(9008,1,9001,50100,1000),false)
 	check(platform._correction_class=="pending_control" and platform.character_root.position.x==before,
@@ -75,11 +86,11 @@ func run() -> void:
 		"release boundary retires only correlated local interval")
 	reset()
 	sent(1,1)
-	steps(2)
+	await steps(2)
 	client._desired_input={"drive":0,"facing":1}
-	steps(1)
+	await steps(1)
 	client._desired_input={"drive":1,"facing":1}
-	steps(1)
+	await steps(1)
 	platform._apply_authoritative_motion(sample(9301,1,9300,50006,266),false)
 	check(platform._prediction_history.size()==2 and platform._prediction_history[0].drive==0
 		and platform._prediction_history[1].drive==1,"coalesced stop occupies its actual local interval once")
@@ -87,33 +98,33 @@ func run() -> void:
 	check(platform._prediction_history.is_empty(),"same applied control ages out coalesced state without ghost replay")
 	reset()
 	sent(1,1)
-	steps(2)
+	await steps(2)
 	sent(2,0)
 	client._server_input_seq=1
 	client.input_rejected.emit("RATE_LIMITED")
 	check(not platform._control_ledger.has(2),"definite rejection removes an unapplied control boundary")
 	reset()
-	steps(40)
+	await steps(40)
 	check(platform._prediction_history.size()==40 and not platform._prediction_fenced,"40 interval ceiling")
-	steps(1)
+	await steps(1)
 	check(platform._prediction_fenced and platform._prediction_history.is_empty(),"41st interval fences and resyncs")
 	reset()
-	steps(1)
+	await steps(1)
 	platform._prediction_history[0].at_ms=Time.get_ticks_msec()-2001
-	steps(1)
+	await steps(1)
 	check(platform._prediction_fenced,"2s age ceiling")
 	reset()
 	platform._apply_authoritative_motion(sample(9001,9,9001,50000),false)
 	check(platform._prediction_fenced,"unknown applied sequence fails closed")
 	reset()
 	sent(1,1)
-	steps(3)
+	await steps(3)
 	platform.set_suspended(true)
 	client._clear_session()
 	client.state="READY"
 	platform.set_suspended(false)
 	platform._apply_authoritative_motion(sample(40000,0,0,50000),true)
-	steps(1)
+	await steps(1)
 	check(platform._prediction_ordinal==1 and platform._prediction_history[0].drive==0
 		and platform._control_ledger.size()==1,"fresh epoch clears all old clock/control mappings")
 	reset()
@@ -127,17 +138,17 @@ func run() -> void:
 		"players":{"p1":fast},"local_player_id":"p1","confirmed_local_position_mm":50000})
 	reset()
 	sent(1,-1)
-	steps(25)
+	await steps(25)
 	var held_x: int = platform._pixel_to_server_mm(platform.character_root.position.x)
-	platform._apply_authoritative_motion(sample(9119,1,9100,held_x+350,-4200),false)
+	platform._apply_authoritative_motion(sample(9119,1,9100,held_x+150,-int(Fixtures.physics("yuna").motor.top_speed_mm_s)),false)
 	check(platform._control_ledger[1].lead_ticks == 5, "held boundary measured five-tick lead")
 	sent(2,0)
-	steps(5)
+	await steps(5)
 	var prior_render: float = platform.character_root.position.x+platform.visual_layer.position.x
 	var release_x: int = platform._pixel_to_server_mm(platform.character_root.position.x)
-	platform._apply_authoritative_motion(sample(9124,2,9121,release_x+337,-3453),false)
+	platform._apply_authoritative_motion(sample(9124,2,9121,release_x+200,-887),false)
 	check(platform._control_ledger[2].lead_ticks == 1, "release boundary independently measured one-tick lead")
-	check(platform._correction_class == "blend", "Yuna 280-mm bounded lead change blends within profile's 100-ms travel budget")
+	check(platform._correction_class == "blend", "selected-motor release correction blends within bounded distance budget")
 	check(absf(platform.character_root.position.x+platform.visual_layer.position.x-prior_render) < 0.001,
 		"profile lead transition cannot reverse the rendered root")
 	var reverse_steps := 0
@@ -148,7 +159,7 @@ func run() -> void:
 		if platform.character_root.position.x+platform.visual_layer.position.x > before_release+0.0008: reverse_steps += 1
 	check(reverse_steps == 0, "profile-dependent release correction converges without backward render steps")
 	sent(3,-1)
-	steps(1)
+	await steps(1)
 	var response := sample(9200,3,9200,platform._pixel_to_server_mm(platform.character_root.position.x)+337)
 	response.contacts = ["p2"]
 	response.merge({"contact_delta_velocity_mm_s":758,"contact_response_tick":9200,"contact_response_facing":1,
@@ -180,16 +191,33 @@ func run() -> void:
 	await physics_frame
 	await physics_frame
 	sent(1,1)
-	steps(12)
+	await steps(12)
 	var yuna_body: Dictionary = Fixtures.physics("yuna").body
 	var kotone_body: Dictionary = Fixtures.physics("kotone").body
 	var yuna_contact_center := int(kotone_peer.motion.position_mm) \
 		- int((int(yuna_body.collision_width_mm) + int(kotone_body.collision_width_mm)) / 2)
 	check(platform._predicted_contacts.has("p2"), "Yuna owner prediction reaches Kotone geometric peer constraint")
+	check(platform._peer_proxies.p2.constant_linear_velocity == Vector2.ZERO, "geometry-only proxy cannot add native conveyor velocity")
 	check(platform._pixel_to_server_mm(platform.character_root.position.x) <= yuna_contact_center + 1,
-		"geometry-only peer constraint still prevents owner penetration")
+		"native peer constraint stays within one millimeter of the geometric edge")
 	check(platform.character_root.velocity.x > 0.0,
 		"peer proxy cannot manufacture infinite-mass stop/recoil velocity for Yuna")
+
+	reset()
+	sent(1, 1)
+	await steps(1)
+	platform._apply_authoritative_motion(sample(9010, 1, 9010, 50000, 0, ["p2"]), false)
+	var measured_contact_x: float = platform.character_root.position.x
+	await steps(3)
+	check(is_equal_approx(platform.character_root.position.x, measured_contact_x),
+		"recent authoritative zero contact velocity prevents fabricated Motor displacement")
+	platform._contact_sample_at_usec = Time.get_ticks_usec() - 100001
+	platform._integrate_control({"drive": 1, "facing": 1, "control_seq": 1}, DT)
+	check(is_equal_approx(platform.character_root.position.x, measured_contact_x), "expired contact hint cannot invent fresh Motor displacement")
+	platform._apply_authoritative_motion(sample(9011, 1, 9010, 50000, 0, ["p2"]), false)
+	sent(2, -1)
+	await steps(3)
+	check(platform.character_root.velocity.x < 0.0, "walking away does not inherit a contact velocity lock")
 
 	reset()
 	# A rebase can leave a subpixel presentation lead after the physical body
@@ -225,7 +253,7 @@ func run() -> void:
 	await physics_frame
 	await physics_frame
 	sent(1,1)
-	steps(20)
+	await steps(20)
 	var owner_body: Dictionary = Fixtures.physics("kotone").body
 	var peer_body: Dictionary = Fixtures.physics("yuna").body
 	var contact_center := int(peer.motion.position_mm) - int((int(owner_body.collision_width_mm) + int(peer_body.collision_width_mm)) / 2)
@@ -235,12 +263,13 @@ func run() -> void:
 		and is_equal_approx(proxy_shape.position.x,0.0) and is_equal_approx(proxy_shape.position.y,-37.2),
 		"Yuna proxy uses her selected 360x1550-mm body")
 	check(platform._pixel_to_server_mm(platform.character_root.position.x)<=contact_center+1,
-		"owner cannot predict through narrower Yuna collider")
+		"native owner stays within one millimeter of narrower Yuna edge")
 	# A refreshed remote hint can move toward the owner between publications.
 	# The prediction proxy must preserve body ordering instead of spawning
 	# overlapped and letting Godot recovery kick the local player backwards.
 	var owner_before_proxy_refresh: float = platform.character_root.position.x
 	platform.remote_players.p2.timeline._samples.back().position_mm = 		platform._pixel_to_server_mm(platform.character_root.position.x)
+	platform.remote_players.p2.timeline._samples.back().tick += 1
 	platform.remote_players.p2.timeline._samples.back().received_usec = Time.get_ticks_usec()
 	platform._update_peer_proxies(0.0)
 	var proxy_center_mm: int = platform._pixel_to_server_mm(platform._peer_proxies.p2.position.x)
@@ -248,6 +277,7 @@ func run() -> void:
 	check(proxy_center_mm >= owner_center_mm + int((int(owner_body.collision_width_mm)
 		+ int(peer_body.collision_width_mm)) / 2),
 		"peer proxy refresh cannot teleport inside owner collider")
+	await physics_frame
 	platform._physics_process(DT)
 	check(platform.character_root.position.x >= owner_before_proxy_refresh - 0.000001,
 		"peer proxy refresh cannot depenetrate owner backwards")

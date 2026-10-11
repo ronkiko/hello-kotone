@@ -44,6 +44,8 @@ func _ready() -> void:
 	_lobby.lost.connect(_lobby_lost)
 	MmoClient.fault.connect(_game_fault)
 	MmoClient.response_received.connect(_game_reply)
+	MmoClient.logout_changed.connect(func(status: String):
+		if status == "cancelled": _signout_after_world = false)
 
 func _state(value: String) -> void:
 	state = value
@@ -217,6 +219,23 @@ func enter_world() -> void:
 	MmoClient.enter_character(reply.data, selected, profile, trusted_ca)
 	reply.clear()
 
+func resume_character(id: String) -> void:
+	# Explicit user action; never automatically take the control lease back.
+	if state != "LOBBY" or availability.get("status") != "online": return
+	var record := {}
+	for candidate in roster.get("characters", []):
+		if candidate.character_id == id: record = candidate.duplicate(true)
+	if record.is_empty() or not _owned(record) or not Appearance.supported(record.appearance_payload): return
+	selection = {}
+	var reply := await _operation("world_resume", {"character_id": id})
+	if reply.is_empty(): return
+	if not _scope(reply.data.identity) or reply.data.character_id != id:
+		_failure("Lobby", "CHARACTER_MISMATCH", true)
+		return
+	_state("WORLD")
+	MmoClient.enter_character(reply.data, record, profile, trusted_ca)
+	reply.clear()
+
 func back_to_realms() -> void:
 	if state not in ["LOBBY", "CREATOR", "FAILED"]: return
 	_visit += 1
@@ -292,12 +311,18 @@ func _lobby_lost(code: String) -> void:
 	_binding = {}
 	_rules = {}
 	if state == "WORLD":
-		MmoClient.disconnect_world()
-		unknown = unknown or MmoClient.last_error.get("outcome_unknown", false)
+		# A newer Lobby visit does not revoke a still-authoritative Game lease.
+		# Game owns atomic replacement and sends SESSION_REPLACED after bind.
+		return
 	_failure("Lobby", code, unknown)
 
 func _game_fault(info: Dictionary) -> void:
 	if state != "WORLD":
+		return
+	if info.get("code") == "SESSION_REPLACED":
+		logout_account()
+		error = {"phase": "Game", "code": "SESSION_REPLACED", "outcome_unknown": false}
+		changed.emit()
 		return
 	var unknown := bool(info.get("outcome_unknown", false))
 	var code := str(info.get("code", "DISCONNECTED"))
@@ -316,7 +341,7 @@ func _game_fault(info: Dictionary) -> void:
 func _game_reply(op: String, data: Dictionary) -> void:
 	if op == "logout" and state == "WORLD":
 		if data.flush.status == "completed":
-			if _signout_after_world:
+			if _signout_after_world or _binding.is_empty():
 				_signout_after_world = false
 				logout_account()
 			else: await refresh_roster()

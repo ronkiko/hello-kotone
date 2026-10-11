@@ -161,6 +161,22 @@ func run() -> void:
 	var visit: int = pre._visit
 	pre._lobby_lost("DISCONNECTED")
 	check(pre.error.phase == "Lobby" and pre._binding.is_empty() and pre._visit > visit, "Lobby loss revokes visit and fences callbacks")
+	scope()
+	pre.state = "WORLD"
+	pre._lobby_lost("DISCONNECTED")
+	check(pre.state == "WORLD" and pre._binding.is_empty(), "Lobby replacement preserves Game until trusted takeover")
+	pre._game_fault({"code": "SESSION_REPLACED", "outcome_unknown": true})
+	check(pre.state == "LOGIN" and pre.error.code == "SESSION_REPLACED" and not pre.error.outcome_unknown,
+		"explicit replacement clears authority and never automatically resumes")
+	scope()
+	peer.connected_ok = true
+	pre.roster = {"characters": [record()]}
+	pre.availability = {"status": "online"}
+	peer.reply = result("world_resume", {"world_handoff": "f".repeat(64), "expires_in_ms": 30000, "character_id": "char-foreign", "identity": {"game_card_id": "hello-kotone", "realm_id": "test", "realm_instance_id": "boot-one"}, "game": {"host": "127.0.0.1", "port": 1}})
+	check(Protocol.response(peer.reply), "resume uses closed handoff response contract")
+	await pre.resume_character("char-one")
+	check(peer.sent[-1].op == "world_resume" and peer.sent[-1].payload.character_id == "char-one", "resume authenticates through Lobby with character ID only")
+	check(pre.state == "FAILED" and root.get_node("MmoClient").session_id.is_empty(), "foreign resume handoff never opens Game")
 	pre._lobby = real_peer
 	peer.queue_free()
 	pre.logout_account()

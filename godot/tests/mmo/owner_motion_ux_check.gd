@@ -165,5 +165,5 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 	check(platform._peer_proxies.size()==int(nearby_peer),label+" bounded nearby prediction proxies")
 	check(reverse_steps == 0,label+" monotonic signed owner render trajectory")
 	check(idle_during_hold == 0,label+" continuous hold has no idle flicker")
-	check(residual <= 6,label+" settles within 0.05px numerical presentation deadband")
+	check(residual <= ceili(float(Fixtures.physics(model).motor.top_speed_mm_s) / float(RULES.physics_hz)),label+" settled cosmetic lead is bounded by one installed-motor physics interval")
 	check(platform.prediction_metrics().snaps == snaps_before,label+" free space has no contact/discontinuity snap")

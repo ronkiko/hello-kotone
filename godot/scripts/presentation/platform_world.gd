@@ -42,6 +42,9 @@ var _local_control: Dictionary = {}
 var _local_control_start := 0
 var _gait_displacement := 0.0
 var _correction_class := "none"
+const NATIVE_RECOVERY_PX := 0.001
+var _contact_sample_at_usec := 0
+var _impact_this_interval := false
 var _diagnostic_motion: Dictionary = {}
 var _last_authoritative_tick := -1
 var _prediction_history: Array[Dictionary] = []
@@ -268,6 +271,8 @@ func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 			return
 
 func _physics_process(delta: float) -> void:
+	var before_render_interval: float = character_root.position.x + visual_layer.position.x
+	_impact_this_interval = false
 	if not _pending_snapshot_motion.is_empty():
 		var snapshot_motion := _pending_snapshot_motion
 		_pending_snapshot_motion = {}
@@ -330,6 +335,19 @@ func _physics_process(delta: float) -> void:
 			_blend_start_offset_x = visual_layer.position.x*(0.1/_blend_remaining)
 		else:
 			_blend_remaining = 0.0
+	# Native geometry recovery and replay can move the body opposite a continuing
+	# server-confirmed contact velocity. Keep that small correction inside the
+	# existing presentation offset; a genuine impact or large discontinuity wins.
+	var contact_velocity := int(_diagnostic_motion.get("velocity_mm_s", 0))
+	var rendered_interval: float = character_root.position.x + visual_layer.position.x
+	var interval_mm: float = (rendered_interval - before_render_interval) * 1000.0 / pixels_per_meter
+	var interval_budget := maxf(2.0, float(_movement.top_speed_mm_s) / float(_movement.physics_hz))
+	if not _impact_this_interval and not _diagnostic_motion.get("contacts", []).is_empty() \
+		and contact_velocity * int(control.drive) > 0 and interval_mm * contact_velocity < 0.0 \
+		and absf(interval_mm) <= interval_budget:
+		visual_layer.position.x = before_render_interval - character_root.position.x
+		_blend_remaining = maxf(delta, _blend_remaining)
+		_blend_start_offset_x = visual_layer.position.x * (0.1 / _blend_remaining)
 	_reframe()
 
 func _process(delta: float) -> void:
@@ -356,17 +374,41 @@ func _integrate_control(control: Dictionary, delta: float) -> void:
 	var acceleration := force * pixels_per_meter / float(_movement.mass_g)
 	character_root.velocity.x = move_toward(character_root.velocity.x, target_speed, acceleration * delta)
 	character_root.velocity.y = 0.0
+	# During a recent authoritative contact, Motor intent alone cannot predict
+	# the other body's braking/force policy. Use the measured owner velocity
+	# while pushing into that contact; native proxies still own geometry only.
+	# Walking away is free prediction. No remote drive or mass is inferred.
+	if int(control.drive) != 0:
+		var own_authoritative: Dictionary = _view.players.get(_local_player_id, {}).get("motion", {})
+		for peer_id in _diagnostic_motion.get("contacts", []):
+			if not _view.players.has(peer_id): continue
+			var peer_mm: int = _view.players[peer_id].motion.position_mm
+			var own_mm: int = int(own_authoritative.get("position_mm", _diagnostic_motion.position_mm))
+			if (peer_mm - own_mm) * int(control.drive) > 0:
+				var age := Time.get_ticks_usec() - _contact_sample_at_usec
+				if age > 100000:
+					# An expired contact sample cannot authorize fresh Motor force
+					# against a still-collidable peer. Await facts, then fence on the
+					# same 200-ms boundary that disables stale peer geometry.
+					if age > 200000: _fence_prediction()
+					return
+				character_root.velocity.x = float(_diagnostic_motion.velocity_mm_s) * pixels_per_meter / 1000.0
+				break
 	# Peer proxies are geometric occupancy for prediction, not infinite-mass
 	# physics authorities. Native slide constrains position, while the server Zone
 	# remains the only owner of mass/contact velocity response.
 	var intended_velocity_x := character_root.velocity.x
-	character_root.move_and_slide()
+	# The installed card has one horizontal axis; no tangential slide solve is
+	# needed. Native move_and_collide can report overlap recovery as contact while
+	# keeping the server-selected rectangle extents unchanged. The explicit
+	# 0.001-px query recovery tolerance is ~0.021 mm at this projection; exact
+	# zero makes Godot alternate collision/no-collision at a touching edge.
+	var collision := character_root.move_and_collide(character_root.velocity * delta, false, NATIVE_RECOVERY_PX, true)
 	var contacts: Array[String] = []
-	for index in range(character_root.get_slide_collision_count()):
-		var collider: Object = character_root.get_slide_collision(index).get_collider()
+	if collision != null:
+		var collider: Object = collision.get_collider()
 		if collider is Node and collider.has_meta("contact_id"):
-			var contact_id := str(collider.get_meta("contact_id"))
-			if not contacts.has(contact_id): contacts.append(contact_id)
+			contacts.append(str(collider.get_meta("contact_id")))
 	var half_width_mm := int(_movement.collision_width_mm / 2)
 	var position_mm := _pixel_to_server_mm(character_root.position.x)
 	var min_center := roundi(float(_map.min_x) * 1000.0 / float(_map.units_per_meter)) + half_width_mm
@@ -406,7 +448,12 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if not force_snap and (tick < _last_authoritative_tick or applied_seq < _last_applied_control_seq):
 		_fence_prediction()
 		return
+	var new_impact: bool = not motion.get("contact_impact_sources", []).is_empty() \
+		and int(motion.get("contact_response_tick", 0)) > int(_diagnostic_motion.get("contact_response_tick", 0))
+	var force_contact_snap: bool = new_impact
+	_impact_this_interval = _impact_this_interval or new_impact
 	_diagnostic_motion = motion.duplicate(true)
+	_contact_sample_at_usec = Time.get_ticks_usec()
 	_prediction_metrics.last_simulation_tick = tick
 	_last_authoritative_tick = tick
 	_last_applied_control_seq = applied_seq
@@ -489,7 +536,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		if _blend_remaining > 0.0:
 			_blend_start_offset_x = visual_layer.position.x * (0.1 / _blend_remaining)
 		_correction_class = "blend" if _blend_remaining > 0.0 else "none"
-	elif not force_snap and error_mm <= blend_budget_mm and motion.contacts.is_empty():
+	elif not force_snap and error_mm <= blend_budget_mm and not force_contact_snap:
 		visual_layer.position.x = before_render_x - character_root.position.x
 		_blend_start_offset_x = visual_layer.position.x
 		_blend_remaining = 0.1
@@ -501,6 +548,11 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 		character_root.reset_physics_interpolation()
 		_correction_class = "snap"
 		if not force_snap: _prediction_metrics.snaps += 1
+
+func _pixel_to_exact_server_mm(pixel_x: float) -> float:
+	# Native geometry remains fractional; integer wire/history quantization must
+	# not place a refreshed peer proxy inside a fractional owner position.
+	return (float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / pixels_per_meter) * 1000.0
 
 func _pixel_to_server_mm(pixel_x: float) -> int:
 	return roundi((float(_map.min_x) / float(_map.units_per_meter) + (pixel_x - ORIGIN_X) / pixels_per_meter) * 1000.0)
@@ -589,17 +641,38 @@ func _update_peer_proxies(lead_ticks: float) -> void:
 		# order cannot cross, so clamp only the proxy placement to the minimum
 		# mixed-profile separation on its authoritative side.
 		var peer_body: Dictionary = Protocol.selected_physics(_movement, _view.players[id]).body
-		var owner_mm := float(_pixel_to_server_mm(character_root.position.x))
+		var owner_mm := _pixel_to_exact_server_mm(character_root.position.x)
 		var peer_mm := float(hint.position_mm)
 		var separation_mm := 0.5 * (float(_movement.collision_width_mm) + float(peer_body.collision_width_mm))
+		separation_mm += NATIVE_RECOVERY_PX * 1000.0 / pixels_per_meter
 		var owner_authoritative_mm := float(_view.players[_local_player_id].motion.position_mm)
 		var peer_authoritative_mm := float(_view.players[id].motion.position_mm)
-		if peer_authoritative_mm >= owner_authoritative_mm:
-			peer_mm = maxf(peer_mm, owner_mm + separation_mm)
-		else:
-			peer_mm = minf(peer_mm, owner_mm - separation_mm)
+		var sample_tick := int(remote_players[id].timeline.latest_tick())
+		var new_sample: bool = int(proxy.get_meta("sample_tick", -1)) != sample_tick
+		if new_sample:
+			proxy.remove_meta("minimum_peer_mm")
+			proxy.remove_meta("maximum_peer_mm")
+			# Clamp an incoming authority refresh once. Re-clamping the same
+			# stationary sample every local tick would move the collision plane
+			# ahead of the owner and let prediction push a fictitious peer.
+			if peer_authoritative_mm >= owner_authoritative_mm:
+				proxy.set_meta("minimum_peer_mm", owner_mm + separation_mm)
+			else:
+				proxy.set_meta("maximum_peer_mm", owner_mm - separation_mm)
+			proxy.set_meta("sample_tick", sample_tick)
+		if proxy.has_meta("minimum_peer_mm"):
+			peer_mm = maxf(peer_mm, float(proxy.get_meta("minimum_peer_mm")))
+		if proxy.has_meta("maximum_peer_mm"):
+			peer_mm = minf(peer_mm, float(proxy.get_meta("maximum_peer_mm")))
 		proxy.position = Vector2(server_to_pixel(peer_mm), FLOOR_Y)
-		proxy.constant_linear_velocity = Vector2(float(hint.velocity_mm_s)*pixels_per_meter/1000.0,0)
+		# Physics transform notifications are normally deferred. Reconciliation
+		# and replay query this proxy in the same owner callback, so flush the
+		# native transform before CharacterBody2D.move_and_collide().
+		proxy.force_update_transform()
+		# Authoritative velocity already forecasts proxy position. Feeding it into
+		# StaticBody2D also creates native conveyor/platform effects on the owner.
+		# The proxy has no independent velocity/force authority.
+		proxy.constant_linear_velocity = Vector2.ZERO
 
 func _reframe() -> void:
 	var half_width := get_viewport_rect().size.x / 2.0

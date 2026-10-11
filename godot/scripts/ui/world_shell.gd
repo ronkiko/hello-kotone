@@ -25,6 +25,7 @@ func _ready() -> void:
 	MmoClient.state_changed.connect(_on_state_changed)
 	MmoClient.fault.connect(_on_fault)
 	MmoClient.input_rejected.connect(_on_input_rejected)
+	MmoClient.logout_changed.connect(_on_logout_changed)
 	MmoClient.world_replica.changed.connect(_show_world)
 	if MmoClient.state != "READY":
 		_return_to_login()
@@ -62,16 +63,19 @@ func _on_locomotion_intent_changed(direction: int) -> void:
 func _on_input_rejected(code: String) -> void:
 	status_label.text = "Control rejected: " + code
 
+func _on_logout_changed(value: String) -> void:
+	status_label.text = "Waiting for 10 seconds of quiet; movement cancels logout." if value == "pending" else "Logout cancelled."
+
 func _leave_world() -> void:
 	if not MmoClient.logout():
 		status_label.text = "The client is busy. Try leaving again in a moment."
 
 func _on_state_changed(value: String) -> void:
 	_project_display()
-	leave_button.disabled = value not in ["READY", "MOVING"]
+	leave_button.disabled = MmoClient.logout_pending or value not in ["READY", "MOVING"]
 	refresh_button.disabled = value != "READY" or (input_adapter != null and input_adapter.locomotion_intent != 0)
 	if value == "LOGGING_OUT":
-		status_label.text = "Stopping and saving..."
+		status_label.text = "Waiting for 10 seconds of quiet in a safe area, then saving..."
 	elif value == "READY":
 		status_label.text = "A/D or arrows to walk."
 	elif value == "MOVING":

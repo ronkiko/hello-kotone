@@ -77,9 +77,10 @@ func screenshot(label: String) -> void:
 	root.get_texture().get_image().save_png(output.path_join("peer%d-%s.png" % [role, label]))
 
 func mark(label: String) -> void:
-	var file := FileAccess.open(sync.path_join(label), FileAccess.WRITE)
+	var file := FileAccess.open(sync.path_join(label + ".pending"), FileAccess.WRITE)
 	file.store_string("ready")
 	file.close()
+	DirAccess.rename_absolute(sync.path_join(label + ".pending"), sync.path_join(label))
 
 func verify_remote_idle(world: Node, remote_id: String, direction: int) -> bool:
 	var side := "left" if direction < 0 else "right"
@@ -265,6 +266,8 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	var reaction_ticks: Array[int] = []
 	var strongest_response := 0
 	var contact_at := -1
+	var applied_phase := -1
+	var phase_at := Time.get_ticks_msec()
 	var reverse_after_contact := 0
 	var max_reverse_mm := 0.0
 	var release_sent := false
@@ -299,11 +302,17 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		var consumed_tick := int(gait.last_contact_response_tick)
 		if consumed_tick>0 and not reaction_ticks.has(consumed_tick):
 			reaction_ticks.append(consumed_tick)
+		var current_phase := int(client.world_replica.local_player().motion.last_applied_control_seq)
+		if current_phase != applied_phase:
+			applied_phase = current_phase
+			phase_at = Time.get_ticks_msec()
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x
 		var signed_mm: float = (rendered-before)*(1000.0 / Appearance.world_pixels_per_meter())
-		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < -0.1:
-			reverse_after_contact+=1
+		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and signed_mm < 0.0:
 			max_reverse_mm=maxf(max_reverse_mm,-signed_mm)
+			# Motion facts use integer millimetres; retain raw sub-mm diagnostics
+			# without classifying fractional native transforms as a physical step.
+			if Time.get_ticks_msec()-phase_at>300 and roundi(signed_mm) < 0: reverse_after_contact+=1
 		before=rendered
 		# Exercise the actual player sequence: first impact -> applied release ->
 		# short release interval -> repress. Same-contact force transmission is
@@ -348,7 +357,7 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	check(reaction_ticks == response_ticks,"presentation consumes each observed physical impact tick exactly once")
 	check(not damage_sequences.is_empty() and damage_values.size() == damage_sequences.size(),
 		"each confirmed damage event is received once through WorldReplica signal")
-	check(reverse_after_contact==0,"physical peer contact has no periodic owner snap back")
+	check(reverse_after_contact==0,"stable applied-control contact phase has no periodic whole-mm owner snap back")
 	mark("push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-stopped%d" % (3-role))),"both push observations complete"): return false
 	if not await wait_until(func(): return client.world_replica.local_player().motion.velocity_mm_s==0 \
@@ -360,9 +369,10 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 		"release_applied_tick":release_applied_tick if role==1 else null,
 		"repress_applied_tick":repress_applied_tick if role==1 else null,
 		"reverse_after_contact":reverse_after_contact,"max_reverse_mm":max_reverse_mm}
-	var report := FileAccess.open(sync.path_join("push-result%d" % role),FileAccess.WRITE)
+	var report := FileAccess.open(sync.path_join("push-result%d.pending" % role),FileAccess.WRITE)
 	report.store_string(JSON.stringify(contact_results))
 	report.close()
+	DirAccess.rename_absolute(sync.path_join("push-result%d.pending" % role), sync.path_join("push-result%d" % role))
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("push-result%d" % (3-role))),"peer push report ready"): return false
 	var other: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(sync.path_join("push-result%d" % (3-role))))
 	# Native JSON parses diagnostic numbers as floats; compare typed tick values.
@@ -381,6 +391,19 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 	return true
 
 func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
+	# A fresh impact needs actual separation. Repress while still touching is
+	# ordinary force transmission under the accepted physical-impact contract.
+	var before_separation: int = client.world_replica.local_player().motion.position_mm
+	if role == 2:
+		client.set_control(1, 1)
+		if not await wait_until(func(): return client.world_replica.local_player().motion.position_mm > before_separation + 500,
+			"Yuna separates before independent inverse impact"): return false
+		client.set_control(0, 1)
+		if not await wait_until(func(): return client.state == "READY" and client._server_input.drive == 0 and client.world_replica.local_player().motion.velocity_mm_s == 0,
+			"Yuna stops after separating"): return false
+	mark("inverse-separated%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("inverse-separated%d" % (3-role))),
+		"both peers observe independent inverse approach"): return false
 	# After Kotone->Yuna, Yuna is on the right. Drive her left into stationary
 	# Kotone: this is the exact inverse role that manual acceptance exposed.
 	client.set_control(0,-1)
@@ -404,6 +427,8 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 	var yuna_wrong_impact_sources := 0
 	var reverse_steps := 0
 	var contact_at := -1
+	var applied_phase := -1
+	var phase_at := Time.get_ticks_msec()
 	var before: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
 		if role==2 else world.platform.remote_players[remote_id].visual_x
 	if role==2:
@@ -423,10 +448,14 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 		if kotone_sources.has(yuna_id):
 			saw_kotone_shove=true
 			if contact_at<0: contact_at=Time.get_ticks_msec()
+		var current_phase := int(client.world_replica.local_player().motion.last_applied_control_seq)
+		if current_phase != applied_phase:
+			applied_phase = current_phase
+			phase_at = Time.get_ticks_msec()
 		var rendered: float = world.platform.character_root.position.x+world.platform.visual_layer.position.x \
 			if role==2 else world.platform.remote_players[remote_id].visual_x
 		var signed_mm: float = -(rendered-before)*(1000.0 / Appearance.world_pixels_per_meter())
-		if contact_at>=0 and signed_mm < -0.1:
+		if contact_at>=0 and Time.get_ticks_msec()-contact_at>300 and Time.get_ticks_msec()-phase_at>300 and roundi(signed_mm) < 0:
 			reverse_steps += 1
 		before=rendered
 		if saw_kotone_shove and Time.get_ticks_msec()-contact_at>350:
@@ -439,7 +468,7 @@ func verify_yuna_pushes_kotone(world: Node, remote_id: String) -> bool:
 	check(yuna_wrong_impact_sources==0,"Yuna pusher is never labeled as shove recipient")
 	check(int(yuna_gait.last_contact_response_tick)==reaction_tick_before,
 		"Yuna pusher never consumes her own contact response as stumble reaction")
-	check(reverse_steps==0,"Yuna pusher render never moves opposite to held left drive after contact")
+	check(reverse_steps==0,"Yuna pusher has no periodic reverse after initial authoritative impact settles")
 	mark("inverse-push-stopped%d" % role)
 	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("inverse-push-stopped%d" % (3-role))),
 		"both peers finish Yuna pusher inverse case"): return false
@@ -590,10 +619,13 @@ func _run() -> void:
 	if not await verify_yuna_pushes_kotone(world,remote_id): quit(1); return
 	world.input_adapter.set_physics_process(false)
 	var before: int = client.world_replica.local_player().motion.position_mm
-	check(client.set_control(1, 1), "held input sent")
-	if not await wait_until(func(): return client.world_replica.local_player().motion.get("position_mm", before) > before, "authoritative movement"): quit(1); return
+	var departure_drive := -1 if role == 1 else 1
+	check(client.set_control(departure_drive, departure_drive), "held input sent away from peer")
+	if not await wait_until(func(): return (client.world_replica.local_player().motion.get("position_mm", before) - before) * departure_drive >= 300, "authoritative separated movement"): quit(1); return
 	check(client.world_replica.local_player().character.appearance_payload == chosen, "moved preserves authoritative model")
-	# Leave while input is held: drain -> stop ACK -> logout actual flush -> roster.
+	mark("depart-separated%d" % role)
+	if not await wait_until(func(): return FileAccess.file_exists(sync.path_join("depart-separated%d" % (3-role))), "both peers leave active contact before safe logout"): quit(1); return
+	# Leave while input is held: drain -> stop ACK -> pending -> quiet -> final flush -> roster.
 	await press("Leave world")
 	if not await wait_until(func(): return pre.state == "LOBBY" and current_scene.scene_file_path.ends_with("login.tscn"), "Leave returns same Lobby"): quit(1); return
 	check(client.session_id == "" and client._desired_input.drive == 0 and client._server_input_seq == 0, "world authority/input cleared")

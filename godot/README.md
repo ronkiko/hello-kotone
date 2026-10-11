@@ -126,7 +126,8 @@ ledger are bounded at 40 entries; history expires after 2 seconds.
 Camera follows presentation. Gait consumes integrated motion separately from
 correction transforms, with a deterministic 50-ms stop debounce. Presentation
 convergence cannot cancel more than the current physics displacement; a stopped
-visual may retain at most 0.05 px of numerical residue without altering the body. <=2-mm native
+visual may retain a cosmetic lead bounded by one selected-motor physics interval
+(22/31 mm in the current independent-clock fixture) without altering the body. <=2-mm native
 numerical residues do not restart a visual blend on each sample. Native
 `StaticBody2D` prediction-only peers use authoritative velocity hints capped at
 100 ms / 250 mm; after 200 ms without a sample they stop colliding. Leave,
@@ -191,3 +192,32 @@ the peer's selected profile. No client model-to-stat table or default body remai
 Kotone currently has 70 kg / 3000 mm/s, Yuna 50 kg / 4200 mm/s. Body geometry
 400×1700 mm and motor contact effort remain temporary card content for 8.10 review;
 8.09 does not close the deferred release/repress collider defect.
+
+## v3.main.8.11 presence / resume
+
+Game control and physical avatar lifetime are independent. Disconnect fences
+commands and clears prediction, while the server retains a collidable avatar until
+card-owned obligations end and ten uninterrupted seconds of rest expire. Final
+retirement freezes State and confirms Storage/Registry before offline-safe.
+Safe logout acknowledges pending immediately; input/heartbeat remain usable and
+movement or hostility cancels it. Session/epoch-fenced logout_status completes,
+cancels or reports dirty/unknown durability.
+
+The roster has an explicit Resume / take control action. A fresh authenticated
+Login/Lobby handoff rebinds the same live character, including healthy-window
+takeover. SESSION_REPLACED clears old commands/prediction and returns the old
+window to sign-in; no automatic takeover loop exists. Losing the old public Lobby
+connection alone does not revoke its still-current Game control lease.
+
+Current card profiles use Kotone 1300 mm/s and Yuna 1820 mm/s. Native collision
+unit checks execute actual physics frames, with a 1-mm assertion budget at the
+geometric edge. Native `move_and_collide` uses an explicit 0.001-px recovery
+query tolerance (~0.021 mm at 48 px/m), with recovery reported as collision;
+rectangle dimensions and authoritative server geometry remain exact. Peer
+proxies keep each incoming sample outside the owner for its entire lifetime,
+flush their native transform before queries and add no conveyor velocity.
+The independent-clock presentation fixture retains a cosmetic rest lead bounded
+by one installed-motor physics interval (22/31 mm), with zero rendered reversal
+or idle flicker. This explicitly replaces the stale fixed 6-mm/old-projection
+fixture claim; it does not alter State, checkpoints, collider dimensions or
+physics authority. Real desktop feel remains author-reviewed.

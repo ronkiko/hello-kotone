@@ -7,6 +7,7 @@ signal response_received(op: String, data: Dictionary)
 signal event_received(event: Dictionary)
 signal control_accepted(control_seq: int)
 signal control_sent(control: Dictionary)
+signal logout_changed(status: String)
 signal input_rejected(code: String)
 signal world_ready
 signal disconnected
@@ -39,6 +40,7 @@ var _security_profile := "trusted_local_dev"
 var _trusted_ca: X509Certificate
 var _expected_identity := {}
 var _expected_character := {}
+var logout_pending := false
 var _leave_requested := false
 var _channel: RefCounted
 var _world_handoff := ""
@@ -86,7 +88,10 @@ func enter_character(handoff: Dictionary, character: Dictionary, profile: String
 	return state != "FAILED"
 
 func set_control(drive: int, facing: int) -> bool:
-	if _leave_requested or drive not in [-1, 0, 1] or facing not in [-1, 1] or state not in ["READY", "MOVING"] or _world_rules.is_empty(): return false
+	if drive not in [-1, 0, 1] or facing not in [-1, 1] or state not in ["READY", "MOVING"] or _world_rules.is_empty(): return false
+	if _leave_requested and (drive != 0 or facing != _desired_input.facing):
+		_leave_requested = false
+		logout_changed.emit("cancelled")
 	_desired_input = {"drive": drive, "facing": facing}
 	if _pending.is_empty() and _scheduled.get("op") == "control_set":
 		_scheduled = {}
@@ -117,7 +122,7 @@ func request_map() -> bool:
 	return _public_request("map")
 
 func logout() -> bool:
-	if state not in ["READY", "MOVING"]: return false
+	if logout_pending or state not in ["READY", "MOVING"]: return false
 	_leave_requested = true
 	_desired_input = {"drive": 0, "facing": _desired_input.facing}
 	# Drain the single in-flight input, explicitly stop, then logout/flush.
@@ -235,6 +240,21 @@ func _on_frame(frame: PackedByteArray) -> void:
 	if message.get("type") == "version_error":
 		_fail("UNSUPPORTED_VERSION", true) if Protocol.version_error(message) else _fail("INVALID_MESSAGE")
 		return
+	if message.get("type") == "event" and message.get("event") == "logout_status":
+		if not Protocol.event(message) or not world_session.accepts_epoch(message.epoch) or message.data.session_id != session_id:
+			_fail("INVALID_EVENT")
+			return
+		if message.data.status == "completed":
+			var flush := {"status": "completed", "save_version": message.data.save_version}
+			_close_cleanly()
+			response_received.emit("logout", {"flush": flush})
+		elif message.data.status == "cancelled":
+			logout_pending = false
+			_leave_requested = false
+			_set_state("READY")
+			logout_changed.emit("cancelled")
+		else: _fail("OUTCOME_UNKNOWN" if message.data.status == "unknown" else "DURABILITY_UNSAFE", message.data.status != "unknown")
+		return
 	if message.get("type") == "event":
 		if session_id.is_empty():
 			push_error("MMO event received without an active session; event_type=%s" % str(message.get("event", "?")))
@@ -290,6 +310,12 @@ func _on_frame(frame: PackedByteArray) -> void:
 		return
 	if _pending.is_empty() or message.request_id != _pending.request_id or message.op != _pending.op:
 		_fail("CORRELATION_ERROR")
+		return
+	if message.status == "rejected" and message.error.code == "LOGOUT_CANCELLED" and _pending.op == "logout":
+		_pending = {}
+		_leave_requested = false
+		_set_state("READY")
+		logout_changed.emit("cancelled")
 		return
 	if message.status != "ok":
 		if _pending.op == "control_set" and message.status == "rejected" and message.error.code in ["RATE_LIMITED", "WORLD_PAUSED"]:
@@ -412,8 +438,14 @@ func _on_frame(frame: PackedByteArray) -> void:
 			response_received.emit(op, data.duplicate(true))
 			_schedule_desired_input()
 		"logout":
-			_close_cleanly()
-			response_received.emit(op, data.duplicate(true))
+			if data.flush.status == "pending":
+				logout_pending = true
+				_leave_requested = false
+				_set_state("READY")
+				logout_changed.emit("pending")
+			else:
+				_close_cleanly()
+				response_received.emit(op, data.duplicate(true))
 
 func _valid_input_ack(data: Dictionary, completed: Dictionary) -> bool:
 	return data.epoch == world_replica.view().epoch and data.zone_id == world_replica.local_player().get("zone_id") \
@@ -455,6 +487,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 	_connection_generation += 1
 	if _channel != null:
 		_channel.close()
+	logout_pending = false
 	_world_handoff = ""
 	_trusted_ca = null
 	_expected_identity = {}
@@ -480,7 +513,7 @@ func _clear_session(preserve_replica: bool = false) -> void:
 		world_replica.clear()
 
 func _fail(code: String, known_outcome: bool = false) -> void:
-	var op: String = _pending.get("op", "")
+	var op: String = _pending.get("op", "logout" if logout_pending else "")
 	last_error = {"code": code, "operation": op, "outcome_unknown": not known_outcome and op in ["login", "enter", "control_set", "logout"]}
 	world_replica.invalidate(code)
 	_clear_session(true)

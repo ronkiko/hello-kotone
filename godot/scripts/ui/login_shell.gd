@@ -9,6 +9,7 @@ const ERRORS := {
 	"SLOTS_FULL": "All character slots are occupied.",
 	"APPEARANCE_INVALID": "The server rejected these appearance options.",
 	"APPEARANCE_INCOMPATIBLE": "This appearance needs an updated client.",
+	"SESSION_REPLACED": "Control moved to your other window. Sign in to take control again.",
 	"CHARACTER_BUSY": "This character still has a world visit in progress.",
 	"DURABILITY_UNSAFE": "The character's last save is not confirmed. Ask the operator to reconcile it.",
 	"RATE_LIMITED": "Please wait before trying again.",
@@ -186,6 +187,7 @@ func _lobby_page() -> void:
 	_label("%s · Characters %d/%d" % [Preworld.realm.display_name, Preworld.roster.get("characters", []).size(), Preworld.roster.get("slot_limit", 0)], 16)
 	for record in Preworld.roster.get("characters", []):
 		_button("%d. %s" % [record.slot, record.display_name], Preworld.select_character.bind(record.character_id))
+		_button("Resume / take control: " + record.display_name, Preworld.resume_character.bind(record.character_id), Preworld.availability.get("status") == "online")
 	if not Preworld.selection.is_empty():
 		var record: Dictionary = Preworld.selection.character
 		_label("Selected: " + record.display_name)
