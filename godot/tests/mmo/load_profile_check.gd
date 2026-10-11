@@ -171,6 +171,10 @@ func short_turn_tap(direction: int) -> void:
 	current_facing = direction
 
 func run() -> void:
+	# Bound the headless client while allowing its render loop to sample at 120 Hz.
+	# The shipped world physics remains 60 Hz; the remote buffer budget allows
+	# one 60-Hz render frame after its 100-ms interpolation delay.
+	Engine.max_fps = 120
 	role = int(OS.get_environment("S812_ROLE"))
 	duration_s = int(OS.get_environment("S812_DURATION_S"))
 	proxy_port = int(OS.get_environment("S812_GAME_PROXY_PORT"))
@@ -344,6 +348,7 @@ func run() -> void:
 	if not await wait_until(func(): return pre.state == "LOBBY", "safe Logout and final save complete", 25.0): finish(); return
 	stage("logout_completed")
 	var summary := {"profile":profile,"role":role,"duration_s":duration_s,
+		"frame_rate_limit_hz":Engine.max_fps,
 		"godot_version":Engine.get_version_info().string,
 		"transport":"native Godot TLS; endpoint may pass through encrypted-byte loopback proxy",
 		"actions": {"intent_to_local_visual_ms":distribution(actions["intent_to_local_visual_ms"]),
