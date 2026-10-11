@@ -6,6 +6,7 @@ var role := 1
 var sync := ""
 var pre: Node
 var client: Node
+var takeover_offers: Array[Dictionary] = []
 func check(value: bool, label: String) -> void:
 	checks += 1
 	if not value: failures.append(label)
@@ -29,6 +30,7 @@ func run() -> void:
 	sync = OS.get_environment("LOBBY09_SYNC")
 	pre = root.get_node("Preworld")
 	client = root.get_node("MmoClient")
+	pre.takeover_offered.connect(func(character: Dictionary): takeover_offers.append(character))
 	var ca := X509Certificate.new()
 	check(ca.load(OS.get_environment("LOBBY09_CA")) == OK, "trusted certificate loaded")
 	if role == 2 and not await wait_for(func(): return FileAccess.file_exists(sync.path_join("avatar")), "first window has live avatar"): finish(); return
@@ -45,6 +47,12 @@ func run() -> void:
 	else:
 		var original := load_mark("avatar")
 		check(pre.roster.characters.size() == 1 and pre.roster.characters[0].character_id == original.player_id, "same owned character in fresh roster")
+		await pre.select_character(original.player_id)
+		check(pre.state == "LOBBY" and takeover_offers.size() == 1
+			and takeover_offers[0].character_id == original.player_id,
+			"CHARACTER_ONLINE offers explicit takeover for the owned character")
+		check(client.state == "IDLE" and client.player_id.is_empty(),
+			"online rejection never starts takeover before explicit user action")
 		await pre.resume_character(original.player_id)
 	if not await wait_for(func(): return client.state == "READY", "world snapshot and new control route"): finish(); return
 	change_scene_to_file("res://scenes/mmo/world.tscn")

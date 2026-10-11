@@ -59,6 +59,41 @@ func sent(seq: int,drive: int) -> void:
 	client.control_sent.emit({"control_seq":seq,"drive":drive,"facing":1})
 func run() -> void:
 	check(Engine.is_in_physics_frame(),"native integration runs on physics callback")
+	platform._correction_window.clear()
+	for value in [9,100,3]: platform._record_correction(value)
+	var owner_metrics: Dictionary = platform.prediction_metrics().correction_mm
+	check(owner_metrics.count==3 and owner_metrics.p50==9 and owner_metrics.p95==100
+		and owner_metrics.max==100 and owner_metrics.latest==3,
+		"owner correction summary reports nearest-rank values and latest arrival")
+	var before_read := {"position":platform.character_root.position,"velocity":platform.character_root.velocity,
+		"history":platform._prediction_history.duplicate(true),"visual":platform.visual_layer.position,
+		"blend":platform._blend_remaining,"replayed":platform._prediction_metrics.last_replayed_ticks}
+	platform.prediction_metrics()
+	platform.prediction_metrics()
+	check(platform.character_root.position==before_read.position
+		and platform.character_root.velocity==before_read.velocity
+		and platform._prediction_history==before_read.history
+		and platform.visual_layer.position==before_read.visual
+		and platform._blend_remaining==before_read.blend
+		and platform._prediction_metrics.last_replayed_ticks==before_read.replayed,
+		"reading owner metrics does not mutate position, velocity, replay, collision state or smoothing")
+	platform._correction_window.clear()
+	for value in range(257): platform._record_correction(value)
+	owner_metrics=platform.prediction_metrics().correction_mm
+	check(platform._correction_window.size()==256 and platform._correction_window.front()==1
+		and owner_metrics.count==256 and owner_metrics.p50==128 and owner_metrics.p95==244
+		and owner_metrics.max==256 and owner_metrics.latest==256,
+		"owner correction window evicts exactly its oldest sample at 256")
+	platform.set_suspended(true)
+	check(platform.prediction_metrics().correction_mm.count==0,"suspension clears owner correction samples")
+	platform.set_suspended(false)
+	platform._record_correction(77)
+	var scoped_player := Fixtures.player()
+	platform.project(Fixtures.MAP,{"epoch":"new-metrics-scope","zone_generation":1,
+		"map":{"map_id":Fixtures.MAP.map_id,"content_version":1,"content_hash":Fixtures.MAP.content_hash},
+		"players":{"p1":scoped_player},"local_player_id":"p1","confirmed_local_position_mm":50000})
+	check(platform.prediction_metrics().correction_mm.count==0,
+		"fresh owner scope cannot inherit correction samples from its predecessor")
 	reset()
 	check(platform._prediction_ordinal == 0,"snapshot resets local ordinal independently of tick9000")
 	sent(1,1)

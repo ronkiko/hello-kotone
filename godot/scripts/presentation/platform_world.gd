@@ -167,6 +167,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 		_position_installed = true
 		_prediction_fenced = false
 		_prediction_history.clear()
+		_correction_window.clear()
 		var initial_motion: Dictionary = local.motion.duplicate(true)
 		initial_motion["contacts"] = local.contacts.duplicate()
 		_apply_authoritative_motion(initial_motion, true)

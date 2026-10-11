@@ -152,16 +152,7 @@ func select_character(id: String) -> void:
 	selection = {}
 	var reply := await _operation("character_select", {"character_id": id})
 	if reply.is_empty():
-		# The server distinguishes an online character lease from a pending
-		# handoff, unsafe save, or other busy state. Offer takeover only for
-		# this exact owned roster entry and only after the player selects it.
-		if state == "LOBBY" and availability.get("status") == "online" and error.get("code") == "CHARACTER_ONLINE":
-			for candidate in roster.get("characters", []):
-				if candidate.get("character_id") == id and _owned(candidate) and Appearance.supported(candidate.appearance_payload):
-					error = {}
-					changed.emit()
-					takeover_offered.emit(candidate.duplicate(true))
-					break
+		_maybe_offer_takeover(id)
 		return
 	if not _owned(reply.data.character) or reply.data.character.character_id != id:
 		_failure("Lobby", "CHARACTER_MISMATCH")
@@ -171,6 +162,22 @@ func select_character(id: String) -> void:
 		return
 	selection = reply.data.duplicate(true)
 	_state("LOBBY")
+
+func _maybe_offer_takeover(id: String) -> bool:
+	# Only the exact online lease error can offer an explicit takeover. Pending,
+	# unsafe, unavailable, unowned and unsupported characters remain ordinary
+	# selection failures and never start a Game session.
+	if state != "LOBBY" or availability.get("status") != "online" \
+		or error.get("code") != "CHARACTER_ONLINE":
+		return false
+	for candidate in roster.get("characters", []):
+		if candidate.get("character_id") == id and _owned(candidate) \
+			and Appearance.supported(candidate.appearance_payload):
+			error = {}
+			changed.emit()
+			takeover_offered.emit(candidate.duplicate(true))
+			return true
+	return false
 
 func _owned(record: Dictionary) -> bool:
 	return _scope(record) and record.account_id == account_id

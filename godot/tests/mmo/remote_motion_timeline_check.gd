@@ -84,6 +84,45 @@ func _initialize() -> void:
 	var stale_state: Dictionary = stale.sample_at(250000)
 	check(close_to(float(stale_state.position_mm), 100.0) and stale_state.frozen and stale_state.velocity_mm_s == 0,
 		"stale stream extrapolates for at most 100 ms then freezes")
+	check(int(stale.metrics().extrapolated) == 1 and int(stale.metrics().frozen) == 1,
+		"sample diagnostics count bounded extrapolation and freeze observations")
+
+	var timing := Timeline.new()
+	var ages := [9, 100, 3]
+	var clocks := [1000000, 1100000, 1103000]
+	for index in range(ages.size()):
+		var now_usec: int = clocks[index]
+		var received_usec: int = now_usec - int(ages[index]) * 1000
+		check(timing.push_sample("e1|city/apartment|1", motion(60 + index, 1000, 0),
+			received_usec, 1000) in ["seeded", "accepted"], "local receive sample accepted %d" % index)
+		timing.sample_at(now_usec)
+	var age_metrics: Dictionary = timing.metrics().sample_age_ms
+	var interpolation_metrics: Dictionary = timing.metrics().interpolation_age_ms
+	check(age_metrics.count == 3 and close_to(age_metrics.p50, 9.0)
+		and close_to(age_metrics.p95, 100.0) and close_to(age_metrics.max, 100.0)
+		and close_to(age_metrics.latest, 3.0), "sample age uses local receive clock and latest-by-arrival")
+	check(interpolation_metrics.count == 3 and close_to(interpolation_metrics.p50, 16.6667)
+		and close_to(interpolation_metrics.p95, 91.0) and close_to(interpolation_metrics.max, 91.0)
+		and close_to(interpolation_metrics.latest, 16.6667),
+		"interpolation age uses local render cursor with millisecond units")
+	timing._sample_age_window.clear()
+	timing._interpolation_age_window.clear()
+	for value in range(257):
+		timing._record_window(timing._sample_age_window, float(value))
+		timing._record_window(timing._interpolation_age_window, float(value))
+	var rolled: Dictionary = timing.metrics().sample_age_ms
+	check(timing._sample_age_window.size() == 256 and timing._sample_age_window.front() == 1.0
+		and rolled.count == 256 and rolled.p50 == 128.0 and rolled.p95 == 244.0
+		and rolled.max == 256.0 and rolled.latest == 256.0,
+		"age windows evict exactly their oldest value at the 256-sample cap")
+	timing.reset()
+	check(timing.metrics().sample_age_ms.count == 0 and timing.metrics().interpolation_age_ms.count == 0,
+		"timeline reset clears both rolling age windows")
+	timing._record_window(timing._sample_age_window, 77.0)
+	timing.push_sample("e2|city/apartment|1", motion(0, 1000, 0), 1200000, 1000)
+	timing.sample_at(1203000)
+	check(timing.metrics().sample_age_ms.count == 1 and timing.metrics().sample_age_ms.latest == 3.0,
+		"scope barrier clears old age samples before recording the new scope")
 
 	var distance_limited := Timeline.new()
 	distance_limited.push_sample("e1|city/apartment|1", motion(0, 0, 3000), 0, 3000)
