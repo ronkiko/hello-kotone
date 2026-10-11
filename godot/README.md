@@ -203,9 +203,12 @@ Safe logout acknowledges pending immediately; input/heartbeat remain usable and
 movement or hostility cancels it. Session/epoch-fenced logout_status completes,
 cancels or reports dirty/unknown durability.
 
-The roster has an explicit Resume / take control action. A fresh authenticated
-Login/Lobby handoff rebinds the same live character, including healthy-window
-takeover. SESSION_REPLACED clears old commands/prediction and returns the old
+The character roster has no permanent Resume / take control action. A
+normal character selection detects an authenticated Registry `online` lease;
+only then Godot asks whether to take control from this window. Pending handoff
+(`CHARACTER_BUSY`) and unsafe durability (`DURABILITY_UNSAFE`) do not offer
+takeover. Confirming issues a fresh authenticated Login/Lobby `world_resume`
+handoff, rebinds the same live character, and supports healthy-window takeover. SESSION_REPLACED clears old commands/prediction and returns the old
 window to sign-in; no automatic takeover loop exists. Losing the old public Lobby
 connection alone does not revoke its still-current Game control lease.
 
