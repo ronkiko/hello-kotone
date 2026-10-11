@@ -48,6 +48,7 @@ var _impact_this_interval := false
 var _diagnostic_motion: Dictionary = {}
 var _last_authoritative_tick := -1
 var _prediction_history: Array[Dictionary] = []
+var _correction_window: Array[int] = []
 var _pending_owner_motion: Dictionary = {}
 var _pending_snapshot_motion: Dictionary = {}
 var _prediction_fenced := false
@@ -188,6 +189,7 @@ func set_suspended(value: bool) -> void:
 		_pending_owner_motion.clear()
 		_pending_snapshot_motion.clear()
 		_prediction_history.clear()
+		_correction_window.clear()
 		_prediction_ordinal = -1
 		_control_ledger.clear()
 		_local_control.clear()
@@ -202,7 +204,23 @@ func set_suspended(value: bool) -> void:
 		node.set_suspended(value)
 
 func prediction_metrics() -> Dictionary:
-	return _prediction_metrics.duplicate(true)
+	var result := _prediction_metrics.duplicate(true)
+	result["correction_mm"] = _correction_metrics()
+	return result
+
+func _correction_metrics() -> Dictionary:
+	if _correction_window.is_empty():
+		return {"count":0,"p50":0,"p95":0,"max":0,"latest":0}
+	var values := _correction_window.duplicate()
+	values.sort()
+	var count := values.size()
+	return {"count":count,"p50":values[maxi(0,ceili(float(count)*0.50)-1)],
+		"p95":values[maxi(0,ceili(float(count)*0.95)-1)],"max":values.back(),"latest":_correction_window.back()}
+
+func _record_correction(value_mm: int) -> void:
+	_correction_window.append(value_mm)
+	while _correction_window.size() > 256:
+		_correction_window.pop_front()
 
 func prediction_diagnostics() -> Dictionary:
 	# Caller-owned bounded evidence; no trace/log accumulation or session secrets.
@@ -524,6 +542,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if not force_snap:
 		_prediction_metrics.samples += 1
 		_prediction_metrics.max_divergence_mm = maxi(_prediction_metrics.max_divergence_mm, error_mm)
+		_record_correction(error_mm)
 	# A control-boundary phase change can cover up to one 100-ms travel window.
 	# Its distance depends on the installed motor, not a shared character speed.
 	var blend_budget_mm := maxf(250.0, float(_movement.top_speed_mm_s) * 0.1)

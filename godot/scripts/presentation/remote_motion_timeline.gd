@@ -9,9 +9,12 @@ const MAX_EXTRAPOLATION_TICKS := 6.0
 const MAX_EXTRAPOLATION_MM := 250.0
 const MAX_SAMPLE_GAP_TICKS := 12
 const SNAP_CORRECTION_MM := 250.0
+const METRIC_WINDOW_SIZE := 256
 
 var _scope := ""
 var _samples: Array[Dictionary] = []
+var _sample_age_window: Array[float] = []
+var _interpolation_age_window: Array[float] = []
 # Causal facts outlive positional contact/discontinuity rebases within one scope.
 var _responses: Array[Dictionary] = []
 var _latest_response_tick := 0
@@ -31,6 +34,8 @@ var _metrics := {
 func reset() -> void:
 	_scope = ""
 	_samples.clear()
+	_sample_age_window.clear()
+	_interpolation_age_window.clear()
 	_responses.clear()
 	_latest_response_tick = 0
 	_last_render_tick = -1.0
@@ -135,10 +140,12 @@ func sample_at(now_usec: int) -> Dictionary:
 	var oldest: Dictionary = _samples.front()
 	var newest: Dictionary = _samples.back()
 	var age_usec := maxi(0, now_usec - int(newest.received_usec))
+	_record_window(_sample_age_window, float(age_usec) / 1000.0)
 	var proposed_tick := float(newest.tick) + float(age_usec) * SERVER_TICK_HZ / 1000000.0 \
 		- INTERPOLATION_DELAY_TICKS
 	var render_tick := maxf(proposed_tick, _last_render_tick)
 	_last_render_tick = render_tick
+	_record_window(_interpolation_age_window, maxf(0.0, float(newest.tick) - render_tick) * 1000.0 / SERVER_TICK_HZ)
 	if render_tick <= float(oldest.tick):
 			return _with_contact_response(_state(oldest, false, false), render_tick)
 	for index in range(_samples.size() - 1):
@@ -199,7 +206,23 @@ func metrics() -> Dictionary:
 	var result := _metrics.duplicate(true)
 	result["sample_count"] = _samples.size()
 	result["latest_tick"] = latest_tick()
+	result["sample_age_ms"] = _window_metrics(_sample_age_window)
+	result["interpolation_age_ms"] = _window_metrics(_interpolation_age_window)
 	return result
+
+func _record_window(window: Array[float], value: float) -> void:
+	window.append(value)
+	while window.size() > METRIC_WINDOW_SIZE:
+		window.pop_front()
+
+func _window_metrics(window: Array[float]) -> Dictionary:
+	if window.is_empty():
+		return {"count":0,"p50":0.0,"p95":0.0,"max":0.0,"latest":0.0}
+	var values := window.duplicate()
+	values.sort()
+	var count := values.size()
+	return {"count":count,"p50":values[maxi(0,ceili(float(count)*0.50)-1)],
+		"p95":values[maxi(0,ceili(float(count)*0.95)-1)],"max":values.back(),"latest":window.back()}
 
 func _append(sample: Dictionary) -> void:
 	if int(sample.contact_response_tick) > _latest_response_tick:
