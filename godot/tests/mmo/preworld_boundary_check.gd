@@ -86,7 +86,8 @@ func run() -> void:
 	# A server-confirmed online lease offers a takeover only after selecting
 	# that exact owned character. Pending handoff and unsafe saves do not.
 	var invitations: Array[Dictionary] = []
-	var invitation: Callable = func(character: Dictionary): invitations.append(character)
+	var invitation: Callable = func(character: Dictionary) -> void:
+		invitations.append(character)
 	pre.takeover_offered.connect(invitation)
 	scope()
 	pre.roster = {"characters": [record()]}
