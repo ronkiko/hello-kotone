@@ -34,6 +34,8 @@ func _initialize() -> void:
 	for item in [
 		["OUT_OF_BOUNDS", "control_set", "rejected", false],
 		["ALREADY_ONLINE", "enter", "rejected", true],
+		["CHARACTER_ONLINE", "character_select", "rejected", true],
+		["CHARACTER_ONLINE", "character_delete", "rejected", false],
 		["ALREADY_ONLINE", "map", "rejected", false],
 		["NICKNAME_NOT_ALLOWED", "login", "error", false],
 		["MADE_UP_ERROR", "login", "rejected", false],
