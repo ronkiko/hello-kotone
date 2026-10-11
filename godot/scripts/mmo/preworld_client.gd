@@ -4,6 +4,7 @@ const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
 const Peer = preload("res://scripts/mmo/public_peer.gd")
 signal changed
+signal takeover_offered(character: Dictionary)
 var state := "LOGIN"
 var error := {}
 var account_id := ""
@@ -150,7 +151,18 @@ func select_character(id: String) -> void:
 	if state != "LOBBY" or not Protocol.token(id): return
 	selection = {}
 	var reply := await _operation("character_select", {"character_id": id})
-	if reply.is_empty(): return
+	if reply.is_empty():
+		# The server distinguishes an online character lease from a pending
+		# handoff, unsafe save, or other busy state. Offer takeover only for
+		# this exact owned roster entry and only after the player selects it.
+		if state == "LOBBY" and error.get("code") == "CHARACTER_ONLINE":
+			for candidate in roster.get("characters", []):
+				if candidate.get("character_id") == id and _owned(candidate) and Appearance.supported(candidate.appearance_payload):
+					error = {}
+					changed.emit()
+					takeover_offered.emit(candidate.duplicate(true))
+					break
+		return
 	if not _owned(reply.data.character) or reply.data.character.character_id != id:
 		_failure("Lobby", "CHARACTER_MISMATCH")
 		return
