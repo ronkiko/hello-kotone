@@ -67,6 +67,30 @@ func wait_until(predicate: Callable, label: String, seconds: float = 30.0) -> bo
 	check(ok, label)
 	return ok
 
+func wait_for_stationary_pair(remote_id: String, seconds: float = 15.0) -> bool:
+	var deadline := Time.get_ticks_msec() + int(seconds * 1000.0)
+	var previous_tick := -1
+	var previous_positions: Array[int] = []
+	var stable_samples := 0
+	while Time.get_ticks_msec() < deadline:
+		if is_instance_valid(world) and client.world_replica.view().players.has(remote_id):
+			var own_motion: Dictionary = client.world_replica.local_player().motion
+			var remote_motion: Dictionary = client.world_replica.view().players[remote_id].motion
+			var tick := int(own_motion.get("simulation_tick", -1))
+			if tick > previous_tick:
+				var positions: Array[int] = [int(own_motion.position_mm), int(remote_motion.position_mm)]
+				if int(own_motion.velocity_mm_s) == 0 and int(remote_motion.velocity_mm_s) == 0 \
+					and positions == previous_positions:
+					stable_samples += 1
+				else:
+					stable_samples = 0
+				previous_positions = positions
+				previous_tick = tick
+				if stable_samples >= 4:
+					return true
+		await process_frame
+	return false
+
 func distribution(values: Array) -> Dictionary:
 	if values.is_empty(): return {"count":0,"p50":null,"p95":null,"max":null,"latest":null}
 	var ordered: Array = values.duplicate()
@@ -149,6 +173,7 @@ func short_turn_tap(direction: int) -> void:
 	var code := KEY_RIGHT if direction > 0 else KEY_LEFT
 	var start_usec := Time.get_ticks_usec()
 	var start_position := int(client.world_replica.local_player().motion.position_mm)
+	var start_control_seq := int(client._server_input_seq)
 	var animation_before: StringName = world.platform.sprite.animation
 	inject_key(code, true)
 	var visible_ms: Variant = null
@@ -159,14 +184,25 @@ func short_turn_tap(direction: int) -> void:
 			visible_ms = float(Time.get_ticks_usec() - start_usec) / 1000.0
 	inject_key(code, false)
 	var released_usec := Time.get_ticks_usec()
+	var facing_acknowledged := await wait_until(func():
+		var motion: Dictionary = client.world_replica.local_player().motion
+		return int(client._server_input_seq) > start_control_seq \
+			and client._server_input == {"drive":0,"facing":direction} \
+			and int(motion.get("last_applied_control_seq", -1)) >= int(client._server_input_seq) \
+			and int(motion.get("facing", 0)) == direction,
+		"short tap is acknowledged as a facing-only control", 5.0)
 	await create_timer(0.2).timeout
+	var final_motion: Dictionary = client.world_replica.local_player().motion
 	short_tap_result = {"visible_reaction_ms":visible_ms,
 		"held_ms":float(released_usec - start_usec) / 1000.0,
 		"start_position_mm":start_position,
-		"end_position_mm":int(client.world_replica.local_player().motion.position_mm),
-		"velocity_mm_s":int(client.world_replica.local_player().motion.velocity_mm_s),
-		"no_displacement":int(client.world_replica.local_player().motion.position_mm) == start_position
-			and int(client.world_replica.local_player().motion.velocity_mm_s) == 0}
+		"end_position_mm":int(final_motion.position_mm),
+		"velocity_mm_s":int(final_motion.velocity_mm_s),
+		"control_seq":int(client._server_input_seq),
+		"facing_acknowledged":facing_acknowledged,
+		"drive_zero":client._server_input == {"drive":0,"facing":direction},
+		"no_displacement":facing_acknowledged and int(final_motion.position_mm) == start_position
+			and int(final_motion.velocity_mm_s) == 0}
 	short_tap_results.append(short_tap_result.duplicate(true))
 	current_facing = direction
 
@@ -239,11 +275,18 @@ func run() -> void:
 	stage("remote_renderer_wait")
 	if not await wait_until(func(): return world.platform.remote_players.has(remote_id), "remote renderer is live"): finish(); return
 	stage("remote_renderer_ready")
+	if not await wait_for_stationary_pair(remote_id):
+		check(false, "both authenticated bodies settle before the short-turn tap")
+		finish()
+		return
+	stage("stationary_pair")
 	var remote: Node = world.platform.remote_players[remote_id]
 	var initial_facing := int(client.world_replica.local_player().motion.get("facing", 1))
 	await short_turn_tap(-initial_facing)
 	if current_facing == approach_direction:
 		await short_turn_tap(-approach_direction)
+	check(bool(short_tap_result.get("facing_acknowledged", false)),
+		"short turn tap is committed as facing-only input")
 	check(bool(short_tap_result.get("no_displacement", false)),
 		"short turn tap changes facing without authoritative movement")
 	var ready_file := FileAccess.open(sync_file + ".ready" + str(role), FileAccess.WRITE)
