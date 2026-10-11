@@ -83,6 +83,23 @@ func run() -> void:
 	peer.reply = {"status": "rejected", "error": {"code": "DURABILITY_UNSAFE"}}
 	await pre.select_character("char-one")
 	check(pre.state == "LOBBY" and pre.selection.is_empty() and pre.error.code == "DURABILITY_UNSAFE", "unsafe Registry barrier never gives World selection")
+	# A server-confirmed online lease offers a takeover only after selecting
+	# that exact owned character. Pending handoff and unsafe saves do not.
+	var invitations: Array[Dictionary] = []
+	var invitation: Callable = func(character: Dictionary): invitations.append(character)
+	pre.takeover_offered.connect(invitation)
+	scope()
+	pre.roster = {"characters": [record()]}
+	peer.reply = {"status": "rejected", "error": {"code": "CHARACTER_BUSY"}}
+	await pre.select_character("char-one")
+	check(invitations.is_empty() and pre.error.code == "CHARACTER_BUSY", "pending handoff cannot offer takeover")
+	scope()
+	peer.reply = {"status": "rejected", "error": {"code": "CHARACTER_ONLINE"}}
+	await pre.select_character("char-one")
+	check(invitations.size() == 1 and invitations[0].character_id == "char-one" and pre.error.is_empty()
+		and pre.selection.is_empty(), "online owned character prompts conditional takeover, without issuing resume")
+	check(peer.sent[-1].op == "character_select", "takeover is not automatic before confirmation")
+	pre.takeover_offered.disconnect(invitation)
 	scope()
 	peer.connected_ok = true
 	var unknown := record()
