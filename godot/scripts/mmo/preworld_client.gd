@@ -155,7 +155,7 @@ func select_character(id: String) -> void:
 		# The server distinguishes an online character lease from a pending
 		# handoff, unsafe save, or other busy state. Offer takeover only for
 		# this exact owned roster entry and only after the player selects it.
-		if state == "LOBBY" and error.get("code") == "CHARACTER_ONLINE":
+		if state == "LOBBY" and availability.get("status") == "online" and error.get("code") == "CHARACTER_ONLINE":
 			for candidate in roster.get("characters", []):
 				if candidate.get("character_id") == id and _owned(candidate) and Appearance.supported(candidate.appearance_payload):
 					error = {}
