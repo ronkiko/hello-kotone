@@ -11,6 +11,7 @@ const ERRORS := {
 	"APPEARANCE_INCOMPATIBLE": "This appearance needs an updated client.",
 	"SESSION_REPLACED": "Control moved to your other window. Sign in to take control again.",
 	"CHARACTER_BUSY": "This character still has a world visit in progress.",
+	"CHARACTER_ONLINE": "This character is already in the world. Try selecting it again to regain control.",
 	"DURABILITY_UNSAFE": "The character's last save is not confirmed. Ask the operator to reconcile it.",
 	"RATE_LIMITED": "Please wait before trying again.",
 	"FLUSH_FAILED": "The world save was not confirmed.",
