@@ -91,6 +91,7 @@ func run() -> void:
 	pre.takeover_offered.connect(invitation)
 	scope()
 	pre.roster = {"characters": [record()]}
+	pre.availability = {"status": "online"}
 	peer.reply = {"status": "rejected", "error": {"code": "CHARACTER_BUSY"}}
 	await pre.select_character("char-one")
 	check(invitations.is_empty() and pre.error.code == "CHARACTER_BUSY", "pending handoff cannot offer takeover")
