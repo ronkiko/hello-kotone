@@ -33,6 +33,10 @@ python3 -m http.server
 The legacy implementation still uses local source material from `.local/` when
 that ignored working-copy directory is available.
 
+## MMO timing contract — Server Tick Authority
+
+The gameplay simulation clock belongs to the server Zone, identified by `realm_instance_id / zone_package_id / zone_generation / simulation_tick`. Client Godot uses local native 60-Hz physics for owner prediction and animation, **not** as server authority. Incoming `motion_frame` is a coalescible latest committed sample, nominally 20 Hz / every three server simulation ticks, bounded by real-time cadence. Reliable gameplay damage and lifecycle events remain separately ordered. Receive/render milliseconds and network RTT are diagnostic/presentation clocks, not the time source of server physics. See [agent rules](AGENTS.md) and [Godot MMO contract](godot/README.md) for details. Canonical architecture is maintained in the neighboring private server-side `ai_research/v3/game/docs/server-tick-authority.md`.
+
 ## Godot
 
 Open `godot/project.godot` in Godot 4.x. Gameplay is being built from scratch;
