@@ -57,7 +57,7 @@ func resync_snapshot_queue_regression() -> void:
 	platform._pending_snapshot_motion = {}
 	platform._resync_requested = true
 	var player := Fixtures.player()
-	player.motion.simulation_tick = 1
+	player.motion.realm_tick = 1
 	platform._queue_snapshot_motion({"players":[player]})
 	platform._try_prediction_resync()
 	check(client.state == "READY" and client._scheduled.is_empty(),
@@ -101,7 +101,7 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 	platform._local_model_id = model
 	Appearance.Library.install(platform.sprite, model)
 	platform._gait.reset(platform.sprite, direction)
-	var sample := {"simulation_tick":8000,"position_mm":50000,"velocity_mm_s":0,"facing":direction,
+	var sample := {"realm_tick":8000,"position_mm":50000,"velocity_mm_s":0,"facing":direction,
 		"last_applied_control_seq":0,"control_started_tick":8000,"contacts":[]}
 	platform._apply_authoritative_motion(sample, true)
 	var server_x := 50000.0
@@ -146,7 +146,7 @@ func scenario(model: String, direction: int, delay: int,release_phase: int,nearb
 			server_x += server_v * DT
 			last_physical_tick = server_tick
 		if ordinal % 3 == 0:
-			delivery.append({"due":ordinal+delay,"sample":{"simulation_tick":server_tick,
+			delivery.append({"due":ordinal+delay,"sample":{"realm_tick":server_tick,
 				"position_mm":roundi(server_x),"velocity_mm_s":roundi(server_v),"facing":direction,
 				"last_applied_control_seq":server_seq,"control_started_tick":started_tick,"contacts":[]}})
 		while not delivery.is_empty() and int(delivery[0].due) <= ordinal:

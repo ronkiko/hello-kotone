@@ -29,7 +29,7 @@ from scratch rather than converted from the Canvas implementation.
 
 ## Current MMO client — v3.main.8.09 physical body / motor binding
 
-Current public protocol is **v8**. The startup shell supports Account Login →
+Current public protocol is **v9**. The startup shell supports Account Login →
 Realm Directory → Realm Lobby → Character Model → Fine Appearance → Selection → World, with two
 one-time handoffs. `Preworld` owns account/Lobby authority; `MmoClient` owns only
 the selected-character Game visit. Leave World stops held input, waits for logout
@@ -105,14 +105,14 @@ Author visual acceptance is tracked in the shared 7.11 roadmap.
 
 ### Unified Realm Tick / server clock — target for new 8.12 (2026-10-12)
 
-**One authoritative `realm_tick` per Realm epoch**, shared across all Zones via Realm TickCommands; each Zone retains `last_committed_realm_tick` to report actual physics progress. No separate game clock generator per Zone. The old `simulation_tick` across the current wire is **pre-migration**, pending coordinated server + Godot 8.12 exact-pair switch without old-shape compatibility fallback.
+**One authoritative `realm_tick` per Realm epoch**, shared across all Zones via Realm TickCommands; each Zone retains `last_committed_realm_tick` to report actual physics progress. The 8.12 executable switch uses protocol v9; no old-field compatibility fallback exists. Exact-pair validation and author acceptance are recorded separately.
 
 The server uses fixed 60-Hz `dt=1/60`; client semantic controls apply on server tick boundary, collisions/impulses/ordered `damage_resolved` belong only to actually committed Realm ticks. `motion_frame` carries latest committed Zone state nominally every third Realm tick, capped by real 20-Hz wall-clock publication; a lagging Zone cannot fabricate a sample for uncommitted ticks. `frame_seq`/State `revision` are separate.
 
 Godot native `_physics_process()`, `CharacterBody2D` and local prediction `local_ordinal` remain independent client UX clocks; no server time authority is derived from InputEvent or packet arrival time. Server tick helps order/correlate; render buffering (100 ms), extrapolation (100 ms/250 mm), TTL and latency/RTT continue in real time. At 8.12 implementation migrate validator/reducer/timeline/evidence together and add multi-Zone scope, missing ticks, old epoch, contact/damage tests. Canon and task: `ai_research/v3/game/docs/server-tick-authority.md` and `ai_research/v3/docs/roadmap/v3/main/8/12-unified-realm-tick.md`.
 
 Current v8 locomotion sends bounded `control_set` desired state. The server publishes
-20-Hz `motion_frame` samples with one zone-level `simulation_tick` and only
+20-Hz `motion_frame` samples with one Realm-owned `realm_tick` and only
 player ID, position, velocity, facing, applied control sequence and contacts.
 Nickname, zone and character appearance remain on snapshots and reliable join facts;
 the Godot reducer overlays motion by player ID. The input engage threshold comes
@@ -154,7 +154,7 @@ the server still resolves and publishes every hit. Current HP is not
 implemented. See [multiplayer presentation](docs/multiplayer-presentation.md).
 
 Remote characters use an eight-sample timeline on the server's 60-Hz
-`simulation_tick`, rendered 100 ms behind the latest sample. Only authoritative
+`realm_tick`, rendered 100 ms behind the latest sample. Only authoritative
 position, velocity and facing are interpolated. Extrapolation is velocity-only and
 stops at 100 ms or 250 mm; contact, discontinuity, epoch, map and zone-generation
 changes reset or fence the timeline. Remote roots keep Godot physics interpolation
@@ -232,3 +232,10 @@ by one installed-motor physics interval (22/31 mm), with zero rendered reversal
 or idle flicker. This explicitly replaces the stale fixed 6-mm/old-projection
 fixture claim; it does not alter State, checkpoints, collider dimensions or
 physics authority. Real desktop feel remains author-reviewed.
+
+
+8.12 executable cutover: current public protocol **v9** carries `realm_tick`;
+`protocol_v9.gd` replaces the old validator without an old-field fallback.
+Replica, native owner predictor and remote timeline use the same Realm-scoped
+authoritative marker while client `local_ordinal` remains independent.
+Exact-pair acceptance is recorded in the shared server 12-validation.json.

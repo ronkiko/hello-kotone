@@ -8,9 +8,9 @@ signal authoritative_snapshot_received(snapshot: Dictionary)
 var _frame_seq := 0
 var _damage_event_seq := 0
 var _zone_generation := 1
-var _simulation_tick := -1
+var _realm_tick := -1
 
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const WorldSession = preload("res://scripts/mmo/world_session.gd")
 var world_session := WorldSession.new()
 var _snapshot: Dictionary = {}
@@ -44,7 +44,7 @@ func clear() -> void:
 	_frame_seq = 0
 	_damage_event_seq = 0
 	_zone_generation = 1
-	_simulation_tick = -1
+	_realm_tick = -1
 	world_session.clear()
 	_snapshot = {}
 	_players = {}
@@ -118,7 +118,7 @@ func replace_snapshot(value: Dictionary) -> bool:
 			applied_control_seq = player.motion.last_applied_control_seq
 	if applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
 		return _reject("SNAPSHOT_CONTROL_SEQUENCE_ROLLBACK")
-	if _snapshot_tick(value) < _simulation_tick:
+	if _snapshot_tick(value) < _realm_tick:
 		return _reject("SNAPSHOT_TICK_ROLLBACK")
 	# All facts through this boundary precede state on the ordered TCP stream.
 
@@ -149,7 +149,7 @@ func apply_event(value: Dictionary) -> bool:
 		return true
 	if value.event == "motion_frame":
 		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision \
-			or value.data.simulation_tick < _simulation_tick:
+			or value.data.realm_tick < _realm_tick:
 			return _reject("STALE_MOTION_FRAME")
 		var incoming := {}
 		for sample in value.data.players:
@@ -172,7 +172,7 @@ func apply_event(value: Dictionary) -> bool:
 			motion.facing = sample.facing
 			motion.last_applied_control_seq = sample.last_applied_control_seq
 			motion.control_started_tick = sample.control_started_tick
-			motion.simulation_tick = value.data.simulation_tick
+			motion.realm_tick = value.data.realm_tick
 			player.motion = motion
 			player.contacts = sample.contacts.duplicate()
 			next.players.append(player)
@@ -239,7 +239,7 @@ func _commit(value: Dictionary, resync_pending: bool = false) -> void:
 	_players = {}
 	for player in _snapshot.players:
 		_players[player.player_id] = player.duplicate(true)
-		_simulation_tick = maxi(_simulation_tick, player.motion.simulation_tick)
+		_realm_tick = maxi(_realm_tick, player.motion.realm_tick)
 	_status = "STALE" if resync_pending else "SYNCED"
 	_reason = "RESYNC_PENDING" if resync_pending else ""
 	_reconnect_required = false
@@ -261,5 +261,5 @@ func _inside_map(player: Dictionary, document: Dictionary) -> bool:
 func _snapshot_tick(value: Dictionary) -> int:
 	var latest := -1
 	for player in value.players:
-		latest = maxi(latest, player.motion.simulation_tick)
+		latest = maxi(latest, player.motion.realm_tick)
 	return latest

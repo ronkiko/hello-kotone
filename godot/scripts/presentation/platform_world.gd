@@ -1,6 +1,6 @@
 extends Node2D
 ## Confirmed replica projection plus owner-only prediction; server remains authority.
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const RemotePlayer = preload("res://scripts/presentation/remote_player.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 const GaitAnimator = preload("res://scripts/presentation/gait_animator.gd")
@@ -56,7 +56,7 @@ var _resync_requested := false
 var _predicted_contacts: Array[String] = []
 var _blend_remaining := 0.0
 var _blend_start_offset_x := 0.0
-var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_simulation_tick": -1,
+var _prediction_metrics := {"samples": 0, "max_divergence_mm": 0, "last_realm_tick": -1,
 	"small_blends": 0, "snaps": 0, "history_peak": 0, "fences": 0,
 	"last_replayed_ticks": 0, "last_applied_control_seq": 0}
 var _gait := GaitAnimator.new()
@@ -226,7 +226,7 @@ func _record_correction(value_mm: int) -> void:
 func prediction_diagnostics() -> Dictionary:
 	# Caller-owned bounded evidence; no trace/log accumulation or session secrets.
 	return {"sample":_diagnostic_motion.duplicate(true),"ledger":_control_ledger.duplicate(true),"local_usec":Time.get_ticks_usec(),"local_ordinal":_prediction_ordinal,
-		"simulation_tick":_last_authoritative_tick,"applied_seq":_last_applied_control_seq,
+		"realm_tick":_last_authoritative_tick,"applied_seq":_last_applied_control_seq,
 		"desired":MmoClient.prediction_control_state(),"acknowledged":MmoClient._server_input.duplicate(),
 		"body_mm":_pixel_to_server_mm(character_root.position.x),
 		"render_mm":_pixel_to_server_mm(character_root.position.x+visual_layer.position.x),
@@ -264,7 +264,7 @@ func _queue_owner_motion(event: Dictionary) -> void:
 	for sample in event.get("data", {}).get("players", []):
 		if sample.get("player_id") == _local_player_id:
 			_pending_owner_motion = sample.duplicate(true)
-			_pending_owner_motion["simulation_tick"] = event.data.simulation_tick
+			_pending_owner_motion["realm_tick"] = event.data.realm_tick
 			return
 
 func _on_damage_resolved(event: Dictionary) -> void:
@@ -462,7 +462,7 @@ func _discard_rejected_control(_code: String) -> void:
 
 func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	if character_root == null or _movement.is_empty(): return
-	var tick := int(motion.simulation_tick)
+	var tick := int(motion.realm_tick)
 	var applied_seq := int(motion.last_applied_control_seq)
 	if not force_snap and (tick < _last_authoritative_tick or applied_seq < _last_applied_control_seq):
 		_fence_prediction()
@@ -473,7 +473,7 @@ func _apply_authoritative_motion(motion: Dictionary, force_snap: bool) -> void:
 	_impact_this_interval = _impact_this_interval or new_impact
 	_diagnostic_motion = motion.duplicate(true)
 	_contact_sample_at_usec = Time.get_ticks_usec()
-	_prediction_metrics.last_simulation_tick = tick
+	_prediction_metrics.last_realm_tick = tick
 	_last_authoritative_tick = tick
 	_last_applied_control_seq = applied_seq
 	_prediction_metrics.last_applied_control_seq = applied_seq

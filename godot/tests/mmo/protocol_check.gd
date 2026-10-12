@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 var _checks := 0
 var _failures := 0
 
@@ -24,9 +24,12 @@ func _initialize() -> void:
 	bad_map.min_x = true
 	check(not Protocol.map_definition(bad_map), "bool is not integer")
 	check(not Protocol.endpoint({"host": "http://localhost", "port": 7777, "server_id": "g"}), "no URL endpoint")
-	var bootstrap := {"type": "version_error", "bootstrap_version": 1, "code": "UNSUPPORTED_VERSION", "received_version": 8, "supported_versions": [4]}
+	var bootstrap := {"type": "version_error", "bootstrap_version": 1, "code": "UNSUPPORTED_VERSION", "received_version": 9, "supported_versions": [4]}
 	check(Protocol.version_error(bootstrap), "bootstrap version mismatch")
-	bootstrap.supported_versions = [8]
+	var old_motion := {"position_mm": 0, "velocity_mm_s": 0, "facing": 1,
+        "last_applied_control_seq": 0, "simulation_tick": 0, "control_started_tick": 0}
+	check(not Protocol.motion(old_motion), "old Zone clock field fails closed")
+	bootstrap.supported_versions = [9]
 	check(not Protocol.version_error(bootstrap), "invalid bootstrap rejected")
 	for source in ['{"x":\r1}', '{"x":1}\r ', '{"x":1}\r', '{"x":\n1}']:
 		check(Protocol.decode(source.to_utf8_buffer()).is_empty(), "raw CR/LF anywhere rejected")
@@ -77,10 +80,10 @@ func _initialize() -> void:
 	forged = response.duplicate(true)
 	forged.contact_shove_sources = ["p2"]
 	check(not Protocol.motion_frame_player(forged, 4), "obsolete motor-knockback wire is rejected")
-	var hit := {"protocol_version":8,"type":"event","event":"damage_resolved","epoch":"e1",
+	var hit := {"protocol_version":9,"type":"event","event":"damage_resolved","epoch":"e1",
 		"zone_id":"city/apartment","revision":4,"data":{
 		"event_id":"damage_1","event_seq":1,"zone_generation":1,
-		"simulation_tick":4,"target_entity_id":"p1","source_entity_id":"p2",
+		"realm_tick":4,"target_entity_id":"p1","source_entity_id":"p2",
 		"position_mm":50000,"impact_impulse_g_mm_s":37900000,
 		"damage":8,"cause":"body_collision"}}
 	check(Protocol.event(hit), "separate damage event structurally valid")
@@ -135,7 +138,7 @@ func _initialize() -> void:
 	quit(0 if _failures == 0 else 1)
 
 func failure(code: String, op: Variant, status: String) -> Dictionary:
-	return {"protocol_version": 8, "type": "response", "request_id": "r1" if op != null else null,
+	return {"protocol_version": 9, "type": "response", "request_id": "r1" if op != null else null,
 		"op": op, "status": status, "data": null, "error": {"code": code, "message": "Test rejection"}}
 
 func check(value: bool, label: String) -> void:

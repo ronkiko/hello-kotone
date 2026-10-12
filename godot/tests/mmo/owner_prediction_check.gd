@@ -42,7 +42,7 @@ func check(value: bool,label: String) -> void:
 	checks += 1
 	if not value: failures.append(label)
 func sample(tick: int,seq: int,start: int,x: int,v: int = 0,contacts: Array = []) -> Dictionary:
-	return {"simulation_tick":tick,"last_applied_control_seq":seq,"control_started_tick":start,
+	return {"realm_tick":tick,"last_applied_control_seq":seq,"control_started_tick":start,
 		"position_mm":x,"velocity_mm_s":v,"facing":1,"contacts":contacts}
 func reset() -> void:
 	client._clear_session()

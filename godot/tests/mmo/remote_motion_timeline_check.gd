@@ -11,7 +11,7 @@ func check(ok: bool, label: String) -> void:
 func motion(tick: int, position_mm: int, velocity_mm_s: int, contacts: Array = [], facing: int = 1,
 		response_delta: int = 0, response_facing: int = 0, response_tick: int = 0,
 		response_contacts: Array = [], impact_sources: Array = []) -> Dictionary:
-	return {"simulation_tick": tick, "position_mm": position_mm,
+	return {"realm_tick": tick, "position_mm": position_mm,
 		"velocity_mm_s": velocity_mm_s, "facing": facing, "contacts": contacts,
 		"contact_delta_velocity_mm_s": response_delta, "contact_response_facing": response_facing,
 		"contact_response_tick": response_tick, "contact_response_contacts": response_contacts,

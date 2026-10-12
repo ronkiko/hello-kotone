@@ -1,6 +1,6 @@
 extends SceneTree
 ## Two actual Godot scene consumers. Python starts services, never plays for us.
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
 var client: Node
 var pre: Node
@@ -324,16 +324,16 @@ func verify_peer_push(world: Node, remote_id: String) -> bool:
 			release_seq=client._server_input_seq
 		if role==1 and release_seq>=0 and release_applied_tick<0 \
 			and int(client.world_replica.local_player().motion.last_applied_control_seq)>=release_seq:
-			release_applied_tick=int(client.world_replica.local_player().motion.simulation_tick)
+			release_applied_tick=int(client.world_replica.local_player().motion.realm_tick)
 		if role==1 and release_applied_tick>=0 and not repress_sent \
-			and int(client.world_replica.local_player().motion.simulation_tick)>=release_applied_tick+2:
+			and int(client.world_replica.local_player().motion.realm_tick)>=release_applied_tick+2:
 			check(client.set_control(1,1),"pusher repress request accepted")
 			repress_sent=true
 		if role==1 and repress_sent and repress_seq<0 and client._server_input.drive==1:
 			repress_seq=client._server_input_seq
 		if role==1 and repress_seq>=0 and repress_applied_tick<0 \
 			and int(client.world_replica.local_player().motion.last_applied_control_seq)>=repress_seq:
-			repress_applied_tick=int(client.world_replica.local_player().motion.simulation_tick)
+			repress_applied_tick=int(client.world_replica.local_player().motion.realm_tick)
 		# Only actual new body collisions may create impact events. A later
 		# release/repress while still touching is *not* a second physical hit.
 		# Give delayed observer presentation time to consume any causal facts.

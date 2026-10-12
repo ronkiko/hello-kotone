@@ -13,7 +13,7 @@ signal world_ready
 signal disconnected
 
 const Appearance = preload("res://scripts/presentation/character_appearance.gd")
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const Channel = preload("res://scripts/mmo/tcp_channel.gd")
 const MapCache = preload("res://scripts/mmo/map_cache.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")

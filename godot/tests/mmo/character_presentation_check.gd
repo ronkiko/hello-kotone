@@ -27,7 +27,7 @@ func run() -> void:
 	for model in ["kotone", "yuna"]:
 		var definition := {"game_card_id":"hello-kotone","realm_id":"local","character_id":"p1","display_name":"local","appearance_schema_version":2,"appearance_payload":payload(model)}
 		# Current Protocol.character includes the durable definition shape used by v7.
-		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"simulation_tick":0},"contacts":[],"character":definition,"physics":preload("res://tests/mmo/replica_check.gd").binding(model)}
+		var player := {"player_id":"p1","nickname":"local","zone_id":"city/apartment","motion":{"position_mm":50000,"velocity_mm_s":0,"facing":1,"last_applied_control_seq":0,"control_started_tick":0,"realm_tick":0},"contacts":[],"character":definition,"physics":preload("res://tests/mmo/replica_check.gd").binding(model)}
 		var remote := player.duplicate(true)
 		remote.player_id = "p2"
 		remote.character.character_id = "p2"
@@ -85,7 +85,7 @@ func run() -> void:
 				"contact_response_contacts":["p1"],"contact_impact_sources":["p1"]}
 			check(remote_node.gait.try_contact_reaction(other,"yuna",physical_response), "remote starts received mass-aware reaction")
 			var hit := {"event_id":"damage_1","event_seq":1,"zone_generation":1,
-				"simulation_tick":12,"target_entity_id":"p2","source_entity_id":"p1",
+				"realm_tick":12,"target_entity_id":"p2","source_entity_id":"p1",
 				"damage":8,"impact_impulse_g_mm_s":37900000,
 				"position_mm":int(remote.motion.position_mm),"cause":"body_collision"}
 			platform._on_damage_resolved(hit)
@@ -113,7 +113,7 @@ func run() -> void:
 			check(platform.damage_effects.get_child_count() == 2,
 				"remote gait timeline no longer creates damage numbers")
 			var contact_player := remote.duplicate(true)
-			contact_player.motion.simulation_tick = 15
+			contact_player.motion.realm_tick = 15
 			contact_player.contacts = ["p1"]
 			remote_node.project(contact_player,remote_node.position.x,"e1|city/apartment|1",50000,
 				int(physical.motor.top_speed_mm_s))

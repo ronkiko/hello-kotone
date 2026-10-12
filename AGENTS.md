@@ -15,3 +15,10 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 ## Порядок изменений
 
 Используй Godot-native nodes/resources/input/physics/AnimationPlayer где они выполняют задачу. Не создавай параллельный самописный physics или animation framework. Тесты и exact-pair server/client SHA фиксировать, работа только в `main`, логичные версионированные commits с patch id, без legacy fallback и не относящегося к задаче рефакторинга. При patch 8.12 сначала читать новое Unified Realm Tick задание в server repo; ранее прошедшие дорогостоящие тесты не перезапускать без изменения affected semantics.
+
+
+8.12 executable cutover: current public protocol **v9** carries `realm_tick`;
+`protocol_v9.gd` replaces the old validator without an old-field fallback.
+Replica, native owner predictor and remote timeline use the same Realm-scoped
+authoritative marker while client `local_ordinal` remains independent.
+Exact-pair acceptance is recorded in the shared server 12-validation.json.

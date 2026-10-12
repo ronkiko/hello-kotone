@@ -8,7 +8,7 @@ timeline is in 8.07.
 ## Remote motion timeline
 
 Each remote character keeps the latest eight accepted authoritative samples. The
-presentation cursor follows the 60-Hz `simulation_tick` timeline 100 ms behind the
+presentation cursor follows the 60-Hz `realm_tick` timeline 100 ms behind the
 estimated latest server tick. Sample receipt time anchors local elapsed time; it does
 not replace the server tick. The cursor never moves backward when a frame arrives
 late. Position and velocity interpolate between matching sample ticks, and the

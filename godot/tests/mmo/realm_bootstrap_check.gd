@@ -1,6 +1,6 @@
 extends SceneTree
 ## v7 selected-character realm-before-zone boundary, adversarial content and restart checks.
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const Replica = preload("res://scripts/mmo/world_replica.gd")
 const Fixtures = preload("res://tests/mmo/replica_check.gd")
 var checks := 0
@@ -30,7 +30,7 @@ func entry(epoch: String = "e1") -> Dictionary:
 	return {"session_id": "s1", "player_id": "p1", "bootstrap": bootstrap(epoch), "snapshot": baseline(epoch)}
 
 func reply(op: String, data: Dictionary) -> Dictionary:
-	return {"protocol_version": 8, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
+	return {"protocol_version": 9, "type": "response", "request_id": "r1", "op": op, "status": "ok", "data": data, "error": null}
 
 func deliver(op: String, data: Dictionary) -> void:
 	client._pending = {"op": op, "request_id": "r1", "payload": {}}
@@ -113,7 +113,7 @@ func run() -> void:
 	reset()
 	client._expected_identity = identity("e2")
 	deliver("enter", entry("e2"))
-	client._on_frame(JSON.stringify({"protocol_version": 8, "type": "event", "event": "joined", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": Fixtures.player("p2", "Bob", 50400)}}).to_utf8_buffer())
+	client._on_frame(JSON.stringify({"protocol_version": 9, "type": "event", "event": "joined", "epoch": "e1", "zone_id": "city/apartment", "revision": 2, "data": {"player": Fixtures.player("p2", "Bob", 50400)}}).to_utf8_buffer())
 	check(client.state == "FAILED" and client.world_replica.view().confirmed_local_position_mm == 50000 and client.world_replica.view().stale_reason == "WRONG_EPOCH", "OLD_FACT_REJECTED_BEFORE_PROJECTION")
 	reset()
 	client._expected_identity = identity("e2")

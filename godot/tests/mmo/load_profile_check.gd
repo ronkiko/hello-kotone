@@ -76,7 +76,7 @@ func wait_for_stationary_pair(remote_id: String, seconds: float = 15.0) -> bool:
 		if is_instance_valid(world) and client.world_replica.view().players.has(remote_id):
 			var own_motion: Dictionary = client.world_replica.local_player().motion
 			var remote_motion: Dictionary = client.world_replica.view().players[remote_id].motion
-			var tick := int(own_motion.get("simulation_tick", -1))
+			var tick := int(own_motion.get("realm_tick", -1))
 			if tick > previous_tick:
 				var positions: Array[int] = [int(own_motion.position_mm), int(remote_motion.position_mm)]
 				if int(own_motion.velocity_mm_s) == 0 and int(remote_motion.velocity_mm_s) == 0 \
@@ -379,7 +379,7 @@ func run() -> void:
 				"owner_metrics": world.platform.prediction_metrics(),
 				"remote_metrics": timeline,
 				"visible_players": client.world_replica.view().players.size(),
-				"simulation_tick": int(local_motion.get("simulation_tick", 0)),
+				"realm_tick": int(local_motion.get("realm_tick", 0)),
 				"local_control_sequence": int(local_motion.get("last_applied_control_seq", 0))})
 			next_snapshot_usec += 1000000
 		await process_frame

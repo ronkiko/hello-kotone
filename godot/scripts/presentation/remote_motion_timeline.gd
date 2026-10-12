@@ -2,7 +2,7 @@ extends RefCounted
 ## Server-tick timeline for one remote character. Never consumes client input.
 
 const MAX_SAMPLES := 8
-const Protocol = preload("res://scripts/mmo/protocol_v8.gd")
+const Protocol = preload("res://scripts/mmo/protocol_v9.gd")
 const SERVER_TICK_HZ := 60.0
 const INTERPOLATION_DELAY_TICKS := 6.0
 const MAX_EXTRAPOLATION_TICKS := 6.0
@@ -50,13 +50,13 @@ func latest_position_mm() -> int:
 	return int(_samples.back().position_mm) if not _samples.is_empty() else 0
 
 func push_sample(scope: String, motion: Dictionary, received_usec: int, top_speed_mm_s: int) -> String:
-	if scope.is_empty() or not motion.has("simulation_tick") or not motion.has("position_mm") \
+	if scope.is_empty() or not motion.has("realm_tick") or not motion.has("position_mm") \
 		or not motion.has("velocity_mm_s") or not motion.has("facing"):
 		return "ignored"
 	if _scope != scope:
 		reset()
 		_scope = scope
-	var tick: Variant = motion.get("simulation_tick")
+	var tick: Variant = motion.get("realm_tick")
 	var position: Variant = motion.get("position_mm")
 	var velocity: Variant = motion.get("velocity_mm_s")
 	var facing: Variant = motion.get("facing")
@@ -162,7 +162,7 @@ func sample_at(now_usec: int) -> Dictionary:
 			"position_mm": lerpf(float(left.position_mm), float(right.position_mm), alpha),
 			"velocity_mm_s": roundi(lerpf(float(left.velocity_mm_s), float(right.velocity_mm_s), alpha)),
 			"facing": int(left.facing) if alpha < 1.0 else int(right.facing),
-			"simulation_tick": render_tick,
+			"realm_tick": render_tick,
 			"contacts": left.contacts.duplicate(),
 			"frozen": false,
 			"extrapolated": false,
@@ -184,7 +184,7 @@ func sample_at(now_usec: int) -> Dictionary:
 		"position_mm": float(newest.position_mm) + distance,
 		"velocity_mm_s": 0 if frozen else int(newest.velocity_mm_s),
 		"facing": int(newest.facing),
-		"simulation_tick": float(newest.tick) + extrapolation_ticks,
+		"realm_tick": float(newest.tick) + extrapolation_ticks,
 		"contacts": newest.contacts.duplicate(),
 		"frozen": frozen,
 		"extrapolated": extrapolation_ticks > 0.0 and not contact_barrier,
@@ -243,7 +243,7 @@ func _state(sample: Dictionary, contact_barrier: bool, extrapolated: bool) -> Di
 		"position_mm": float(sample.position_mm),
 		"velocity_mm_s": 0 if contact_barrier else int(sample.velocity_mm_s),
 		"facing": int(sample.facing),
-		"simulation_tick": int(sample.tick),
+		"realm_tick": int(sample.tick),
 		"contacts": sample.contacts.duplicate(),
 		"frozen": contact_barrier,
 		"extrapolated": extrapolated,

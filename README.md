@@ -52,3 +52,10 @@ is ignored by Git and is separate from the existing `.legacy/web/` archive.
 Godot `.import` sidecars and script `.uid` files are versioned with their
 source assets. Generated `.godot/` caches are ignored in all project folders.
 Root `opencode.json` is a local MCP configuration and is also ignored.
+
+
+8.12 executable cutover: current public protocol **v9** carries `realm_tick`;
+`protocol_v9.gd` replaces the old validator without an old-field fallback.
+Replica, native owner predictor and remote timeline use the same Realm-scoped
+authoritative marker while client `local_ordinal` remains independent.
+Exact-pair acceptance is recorded in the shared server 12-validation.json.
