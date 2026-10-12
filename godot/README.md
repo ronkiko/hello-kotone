@@ -103,11 +103,13 @@ Recorded agent operations/plans and checksums are in `tools/character_recipes/`;
 byte-for-byte in a temporary directory.
 Author visual acceptance is tracked in the shared 7.11 roadmap.
 
-### Server Tick Authority (canonical v3 timing rule, 2026-10-12)
+### Unified Realm Tick / server clock — target for new 8.12 (2026-10-12)
 
-Server Zone `simulation_tick` is the **logical world time** for physics, contact/damage, control application and atomic authoritative frame. Scope always includes realm instance, zone ID and zone generation; `revision`/`frame_seq` are distinct. The server stages semantic controls asynchronously and applies them on its authoritative 60-Hz tick boundaries; no client wall-clock delay is a physics `dt`.
+**One authoritative `realm_tick` per Realm epoch**, shared across all Zones via Realm TickCommands; each Zone retains `last_committed_realm_tick` to report actual physics progress. No separate game clock generator per Zone. The old `simulation_tick` across the current wire is **pre-migration**, pending coordinated server + Godot 8.12 exact-pair switch without old-shape compatibility fallback.
 
-Godot `_physics_process()` owns only local prediction/display cadence; `local_ordinal` is never a server tick. Owner reconciliation and remote sample-ordering use received `simulation_tick` with scope/control fences. Remote interpolation buffer, bounded extrapolation, response latency and UI animations still use local real-time clocks. Network motion publishing nominally samples every three committed server ticks and never faster than 20 Hz of real wall time (catch-up coalesces to latest without burst); it cannot fabricate missing server steps. Reliable `damage_resolved`/join/leave/lifecycle events remain independent of this sampling. Never compare server/client monotonic timestamps directly to infer network delay without calibration. Full policy and ongoing scheduler diagnostic corrective are in the server-side `ai_research/v3/game/docs/server-tick-authority.md` and Series 8.12 files.
+The server uses fixed 60-Hz `dt=1/60`; client semantic controls apply on server tick boundary, collisions/impulses/ordered `damage_resolved` belong only to actually committed Realm ticks. `motion_frame` carries latest committed Zone state nominally every third Realm tick, capped by real 20-Hz wall-clock publication; a lagging Zone cannot fabricate a sample for uncommitted ticks. `frame_seq`/State `revision` are separate.
+
+Godot native `_physics_process()`, `CharacterBody2D` and local prediction `local_ordinal` remain independent client UX clocks; no server time authority is derived from InputEvent or packet arrival time. Server tick helps order/correlate; render buffering (100 ms), extrapolation (100 ms/250 mm), TTL and latency/RTT continue in real time. At 8.12 implementation migrate validator/reducer/timeline/evidence together and add multi-Zone scope, missing ticks, old epoch, contact/damage tests. Canon and task: `ai_research/v3/game/docs/server-tick-authority.md` and `ai_research/v3/docs/roadmap/v3/main/8/12-unified-realm-tick.md`.
 
 Current v8 locomotion sends bounded `control_set` desired state. The server publishes
 20-Hz `motion_frame` samples with one zone-level `simulation_tick` and only
