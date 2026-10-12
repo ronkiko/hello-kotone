@@ -34,6 +34,7 @@ func check(value: bool, label: String) -> void:
 	checks += 1
 	if not value: failures.append(label)
 func run() -> void:
+	resync_snapshot_queue_regression()
 	for model in ["kotone", "yuna"]:
 		for direction in [-1, 1]:
 			for delay in [0, 3, 6]:
@@ -44,6 +45,36 @@ func run() -> void:
 	print(JSON.stringify({"suite":"owner-motion-ux","checks":checks,"failures":failures,"scenarios":results,
 		"result":"PASS" if failures.is_empty() else "FAIL"}))
 	quit(0 if failures.is_empty() else 1)
+
+func resync_snapshot_queue_regression() -> void:
+	client._clear_session()
+	client.state = "READY"
+	client._world_rules = {"movement":RULES}
+	client._desired_input = {"drive":0,"facing":1}
+	client._server_input = {"drive":0,"facing":1}
+	client._pending = {}
+	client._scheduled = {}
+	platform._pending_snapshot_motion = {}
+	platform._resync_requested = true
+	var player := Fixtures.player()
+	player.motion.simulation_tick = 1
+	platform._queue_snapshot_motion({"players":[player]})
+	platform._try_prediction_resync()
+	check(client.state == "READY" and client._scheduled.is_empty(),
+		"queued authoritative snapshot prevents duplicate State before physics install")
+	platform._physics_process(DT)
+	check(platform._pending_snapshot_motion.is_empty() and not platform._resync_requested,
+		"physics installs queued snapshot and clears the resync fence")
+	platform._pending_snapshot_motion = {}
+	platform._resync_requested = true
+	client.state = "READY"
+	client._scheduled = {}
+	platform._try_prediction_resync()
+	check(client.state == "RESYNCING" and client._scheduled.get("op", "") == "state",
+		"prediction fence still requests State when no authoritative snapshot is queued")
+	client._clear_session()
+	platform._pending_snapshot_motion = {}
+	platform._resync_requested = false
 func scenario(model: String, direction: int, delay: int,release_phase: int,nearby_peer: bool,slow_server: bool=false) -> void:
 	# Typed metric conversion: platform is dynamically typed as Node in this test.
 	var mm_per_pixel: float = 1000.0 / Appearance.world_pixels_per_meter()

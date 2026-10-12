@@ -594,7 +594,10 @@ func _fence_prediction() -> void:
 		_try_prediction_resync()
 
 func _try_prediction_resync() -> void:
-	if _resync_requested and MmoClient.state == "READY":
+	# A received snapshot is authoritative immediately, even though its motion
+	# is installed on the next local physics tick. Do not issue a duplicate
+	# State request in the render frame between those two callbacks.
+	if _resync_requested and _pending_snapshot_motion.is_empty() and MmoClient.state == "READY":
 		MmoClient.request_state()
 
 func _remove_remote(id: String) -> void:
