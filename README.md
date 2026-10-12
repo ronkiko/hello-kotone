@@ -33,9 +33,11 @@ python3 -m http.server
 The legacy implementation still uses local source material from `.local/` when
 that ignored working-copy directory is available.
 
-## MMO timing contract — Server Tick Authority
+## MMO clock contract — unified Realm tick
 
-The gameplay simulation clock belongs to the server Zone, identified by `realm_instance_id / zone_package_id / zone_generation / simulation_tick`. Client Godot uses local native 60-Hz physics for owner prediction and animation, **not** as server authority. Incoming `motion_frame` is a coalescible latest committed sample, nominally 20 Hz / every three server simulation ticks, bounded by real-time cadence. Reliable gameplay damage and lifecycle events remain separately ordered. Receive/render milliseconds and network RTT are diagnostic/presentation clocks, not the time source of server physics. See [agent rules](AGENTS.md) and [Godot MMO contract](godot/README.md) for details. Canonical architecture is maintained in the neighboring private server-side `ai_research/v3/game/docs/server-tick-authority.md`.
+**2026-10-12 target:** one authoritative `realm_tick` per Realm epoch, shared by all server Zones; Zone only tracks committed progress. Godot client physics/prediction/animation remain local clocks, not server authority. Motion snapshots are nominally one per three Realm ticks (60/20 Hz), with real-time 20-Hz cap and explicit committed tick; damage and lifecycle events are independently ordered. Server OS monotonic is for scheduling/real latency, never gameplay variable `dt`.
+
+See [client agent rules](AGENTS.md), [Godot timing contract](godot/README.md), and server-side [new 8.12 task](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/8/12-unified-realm-tick.md). The current per-Zone `simulation_tick` is pre-migration code, not a second canonical clock.
 
 ## Godot
 
