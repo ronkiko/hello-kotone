@@ -28,8 +28,8 @@ func accepted(now_usec: int) -> void:
 			sorted.sort()
 			var median: float = maxf(NOMINAL_GAP_USEC, sorted[sorted.size() / 2])
 			var high: float = sorted[mini(sorted.size() - 1, int(sorted.size() * 0.9))]
-			min_wait = minf(median * 4.0, maxf(median * 2.0, high * 1.5))
-			max_wait = maxf(min_wait * 2.0, median * 8.0)
+			min_wait = minf(NOMINAL_GAP_USEC * 4.0, minf(median * 4.0, maxf(median * 2.0, high * 1.5)))
+			max_wait = minf(NOMINAL_GAP_USEC * 16.0, maxf(min_wait * 2.0, median * 8.0))
 	last_usec = now_usec
 	bars = 4
 

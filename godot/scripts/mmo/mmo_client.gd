@@ -40,6 +40,7 @@ func _valid_motion_frame(event: Dictionary) -> void:
 		_server_input_seq = world_replica.local_player().motion.last_applied_control_seq
 		_server_input = {"drive": 0, "facing": world_replica.local_player().motion.facing}
 		_retire_motion_controls()
+	if state not in ["READY", "MOVING", "RESYNCING", "LOGGING_OUT"] or _world_rules.is_empty() or map_document.is_empty(): return
 	frame_health.accepted(Time.get_ticks_usec())
 	_set_frame_health(4)
 

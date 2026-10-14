@@ -30,6 +30,12 @@ func run() -> void:
 	var slow := Health.new()
 	for index in range(100): slow.accepted(index * 90000)
 	check(slow.max_wait > healthy.max_wait, "independent relative cadence, no absolute freeze deadline")
+	var bounded := Health.new()
+	var clock := 0
+	for index in range(256):
+		clock += int(bounded.min_wait * 0.9)
+		bounded.accepted(clock)
+	check(bounded.max_wait <= Health.NOMINAL_GAP_USEC * 16.0 and bounded.min_wait <= Health.NOMINAL_GAP_USEC * 4.0, "degrading cadence cannot expand beyond relative nominal caps")
 	var replica := preload("res://scripts/mmo/world_replica.gd").new()
 	replica.world_session.bind({"identity":{"game_card_id":"hello-kotone","realm_id":"local","realm_instance_id":"e1"},"capabilities":["control_set","logout","map","state","world_rules"]})
 	replica.start({"epoch":"e1","revision":1,"map":{"map_id":Fixtures.MAP.map_id,"content_version":1,"content_hash":Fixtures.MAP.content_hash},"players":[Fixtures.player()]}, "p1", "player1")
