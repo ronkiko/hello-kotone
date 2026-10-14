@@ -9,6 +9,40 @@ signal control_accepted(control_seq: int)
 signal control_sent(control: Dictionary)
 signal logout_changed(status: String)
 signal input_rejected(code: String)
+signal frame_health_changed(bars: int)
+signal visual_stall_changed(frozen: bool)
+const FrameHealth = preload("res://scripts/mmo/frame_health.gd")
+var frame_health := FrameHealth.new()
+var visual_stalled := false
+var _motion_generation := 1
+
+func _ready() -> void:
+	world_replica.motion_received.connect(_valid_motion_frame)
+
+func _set_frame_health(count: int) -> void:
+	var frozen := count == 0
+	if frozen != visual_stalled:
+		visual_stalled = frozen
+		if frozen: _retire_motion_controls()
+		visual_stall_changed.emit(frozen)
+	frame_health_changed.emit(count)
+
+func _retire_motion_controls() -> void:
+	_desired_input = {"drive": 0, "facing": _desired_input.facing}
+	if _scheduled.get("op") == "control_set": _scheduled = {}
+	if _pending.is_empty() and state == "MOVING": _set_state("READY")
+	input_rejected.emit("FRAME_STALE")
+
+func _valid_motion_frame(event: Dictionary) -> void:
+	var generation: int = event.data.zone_generation
+	if generation != _motion_generation:
+		_motion_generation = generation
+		_server_input_seq = world_replica.local_player().motion.last_applied_control_seq
+		_server_input = {"drive": 0, "facing": world_replica.local_player().motion.facing}
+		_retire_motion_controls()
+	frame_health.accepted(Time.get_ticks_usec())
+	_set_frame_health(4)
+
 signal world_ready
 signal disconnected
 
@@ -89,6 +123,7 @@ func enter_character(handoff: Dictionary, character: Dictionary, profile: String
 	return state != "FAILED"
 
 func set_control(drive: int, facing: int) -> bool:
+	if visual_stalled: return false
 	if drive not in [-1, 0, 1] or facing not in [-1, 1] or state not in ["READY", "MOVING"] or _world_rules.is_empty(): return false
 	if _leave_requested and (drive != 0 or facing != _desired_input.facing):
 		_leave_requested = false
@@ -101,15 +136,17 @@ func set_control(drive: int, facing: int) -> bool:
 	return true
 
 func _schedule_desired_input() -> void:
+	if visual_stalled: return
 	if state == "READY" and _pending.is_empty() and _desired_input != _server_input and _scheduled.get("op") == "ping": _scheduled = {}
 	if state != "READY" or _desired_input == _server_input or not _pending.is_empty() or not _scheduled.is_empty(): return
 	if _server_input_seq >= 9007199254740991:
 		_fail("CONTROL_NAMESPACE_EXHAUSTED")
 		return
-	_schedule("control_set", _desired_input.merged({"control_seq": _server_input_seq + 1}))
+	_schedule("control_set", _desired_input.merged({"control_seq": _server_input_seq + 1, "zone_generation": world_replica.view().zone_generation}))
 	_set_state("MOVING")
 
 func request_state() -> bool:
+	if visual_stalled: return false
 	# A resync must not silently leave a held server input running while presentation freezes.
 	if _desired_input.drive != 0 or _server_input.drive != 0:
 		return false
@@ -134,6 +171,7 @@ func logout() -> bool:
 	return true
 
 func _advance_leave() -> void:
+	if visual_stalled: return
 	if not _leave_requested or state != "READY" or not _pending.is_empty() or not _scheduled.is_empty(): return
 	if _server_input.drive != 0:
 		_schedule("control_set", {"control_seq": _server_input_seq + 1, "drive": 0, "facing": _server_input.facing})
@@ -192,9 +230,13 @@ func _on_connected() -> void:
 			_schedule("session_rules", {})
 
 func _schedule(op: String, payload: Dictionary) -> void:
+	if op == "control_set": payload["zone_generation"] = world_replica.view().zone_generation
 	_scheduled = {"op": op, "payload": payload}
 
 func _process(_delta: float) -> void:
+	var old_bars := frame_health.bars
+	var count := frame_health.poll(Time.get_ticks_usec())
+	if count != old_bars: _set_frame_health(count)
 	if _channel == null or state in ["IDLE", "DISCONNECTED", "FAILED"]:
 		return
 	var generation := _connection_generation
@@ -287,6 +329,7 @@ func _on_frame(frame: PackedByteArray) -> void:
 			_fail("CHARACTER_MISMATCH")
 			return
 		if not world_replica.apply_event(message):
+			if not world_replica.view().reconnect_required: return
 			_fail("STREAM_DESYNC")
 			return
 		# A synchronous replica observer may explicitly cancel the session.
@@ -367,6 +410,10 @@ func _on_frame(frame: PackedByteArray) -> void:
 			if not world_session.supports(capability):
 				_fail("WORLD_CAPABILITY_MISSING")
 				return
+	if op == "control_set" and completed.payload.get("zone_generation", 1) != world_replica.view().zone_generation:
+		_pending = {}
+		_set_state("READY")
+		return
 	if op == "control_set" and not _valid_input_ack(message.data, completed):
 		# Keep pending mutation context until validation: a malformed ACK is unknown.
 		_fail("INPUT_BASELINE_MISMATCH")
@@ -496,6 +543,9 @@ func _set_state(value: String) -> void:
 	state_changed.emit(state)
 
 func _clear_session(preserve_replica: bool = false) -> void:
+	frame_health.clear()
+	visual_stalled = false
+	_motion_generation = 1
 	_connection_generation += 1
 	if _channel != null:
 		_channel.close()

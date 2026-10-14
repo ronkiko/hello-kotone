@@ -239,3 +239,13 @@ physics authority. Real desktop feel remains author-reviewed.
 Replica, native owner predictor and remote timeline use the same Realm-scoped
 authoritative marker while client `local_ordinal` remains independent.
 Exact-pair acceptance is recorded in the shared server 12-validation.json.
+
+## v3.main.9.04 autonomous frame health
+
+The World HUD now displays four adaptive motion-freshness bars. Zero freezes
+spatial presentation while networking/UI and tiny current-action sprite loops
+continue. First valid ordinary motion frame restores authority and four green
+bars, including a fenced new Zone incarnation on the same Game connection.
+Server failure cutoff remains independent at T0+10s; TLS loss clears all leases
+and returns to Login. No recovery snapshot/lifecycle message/RESYNC/client ACK
+is added. See [frame health](docs/frame-health.md).

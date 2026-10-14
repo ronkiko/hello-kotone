@@ -21,6 +21,31 @@ var visual_layer := Node2D.new()
 var sprite: AnimatedSprite2D
 var local_label := Label.new()
 var _suspended := false
+var _visual_stalled := false
+var _stall_loops := {}
+const StallLoop = preload("res://scripts/presentation/visual_stall_loop.gd")
+
+func set_visual_stalled(value: bool) -> void:
+	if not is_inside_tree(): return
+	if value == _visual_stalled: return
+	_visual_stalled = value
+	var sprites: Array = [sprite]
+	for actor in remote_players.values(): sprites.append(actor.sprite)
+	for actor_sprite in sprites:
+		if value:
+			var loop := StallLoop.new()
+			loop.freeze(actor_sprite)
+			_stall_loops[actor_sprite] = loop
+		elif _stall_loops.has(actor_sprite):
+			_stall_loops[actor_sprite].thaw(actor_sprite)
+	if not value:
+		_stall_loops.clear()
+		_prediction_history.clear()
+		_control_ledger.clear()
+		_last_authoritative_tick = -1
+		for actor in remote_players.values(): actor.timeline.reset()
+		if not _map.is_empty(): project(_map, _view)
+
 var remote_players: Dictionary = {}
 var _peer_proxies: Dictionary = {}
 var _peer_lead_ticks := 0
@@ -122,6 +147,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_resize_projection)
 	MmoClient.control_sent.connect(_record_sent_control)
 	MmoClient.input_rejected.connect(_discard_rejected_control)
+	MmoClient.visual_stall_changed.connect(set_visual_stalled)
 	MmoClient.world_replica.motion_received.connect(_queue_owner_motion)
 	MmoClient.world_replica.damage_resolved.connect(_on_damage_resolved)
 	MmoClient.world_replica.authoritative_snapshot_received.connect(_queue_snapshot_motion)
@@ -149,6 +175,7 @@ func project(document: Dictionary, view: Dictionary, _unused: Variant = null) ->
 	var map_changed: bool = _map.get("map_id", "") != document.map_id or _map.get("content_hash", "") != document.content_hash
 	_map = document.duplicate(true)
 	_view = view.duplicate(true)
+	if _visual_stalled: return true
 	if map_changed:
 		_install_world_bounds()
 	world_length = float(document.max_x - document.min_x) / float(document.units_per_meter) * pixels_per_meter
@@ -261,16 +288,23 @@ func _install_world_bounds() -> void:
 
 func _queue_owner_motion(event: Dictionary) -> void:
 	if _suspended or _prediction_fenced or event.get("event") != "motion_frame": return
+	var generation: int = event.data.zone_generation
+	var rebase: bool = generation != int(_view.get("zone_generation", 1)) or _last_authoritative_tick < 0
 	for sample in event.get("data", {}).get("players", []):
 		if sample.get("player_id") == _local_player_id:
 			_pending_owner_motion = sample.duplicate(true)
 			_pending_owner_motion["realm_tick"] = event.data.realm_tick
+			if rebase:
+				_prediction_history.clear()
+				_control_ledger.clear()
+				_apply_authoritative_motion(_pending_owner_motion, true)
+				_pending_owner_motion.clear()
 			return
 
 func _on_damage_resolved(event: Dictionary) -> void:
 	# Validated once by WorldReplica. Rendering has no replay cache or network
 	# semantics; the same handler serves local and remote target entities.
-	if _suspended or not _position_installed:
+	if _visual_stalled or _suspended or not _position_installed:
 		return
 	var target: String = str(event.target_entity_id)
 	var players: Dictionary = _view.get("players", {})
@@ -290,6 +324,7 @@ func _queue_snapshot_motion(snapshot: Dictionary) -> void:
 			return
 
 func _physics_process(delta: float) -> void:
+	if _visual_stalled: return
 	var before_render_interval: float = character_root.position.x + visual_layer.position.x
 	_impact_this_interval = false
 	if not _pending_snapshot_motion.is_empty():
@@ -370,6 +405,7 @@ func _physics_process(delta: float) -> void:
 	_reframe()
 
 func _process(delta: float) -> void:
+	if _visual_stalled: return
 	_try_prediction_resync()
 	if _position_installed:
 		local_label.position.x = character_root.position.x + visual_layer.position.x - local_label.size.x / 2.0

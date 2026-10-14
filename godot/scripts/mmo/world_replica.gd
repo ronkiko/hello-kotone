@@ -138,7 +138,11 @@ func apply_event(value: Dictionary) -> bool:
 		return _reject("WRONG_ZONE")
 	if value.event == "damage_resolved":
 		var data: Dictionary = value.data
-		if data.zone_generation != _zone_generation or data.event_seq <= _damage_event_seq:
+		# Reliable committed facts may precede the next 20-Hz sample. They
+		# do not advance motion/control scope; only an ordinary frame does.
+		var next_incarnation: bool = data.zone_generation == _zone_generation + 1 \
+			and value.revision > _snapshot.revision and data.realm_tick >= _realm_tick
+		if (data.zone_generation != _zone_generation and not next_incarnation) or data.event_seq <= _damage_event_seq:
 			return _reject("STALE_DAMAGE_EVENT")
 		if not _players.has(data.target_entity_id) or not _players.has(data.source_entity_id):
 			return _reject("DAMAGE_ENTITY_NOT_PRESENT")
@@ -148,14 +152,16 @@ func apply_event(value: Dictionary) -> bool:
 		damage_resolved.emit(data.duplicate(true))
 		return true
 	if value.event == "motion_frame":
-		if value.data.zone_generation != _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision \
+		var new_generation: bool = value.data.zone_generation > _zone_generation
+		if value.data.zone_generation < _zone_generation or value.data.frame_seq <= _frame_seq or value.revision < _snapshot.revision \
 			or value.data.realm_tick < _realm_tick:
-			return _reject("STALE_MOTION_FRAME")
+			return false
+		if new_generation and value.revision <= _snapshot.revision: return false
 		var incoming := {}
 		for sample in value.data.players:
 			if not _players.has(sample.player_id) or incoming.has(sample.player_id):
 				return _reject("MOTION_MEMBERSHIP_CHANGED")
-			if sample.player_id == _local_id and sample.last_applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
+			if not new_generation and sample.player_id == _local_id and sample.last_applied_control_seq < _players[_local_id].motion.last_applied_control_seq:
 				return _reject("STALE_CONTROL_SEQUENCE")
 			incoming[sample.player_id] = sample
 		if incoming.size() != _players.size(): return _reject("MOTION_MEMBERSHIP_CHANGED")
@@ -178,6 +184,7 @@ func apply_event(value: Dictionary) -> bool:
 			next.players.append(player)
 		next.revision = value.revision
 		if not _valid_snapshot(next, _local_id, _nickname): return _reject("INVALID_MOTION")
+		_zone_generation = value.data.zone_generation
 		_latest_frame_samples = incoming.duplicate(true)
 		_frame_seq = value.data.frame_seq
 		_commit(next, _status == "STALE")

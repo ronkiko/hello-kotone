@@ -13,13 +13,13 @@ func run() -> void:
 	client.state = "READY"
 	client._world_rules = {"movement":{"engage_ms":100}}
 	check(client.set_control(0, -1), "stationary turn scheduled")
-	check(client._scheduled.payload == {"control_seq":1,"drive":0,"facing":-1}, "complete semantic control")
+	check(client._scheduled.payload == {"control_seq":1,"drive":0,"facing":-1,"zone_generation":1}, "complete semantic control")
 	client.set_control(1,-1)
 	client.set_control(0,-1)
-	check(client._scheduled.payload == {"control_seq":1,"drive":0,"facing":-1}, "short tap persists after coalescing")
+	check(client._scheduled.payload == {"control_seq":1,"drive":0,"facing":-1,"zone_generation":1}, "short tap persists after coalescing")
 	for i in range(1000): client.set_control(i % 3 - 1, -1)
 	check(client._scheduled.size() == 2 and client._server_input_seq == 0, "bounded one slot no sequence consumption")
-	client._pending = {"op":"control_set","payload":{"control_seq":1,"drive":0,"facing":-1}}
+	client._pending = {"op":"control_set","payload":{"control_seq":1,"drive":0,"facing":-1,"zone_generation":1}}
 	client._scheduled = {}
 	client.set_control(0,1)
 	check(client._scheduled.is_empty() and client._desired_input == {"drive":0,"facing":1}, "latest state retained during in flight")

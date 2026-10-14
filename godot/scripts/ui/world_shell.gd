@@ -36,7 +36,10 @@ func _ready() -> void:
 	input_adapter.client = MmoClient
 	input_adapter.locomotion_intent_changed.connect(_on_locomotion_intent_changed)
 	add_child(input_adapter)
+	var signal_icon := preload("res://scripts/ui/frame_signal.gd").new()
+	add_child(signal_icon)
 	_show_world()
+	platform.set_visual_stalled(MmoClient.visual_stalled)
 	_on_state_changed(MmoClient.state)
 
 func _show_world() -> void:

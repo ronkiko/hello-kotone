@@ -348,11 +348,11 @@ func _game_fault(info: Dictionary) -> void:
 	# A clean transport loss (the usual local-stand restart case) cannot reuse the
 	# old Game/Lobby authority. Drop it immediately and present a fresh sign-in
 	# instead of leaving a dead World visit on the generic failure page.
-	if not unknown and code in ["DISCONNECTED", "CONNECT_FAILED", "CONNECT_TIMEOUT",
+	if code in ["DISCONNECTED", "TLS_FAILED"] or (not unknown and code in ["DISCONNECTED", "CONNECT_FAILED", "CONNECT_TIMEOUT",
 			"FRAME_TIMEOUT", "READ_FAILED", "WRITE_FAILED", "WRITE_TIMEOUT", "REQUEST_TIMEOUT",
-			"NOT_AUTHENTICATED", "INVALID_HANDOFF"]:
+			"NOT_AUTHENTICATED", "INVALID_HANDOFF"]):
 		logout_account()
-		error = {"phase": "Game", "code": "REAUTH_REQUIRED", "outcome_unknown": false}
+		error = {"phase": "Game", "code": "REAUTH_REQUIRED", "outcome_unknown": unknown}
 		changed.emit()
 		return
 	_failure("Game", code, unknown)

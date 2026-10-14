@@ -16,6 +16,7 @@ func _ready() -> void:
 	_engage_ms = int(movement.get("engage_ms", 0))
 	client.input_rejected.connect(_on_rejected)
 	client.state_changed.connect(_on_state)
+	client.visual_stall_changed.connect(func(_frozen: bool): _on_rejected("FRAME_STALE"))
 
 func _submit(drive: int, orientation: int, send: bool = true) -> void:
 	if drive == locomotion_intent and orientation == facing: return
@@ -25,6 +26,7 @@ func _submit(drive: int, orientation: int, send: bool = true) -> void:
 	if send and client.state in ["READY", "MOVING"]: client.set_control(drive, facing)
 
 func _physics_process(delta: float) -> void:
+	if client.visual_stalled: return
 	var left := Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
 	var right := Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)
 	if not left and not right: _require_release = false

@@ -37,7 +37,7 @@ func _initialize() -> void:
 		and replica.local_player().nickname == "player1" and replica.local_player().character.character_id == "p1", "physics sample merges over static identity")
 	check(replica.latest_frame_sample("p1").contact_delta_velocity_mm_s == 0, "transient frame sample is available to presentation")
 	check(replica.apply_event(sample(3,8)), "coalesced publication sequence accepted")
-	check(not replica.apply_event(sample(3,8)) and replica.view().reconnect_required, "duplicate fenced")
+	check(not replica.apply_event(sample(3,8)) and not replica.view().reconnect_required, "duplicate fenced")
 	for field in ["realm_instance_id","zone_package_id","zone_generation","frame_seq","realm_tick"]:
 		replica = ready_replica()
 		var bad := sample()
