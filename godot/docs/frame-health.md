@@ -1,10 +1,12 @@
 # Motion frame freshness — v3.main.9.04
 
 `MmoClient` owns the monotonic watchdog for frames accepted by `WorldReplica`.
-Only ordinary valid `motion_frame` refreshes it. The 64-gap healthy history uses
-median/p90 with multiplicative waits: min ≥2× cadence, max ≥8× cadence and ≥2×
-min. The server's 20-Hz cap bounds the fastest meaningful baseline; TCP batch
-microgaps cannot train a faster clock. Degraded/stalled gaps cannot raise waits.
+Only ordinary valid `motion_frame` refreshes it, after the World has loaded.
+The 64-gap healthy history uses median/p90. The initial waits are 2×/8× the
+20-Hz nominal cadence. Learning adapts min_wait between 2× the measured median
+and 4× nominal, with the high percentile as a jitter guard. max_wait is at least
+2× min_wait and targets 8× the median, capped at 16× nominal. TCP batch
+microgaps cannot train a faster clock; degraded/stalled gaps cannot raise waits.
 Four ascending HUD bars decline relative to `(age-min)/(max-min)`; zero enters
 Visual Stall. The first accepted ordinary frame immediately restores four green.
 
