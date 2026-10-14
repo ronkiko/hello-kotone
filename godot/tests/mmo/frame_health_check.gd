@@ -43,7 +43,7 @@ func run() -> void:
 	var event := {"protocol_version":9,"type":"event","event":"motion_frame","epoch":"e1","zone_id":Fixtures.MAP.map_id,"revision":5,"data":{"realm_instance_id":"e1","zone_package_id":Fixtures.MAP.map_id,"zone_generation":1,"frame_seq":1,"realm_tick":4,"players":[{"player_id":"p1","position_mm":50000,"velocity_mm_s":0,"facing":-1,"last_applied_control_seq":1,"control_started_tick":0,"contacts":[],"contact_delta_velocity_mm_s":0,"contact_response_facing":0,"contact_response_tick":0,"contact_response_contacts":[],"contact_impact_sources":[]}]}}
 	check(replica.apply_event(event), "ordinary frame accepted")
 	var next := event.duplicate(true)
-	next.data.zone_generation = 2
+	next.data.zone_generation = 3
 	next.data.frame_seq += 1
 	next.data.realm_tick += 50
 	next.revision += 1
@@ -51,14 +51,14 @@ func run() -> void:
 	next.data.players[0].position_mm += 20
 	var joined := {"protocol_version":9,"type":"event","event":"joined","epoch":"e1","zone_id":Fixtures.MAP.map_id,"revision":6,"data":{"player":Fixtures.player("p2", "peer", 50400)}}
 	check(replica.apply_event(joined), "known peer in resumed damage scope")
-	var damage := {"protocol_version":9,"type":"event","event":"damage_resolved","epoch":"e1","zone_id":Fixtures.MAP.map_id,"revision":7,"data":{"event_id":"damage_1","event_seq":1,"zone_generation":2,"realm_tick":54,"target_entity_id":"p1","source_entity_id":"p2","position_mm":50000,"impact_impulse_g_mm_s":37900000,"damage":8,"cause":"body_collision"}}
+	var damage := {"protocol_version":9,"type":"event","event":"damage_resolved","epoch":"e1","zone_id":Fixtures.MAP.map_id,"revision":7,"data":{"event_id":"damage_1","event_seq":1,"zone_generation":3,"realm_tick":54,"target_entity_id":"p1","source_entity_id":"p2","position_mm":50000,"impact_impulse_g_mm_s":37900000,"damage":8,"cause":"body_collision"}}
 	check(replica.apply_event(damage) and replica.view().zone_generation == 1, "reliable new-incarnation fact may precede sample without advancing motion fence")
 	next.revision = 8
 	var peer_sample: Dictionary = next.data.players[0].duplicate(true)
 	peer_sample.player_id = "p2"
 	peer_sample.position_mm = 50400
 	next.data.players.append(peer_sample)
-	check(replica.apply_event(next) and replica.view().zone_generation == 2, "ordinary new generation resets control fence")
+	check(replica.apply_event(next) and replica.view().zone_generation == 3, "ordinary new generation resets control fence")
 	check(not replica.apply_event(event) and not replica.view().reconnect_required, "late old incarnation cannot kill recovered stream")
 	check(not replica.apply_event(next), "duplicate cannot refresh watchdog")
 	var client: Node = root.get_node("MmoClient")

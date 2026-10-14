@@ -140,7 +140,7 @@ func apply_event(value: Dictionary) -> bool:
 		var data: Dictionary = value.data
 		# Reliable committed facts may precede the next 20-Hz sample. They
 		# do not advance motion/control scope; only an ordinary frame does.
-		var next_incarnation: bool = data.zone_generation == _zone_generation + 1 \
+		var next_incarnation: bool = data.zone_generation > _zone_generation \
 			and value.revision > _snapshot.revision and data.realm_tick >= _realm_tick
 		if (data.zone_generation != _zone_generation and not next_incarnation) or data.event_seq <= _damage_event_seq:
 			return _reject("STALE_DAMAGE_EVENT")
