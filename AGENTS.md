@@ -12,6 +12,29 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 
 Перед изменением physics/wire/prediction/reducer читать серверный [канон Server Tick Authority](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/server-tick-authority.md), новую задачу 8.12 и действующий Godot README. Следующие патчи: 8.13 Load/Jitter, 8.14 integrated multiplayer, 8.15 cleanup, 8.16 acceptance. Любая техническая миграция только main и с exact SHA pair, не менять unrelated balance/canon и не запускать длинные gates до диагностики.
 
+## Series 10: обязательная документация Go Networking (черновик, не запускать реализацию без разрешения)
+
+Названия новых компонентов: **Go Networking Client (GNC)** на компьютере игрока,
+**Go Networking Server (GNS)** на сервере; общий контракт реализует
+**Go Networking Protocol Core (GNPC)**. Серия 10 пока **DRAFT**;
+первый функциональный сетевой результат — минимальный бинарный **GNC↔GNS
+PING/PONG**, позже Godot↔GNC↔GNS; не требовать преждевременно полной MMO-функциональности.
+
+**Единственный исходный технический документ сетевого слоя** находится в
+[`ai_research/v3/game/docs/go-networking/README.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/README.md).
+При любых изменениях Godot ↔ GNC, публичного wire, сетевых API, native ABI,
+сериализации, connect/disconnect, протокольных событий или ошибок обязательно
+читать [Documentation Contract](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md).
+В одном логическом патче с клиентским кодом обновлять соответствующую живую
+главу в `ai_research` (или ссылку на проверенную реализацию в ней), её статус
+PLANNED/DESIGNED/IMPLEMENTED/VERIFIED и тест/evidence. **Нельзя сдавать patch
+DONE/PASS с несовпадающими кодом и документацией.** Фиксировать оба Git SHA
+и версию ABI/wire при изменении совместимого server/client набора.
+Не создавать независимую конкурирующую спецификацию в клиентском repo;
+локальные технические детали могут ссылаться на единый документ.
+Утверждённый текущий public v9 сохраняется до отдельно разрешённого cutover;
+на пользовательских стендах ничего не менять без отдельного решения.
+
 ## Порядок изменений
 
 Используй Godot-native nodes/resources/input/physics/AnimationPlayer где они выполняют задачу. Не создавай параллельный самописный physics или animation framework. Тесты и exact-pair server/client SHA фиксировать, работа только в `main`, логичные версионированные commits с patch id, без legacy fallback и не относящегося к задаче рефакторинга. При patch 8.12 сначала читать новое Unified Realm Tick задание в server repo; ранее прошедшие дорогостоящие тесты не перезапускать без изменения affected semantics.
