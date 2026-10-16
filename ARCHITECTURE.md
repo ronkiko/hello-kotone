@@ -5,6 +5,10 @@
 Login/Lobby/Game/Storage/Worker процессы; [GitHub](https://github.com/ronkiko/ai_research/blob/main/ARCHITECTURE.md).
 Общие physics/wire/security contracts принадлежат серверному репозиторию.
 
+## Проектируемая сеть серии 10 — не реализована
+
+Директор утвердил выделение будущего сетевого слоя в **отдельный `ronkiko/go-networking`** (единый Go-модуль с Go Networking Client, Go Networking Server и Go Networking Protocol Core). `hello-kotone` будет владеть **Godot native binding, интеграцией и упаковкой GNC**, но не собственной копией кодека, opcode или Go Network Client. Пока репозиторий Go Networking ещё не создан, этот раздел — план, а ниже описан **реальный Godot public v9**. [Решение и этапы](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/README.md).
+
 ## Один клиентский процесс
 
 Godot запускает Login scene. Autoload `Preworld` ведёт account/realm/Lobby visit,
