@@ -28,7 +28,7 @@ Go GNS и будущий server-side GNPC принадлежат private
 [`go-networking`](https://github.com/ronkiko/go-networking/blob/main/README.md);
 его README — каноническая карта серверной сети и будущего сетевого контракта.
 GDScript SDK принадлежит этому repo. MMO authority остаётся в `ai_research`.
-Ниже описан действующий public v9; SDK проверяется отдельно от `godot/`.
+Ниже описан действующий public v9; SDK проверен на установленном Linux Godot 4.7.2: три чистых импорта и local runtime/lifecycle PASS. Другие ОС, exports и внешняя сеть не проверены. SDK не установлен в `godot/`.
 
 ## Один клиентский процесс
 

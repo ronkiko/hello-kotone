@@ -22,3 +22,5 @@ This replaces the retired `experiments/gnc_health` Go/C++ experiment by direct
 Director instruction. **It does not prove a Go GNC ABI, server health, external
 networking or production gameplay.** The 10.02 task/evidence records this changed
 criterion and the installed engine revision; 10.03 remains unstarted.
+
+Verified: installed `4.7.2.stable.official.ed1daf0bf`, Linux x86_64; all three cold imports/runs and all negative checks passed. Other platforms and exports are untested.

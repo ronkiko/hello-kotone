@@ -1,6 +1,6 @@
 # MMO Godot SDK addon
 
-**IMPLEMENTED / verification in isolated 10.02.** This package follows the
+**VERIFIED in isolated 10.02 on installed Linux Godot 4.7.2.** This package follows the
 [SDK structure used by Nakama](https://github.com/heroiclabs/nakama-godot): a
 GDScript factory creates owned client nodes using Godot's standard transport
 primitives. It does not include Nakama source or speak the Nakama protocol.
