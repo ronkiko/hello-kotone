@@ -20,8 +20,11 @@ physics, сеть, сервисы и будущие подсистемы, а н�
 **10.00 агентом сдана, приёмка Директора ещё PENDING.** Отдельно Директор
 разрешил узкий standalone 10.01 **Go GNS↔Python IPC smoke** только в
 `go-networking`, без Godot/игры/производственного кода; он прошёл локальный тест.
-Это не утверждение full 10.01, не приёмка 10.00, не разрешение GNC или Godot
-изменений. Последующие шаги отдельно согласуются.
+**Следующее разрешение Директора:** автономный 10.02 Go GNC↔Godot local HEALTH,
+без изменения работающей игры. Go native C ABI протестирован, изолированный
+GDExtension smoke создан в `experiments/gnc_health/`, но Godot runtime PENDING.
+Это не приёмка 10.00, не разрешение на Game transport cutover.
+Последующие шаги отдельно согласуются.
 Не изменять runtime, стенды и сохранённые данные в ходе нулевой ревизии.
 
 
@@ -45,7 +48,7 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 будут одним Go-модулем в отдельном private `ronkiko/go-networking` (пока реализован только isolated GNS IPC smoke; GNC/GNPC external wire не реализованы).
 `hello-kotone` владеет только Godot native integration/packaging; нельзя
 копировать здесь самостоятельный Go codec/сеть. Серия 10 пока **DRAFT**;
-ближайший шаг после доказанного GNS↔Python IPC — минимальный **GNC↔Godot local health**, затем GNC↔GNS публичный PING/PONG; не требовать преждевременно полной MMO-функциональности.
+10.02 — изолированная GNC↔Godot local health проба (не закрыта до реального Godot PASS), затем GNC↔GNS публичный PING/PONG; не требовать преждевременно полной MMO-функциональности.
 
 **Каноническая внутренняя карта Go Networking** находится в private
 [`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md). MMO-side boundary остаётся в
