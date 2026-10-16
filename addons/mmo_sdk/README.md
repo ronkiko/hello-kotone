@@ -33,9 +33,27 @@ close another client. The factory refuses creation outside the tree.
 ## Scope and future integration
 
 This 10.02 foundation provides factory, local health and lifecycle only.
-**It has no connect/send/remote-health API yet.** HTTP/WebSocket exchange, sessions,
-endpoint configuration, codecs, timeouts, queues and async replies require the
-separately approved network patch. There is no fake successful remote operation.
+**It has no connect/send/remote-health API yet.** The current HTTPRequest and
+WebSocketPeer instances are local SDK lifecycle fixtures, **not** a mandate to
+use HTTP/WebSocket for the historical SoulWorker client.
+
+**Director-approved future wire direction (2026-10-17):** the 10.03 design
+targets **binary TCP frames compatible with the observed SoulWorker protocol**
+using native Godot `StreamPeerTCP` for the SDK client implementation.
+The SDK retains a Nakama-inspired **component organization only**, not its
+HTTP/WebSocket protocol. No invented on-wire protocol-version field, universal
+request ID, `group`, or fake `SYSTEM PING/PONG` opcode. Historical framing,
+transform, source-backed opcodes and packet layouts belong to the
+[canonical SoulWorker wire specification in go-networking](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md).
+[10.03 agent task](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md)
+is design-only until separately authorized. No existing 10.02 code is being
+claimed to implement TCP yet.
+
+**Long-term compatibility requirement:** preserve the possibility that a
+future, separately adapted Hello Kotone server can serve an **original old-build
+SoulWorker client**, after implementing the actual historical handshake and
+command semantics. Current local HEALTH proves only addon lifecycle.
+There is no fake successful remote operation.
 
 The addon is maintained in `hello-kotone`; Go GNS and its future canonical wire
 contract belong to `go-networking`; MMO authority remains in `ai_research`.
