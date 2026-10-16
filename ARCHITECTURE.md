@@ -20,9 +20,24 @@ Login/Lobby/Game/Storage/Worker процессы; [GitHub](https://github.com/ro
 освобождают transport resources; закрытие одного клиента не закрывает другой.
 
 Addon загружается GDScript preload, без Go runtime, native build, GDExtension,
-sidecar или обязательного autoload. Будущие async HTTP/WebSocket операции,
-wire, sessions и backend endpoints здесь ещё не реализованы. Это основа 10.02,
-не интеграция в действующую игру и не разрешение на 10.03.
+sidecar или обязательного autoload. **HTTPRequest и WebSocketPeer 10.02 —
+лишь проверенные локальные примитивы/lifecycle, не обязательный внешний транспорт.**
+Remote connect/send, wire, sessions и backend endpoints ещё не реализованы;
+10.02 не интегрирован в действующую игру.
+
+**Решение Директора 2026-10-17 для внешней сети:** 10.03 использует
+**бинарный TCP и исторический формат SoulWorker**, а не новый header
+с `protocol_version`/global `request_id`/новой группой команд.
+Реализация GDScript SDK остаётся Godot-native по модели Nakama, но
+Nakama WebSocket/HTTP wire **не заимствуется**. Для настоящего SoulWorker
+TCP предусмотрен штатный `StreamPeerTCP`. Версии/поля внешнего протокола
+следуют [единой спецификации в Go repo](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md),
+а не создаются здесь заново.
+В перспективе наш сервер должен допускать доработку, позволяющую обслуживать
+**оригинальный SoulWorker-клиент старого конкретного билда**, после отдельной
+реализации исторического handshake/opcode/логина/сервисов.
+[Задание 10.03](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md)
+— пока DRAFT, код и исходные игровые сцены не менялись.
 
 Go GNS и будущий server-side GNPC принадлежат private
 [`go-networking`](https://github.com/ronkiko/go-networking/blob/main/README.md);
