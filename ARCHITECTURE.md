@@ -8,7 +8,7 @@ Login/Lobby/Game/Storage/Worker процессы; [GitHub](https://github.com/ro
 ## Сеть серии 10 — PLANNED / DRAFT
 
 Этот Godot-клиент — часть multirepo вместе с `ronkiko/ai_research` и private
-`ronkiko/go-networking`. Новый сетевой репозиторий уже создан и содержит архитектурную карту, но пока не содержит реализации;
+`ronkiko/go-networking`. Новый сетевой репозиторий уже создан: содержит архитектурную карту и отдельно проверенный GNS↔Python IPC health smoke, но **не** содержит GNC/Godot integration;
 его [README](https://github.com/ronkiko/go-networking/blob/main/README.md) —
 каноническая карта GNC/GNS/GNPC. `hello-kotone` владеет только Godot native
 binding, интеграцией и упаковкой GNC; реализация Go-клиента, сервера и общего
@@ -134,4 +134,4 @@ Appearance mapping общий для Creator/owner/remote. Native SpriteFrames �
 Godot tests проверяют reducers, input, native geometry, presentation и TLS scenes;
 server-side cross-repo runners оркестрируют disposable integration. Asset tools
 имеют самостоятельные проверки. Старые reports не являются PASS текущего checkout.
-Будущий GNC/GNS/GNPC — **PLANNED / DRAFT**, никакой Go-код не обслуживает эту схему.
+GNS↔Python isolated IPC smoke — локально проверенный эксперимент; **GNC/Godot, внешний GNPC wire и игровая интеграция PLANNED/DRAFT**. Никакой Go-код не обслуживает нынешний public v9.
