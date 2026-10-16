@@ -19,3 +19,6 @@ godot/*.zip
 
 # Local-only reference material.
 /references/
+
+# Isolated GNC native Godot smoke artifacts (never commit binaries).
+/experiments/gnc_health/project/bin/
