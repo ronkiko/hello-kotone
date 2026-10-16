@@ -1,9 +1,22 @@
 # Hello Kotone
 
-Человеческий Godot-клиент исследовательского MMO.
+Человеческий Godot-клиент MMO, часть единого проекта в трёх Git-репозиториях.
 **[Карта клиента](ARCHITECTURE.md)** → [Godot contracts/runbook](godot/README.md).
-Сервер и общие спецификации находятся в соседнем
-[ai_research](../ai_research/ARCHITECTURE.md) ([GitHub](https://github.com/ronkiko/ai_research/blob/main/ARCHITECTURE.md)).
+
+## Multirepo и границы ответственности
+
+| Репозиторий | Владение |
+| --- | --- |
+| [`ai_research`](https://github.com/ronkiko/ai_research) | Авторитетные MMO-домены и Python-сервер: Login, Lobby, Game/Realm, State, Storage, game cards, общие игровые контракты и roadmap. |
+| `hello-kotone` — этот репозиторий | Godot-клиент: UI, ввод, локальные prediction/presentation, клиентские assets и будущая Godot-интеграция GNC. Не владеет состоянием мира или реализацией Go-протокола. |
+| [`go-networking`](https://github.com/ronkiko/go-networking) — private | Один Go-модуль: Go Networking Client (GNC), Go Networking Server (GNS) и общий Go Networking Protocol Core (GNPC). Владеет сетевым transport/protocol, не игровыми правилами и не UI. Репозиторий создан с архитектурной картой, Go-реализация пока отсутствует. |
+
+Локально каталоги трёх репозиториев располагаются рядом в `/home/user/work2/`.
+Обзор разделения и карта серверной стороны находятся в
+[README проекта](https://github.com/ronkiko/ai_research/blob/main/README.md) и
+[общей архитектуре](https://github.com/ronkiko/ai_research/blob/main/ARCHITECTURE.md).
+
+## Текущий клиент
 
 Текущий flow: Account Login → Realm → Lobby → Character Model/Appearance → World.
 Public protocol **v9 TCP/TLS JSONL**, единый server Realm tick; client physics,
@@ -15,14 +28,19 @@ profile производится в UI согласно server stand. Private cr
 не сохраняются как preferences. Client/server deployment и performance результаты
 проверяются отдельно от наличия кода.
 
-[Единый стандарт документации](../ai_research/DOCUMENTATION-POLICY.md) и
-[10.00 audit](../ai_research/v3/docs/roadmap/v3/main/10/00-review-and-validation.md)
-охватывают оба репозитория. Будущие **GNC/GNS/GNPC — PLANNED/DRAFT**;
-Go transport пока не обслуживает игру. [Черновик](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/README.md).
+[Единый стандарт документации](../ai_research/DOCUMENTATION-POLICY.md) применяется
+ко всем компонентам multirepo. Ретроспективный аудит 10.00 охватывает исходные
+server/client репозитории; новый `go-networking` пока не содержит реализации.
+Сетевая архитектура Go описывается в private
+[`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md);
+контракт синхронизации — в
+[`DOCUMENTATION-CONTRACT.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md).
+GNC/GNS/GNPC остаются **PLANNED/DRAFT**; Go transport пока не обслуживает игру.
 
 ## Другие материалы
 
-- `references/` — source/reference art, в том числе tracked inputs canonical recipes.
+- `references/` — локальные reference/source materials; каталог игнорируется Git и
+  не входит в чистый checkout. Canonical client assets находятся в `godot/assets/`.
 - `reference_projects/`, Godot mannequin/rig/archive — самостоятельные эксперименты.
 - Корневой HTML/CSS — библиотека прежней Canvas игры; `.legacy/web/` содержит её
   только в локальных checkout, где ignored архив сохранён. В чистом Git checkout

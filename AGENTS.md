@@ -16,7 +16,7 @@ physics, сеть, сервисы и будущие подсистемы, а н�
 Нормативные спецификации и практические инструкции сохраняют нужную точность.
 
 **[v3.main.10.00 — общий нулевой патч ревизии документации](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/00-documentation-revision.md)**
-проверяет все логические компоненты **обоих репозиториев**;
+проверяет все логические компоненты **двух исходных runtime-репозиториев**;
 **Директор разрешил начать аудит 10.00 уже сейчас.** Параллельно разрешено
 обсуждать и дополнять **DRAFT** серии 10, но формальное исполнение 10.01
 и любой Go Networking кодовый патч требуют предварительной проверки и
@@ -41,13 +41,14 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 Названия новых компонентов: **Go Networking Client (GNC)** на компьютере игрока,
 **Go Networking Server (GNS)** на сервере; общий контракт реализует
 **Go Networking Protocol Core (GNPC)**. **УТВЕРЖДЕНО:** GNC/GNS/GNPC
-будут одним Go-модулем в отдельном `ronkiko/go-networking` (пока не создан).
+будут одним Go-модулем в отдельном private `ronkiko/go-networking` (репозиторий уже создан, Go-код пока не реализован).
 `hello-kotone` владеет только Godot native integration/packaging; нельзя
 копировать здесь самостоятельный Go codec/сеть. Серия 10 пока **DRAFT**;
 первый функциональный сетевой результат — минимальный бинарный **GNC↔GNS
 PING/PONG**, позже Godot↔GNC↔GNS; не требовать преждевременно полной MMO-функциональности.
 
-**Единственный исходный технический документ сетевого слоя** находится в
+**Каноническая внутренняя карта Go Networking** находится в private
+[`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md). MMO-side boundary остаётся в
 [`ai_research/v3/game/docs/go-networking/README.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/README.md).
 При любых изменениях Godot ↔ GNC, публичного wire, сетевых API, native ABI,
 сериализации, connect/disconnect, протокольных событий или ошибок обязательно
