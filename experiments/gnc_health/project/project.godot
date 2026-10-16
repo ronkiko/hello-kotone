@@ -1,0 +1,4 @@
+; Separate smoke project, NOT main hello-kotone game
+config_version=5
+[application]
+config/name="GNC Native Local Health (isolated)"
