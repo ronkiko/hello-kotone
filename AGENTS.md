@@ -17,10 +17,11 @@ physics, сеть, сервисы и будущие подсистемы, а н�
 
 **[v3.main.10.00 — общий нулевой патч ревизии документации](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/00-documentation-revision.md)**
 проверяет все логические компоненты **двух исходных runtime-репозиториев**;
-**Директор разрешил начать аудит 10.00 уже сейчас.** Параллельно разрешено
-обсуждать и дополнять **DRAFT** серии 10, но формальное исполнение 10.01
-и любой Go Networking кодовый патч требуют предварительной проверки и
-приёмки 10.00. Создание задания не является приёмкой 10.00.
+**10.00 агентом сдана, приёмка Директора ещё PENDING.** Отдельно Директор
+разрешил узкий standalone 10.01 **Go GNS↔Python IPC smoke** только в
+`go-networking`, без Godot/игры/производственного кода; он прошёл локальный тест.
+Это не утверждение full 10.01, не приёмка 10.00, не разрешение GNC или Godot
+изменений. Последующие шаги отдельно согласуются.
 Не изменять runtime, стенды и сохранённые данные в ходе нулевой ревизии.
 
 
@@ -41,11 +42,10 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 Названия новых компонентов: **Go Networking Client (GNC)** на компьютере игрока,
 **Go Networking Server (GNS)** на сервере; общий контракт реализует
 **Go Networking Protocol Core (GNPC)**. **УТВЕРЖДЕНО:** GNC/GNS/GNPC
-будут одним Go-модулем в отдельном private `ronkiko/go-networking` (репозиторий уже создан, Go-код пока не реализован).
+будут одним Go-модулем в отдельном private `ronkiko/go-networking` (пока реализован только isolated GNS IPC smoke; GNC/GNPC external wire не реализованы).
 `hello-kotone` владеет только Godot native integration/packaging; нельзя
 копировать здесь самостоятельный Go codec/сеть. Серия 10 пока **DRAFT**;
-первый функциональный сетевой результат — минимальный бинарный **GNC↔GNS
-PING/PONG**, позже Godot↔GNC↔GNS; не требовать преждевременно полной MMO-функциональности.
+ближайший шаг после доказанного GNS↔Python IPC — минимальный **GNC↔Godot local health**, затем GNC↔GNS публичный PING/PONG; не требовать преждевременно полной MMO-функциональности.
 
 **Каноническая внутренняя карта Go Networking** находится в private
 [`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md). MMO-side boundary остаётся в
