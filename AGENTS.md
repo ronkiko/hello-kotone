@@ -52,8 +52,17 @@ MMO-side authority — в `ai_research/v3/game/docs/go-networking/README.md`.
 
 10.02 проверяет только создание SDK, native Godot transport primitives и
 локальный lifecycle. Remote API, connect/send, wire и серверные endpoints
-не реализуются до отдельного разрешения 10.03. Local health не является
-ответом сервера. Текущая игра продолжает использовать v9.
+не реализуются до отдельного разрешения 10.03. **Дизайн 10.03 утверждён
+Директором 2026-10-17: бинарный TCP и исторический wire SoulWorker.**
+[03-soulworker-wire-first-network-smoke.md](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md);
+[владеющая спецификация](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md).
+Организацию GDScript addon берём по Nakama, но НЕ её HTTP/WebSocket wire.
+Для SoulWorker-oriented реализации использовать штатный Godot StreamPeerTCP,
+без client Go/GDExtension. Не добавлять в header самостоятельные версию,
+request_id, group либо выдуманный SYSTEM PING/PONG opcode. Историческая
+build-совместимость оригинального SoulWorker клиента — будущая цель,
+а не статус 10.03. Local health не является ответом сервера.
+Текущая игра продолжает использовать v9.
 
 Обновлять logical docs вместе со смысловыми изменениями. Source, команды и
 exact repo SHAs — в patch evidence; не заявлять PASS внешней сети по local smoke.
