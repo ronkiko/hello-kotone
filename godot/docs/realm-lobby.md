@@ -1,6 +1,6 @@
 # Godot Realm Lobby / Creator — v3.main.7.10
 
-The human client in `~/work2/hello-kotone/godot` uses current **protocol v7**:
+The human client in `~/work2/hello-kotone/godot` uses current **protocol v9**:
 
 ```text
 Account Login → Realm Directory → Realm Lobby → Character Create/Select
@@ -92,12 +92,10 @@ Creator, local avatar and remote avatars. Kotone and Yuna use their authored idl
 soft/bright face shading are cosmetic shader/overlay effects over the existing art;
 collision and authoritative movement are unchanged; texture normalization belongs only to presentation.
 
-Historical server Alpha fixtures may still have the old four-field player shape;
-this is temporary Series 7 test scaffolding, not a production admission path.
-The human client requires the selected-character projection. 7.12 must migrate
-remaining historical cross-repo network harnesses to current admission or remove
-them after transferring their regression invariants. The old empty-appearance
-fallback and Registry 1→2 converter were removed in 7.10.
+The old four-field Alpha player shape is historical evidence only. The current
+human flow and cross-repository harnesses use selected-character v9 admission;
+the historical admission harness and old empty-appearance/Registry converters
+were removed during Series 7 cleanup.
 
 ## Repeatable validation
 

@@ -1,6 +1,9 @@
-# Current v8 baseline
+# Human control — protocol v9
 
-8.05 replaces the discrete movement implementation described historically in Series 5.
-See [Motion wire v8](motion-wire-v8.md) for the current control, reducer and confirmed
-presentation contracts. Prediction/reconciliation and remote timeline are implemented
-in the following Series 8 patches (8.06/8.07).
+Статус: **IMPLEMENTED**.
+
+MoveInput samples native physics input, changes facing immediately, engages drive
+after validated server engage_ms, and releases on key/focus loss. MmoClient sends
+a coalesced complete control state with zone_generation/control_seq. It never sends
+position as authority. Rejection/stall requires a fresh press.
+[Wire](motion-wire-v8.md), [prediction](prediction-reconciliation.md).

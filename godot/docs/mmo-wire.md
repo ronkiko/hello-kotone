@@ -1,6 +1,8 @@
-# Current v8 baseline
+# Public transport — protocol v9
 
-8.05 replaces the discrete movement implementation described historically in Series 5.
-See [Motion wire v8](motion-wire-v8.md) for the current control, reducer and confirmed
-presentation contracts. Prediction/reconciliation and remote timeline are implemented
-in the following Series 8 patches (8.06/8.07).
+Статус: **IMPLEMENTED**.
+
+PublicPeer handles Login/Lobby visits; MmoClient handles Game bootstrap and
+request/control scheduling. Both use bounded native TCP/TLS and strict JSON/v9
+validation, with generation fences and no automatic replay after unknown outcomes.
+[Current wire contract](motion-wire-v8.md), [client map](../../ARCHITECTURE.md).

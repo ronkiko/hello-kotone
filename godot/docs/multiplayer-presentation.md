@@ -1,9 +1,9 @@
-# Current v8 baseline
+# Current v9 baseline
 
-8.05 replaces the discrete movement implementation described historically in Series 5.
-See [Motion wire v8](motion-wire-v8.md) for the current control, reducer and confirmed
-presentation contracts. Owner prediction/reconciliation is in 8.06; the remote server
-timeline is in 8.07.
+The client implements the current protocol v9 control, reducer and confirmed
+presentation contracts. See [current wire contract](motion-wire-v8.md); the legacy
+filename remains for existing links. Owner prediction/reconciliation and the remote timeline are implemented;
+[client map](../../ARCHITECTURE.md) explains the current flow.
 
 ## Remote motion timeline
 

@@ -1,7 +1,7 @@
-# Motion wire v8 (8.05 / 8.08)
+# Motion wire — current v9 (path retained)
 
-Login/Lobby identity and TLS contracts are unchanged; all endpoints require v8.
-Game sends control_set {control_seq, drive, facing}; desired complete state is
+Login/Lobby identity and TLS contracts are unchanged; all endpoints require v9.
+Game sends control_set {zone_generation, control_seq, drive, facing}; desired complete state is
 coalesced in one slot, monotonic sequence is allocated on enqueue, requests are
 spaced at least 50 ms. Unknown outcomes are never replayed after fresh enter.
 
