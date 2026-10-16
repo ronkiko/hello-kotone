@@ -3,9 +3,9 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 network_repo="$(cd "$here/../../../go-networking" && pwd)"
-if [ -z "$GODOT_CPP" ]; then echo "Set GODOT_CPP to godot-cpp 4.4 checkout" >&2; exit 2; fi
+if [ -z "${GODOT_CPP:-}" ]; then echo "Set GODOT_CPP to godot-cpp 4.4 checkout" >&2; exit 2; fi
 godot_bin="godot"
-if [ -n "$GODOT_BIN" ]; then godot_bin="$GODOT_BIN"; fi
+if [ -n "${GODOT_BIN:-}" ]; then godot_bin="$GODOT_BIN"; fi
 out="$here/project/bin"
 for tool in go g++ scons "$godot_bin"; do
   command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 2; }
