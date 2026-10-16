@@ -28,6 +28,13 @@ GDExtension smoke создан в `experiments/gnc_health/`, но Godot runtime 
 Не изменять runtime, стенды и сохранённые данные в ходе нулевой ревизии.
 
 
+**АКТИВНОЕ ПОРУЧЕНИЕ ДИРЕКТОРА:** пройти и завершить изолированные 10.01/10.02
+по [общему corrective handoff](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/01-02-agent-corrective-handoff.md).
+Разрешено чинить и тестировать только `experiments/gnc_health/` и локальный
+Go GNC/GNS smoke; для 10.02 **обязателен реальный headless Godot PASS**.
+Это исключение из старого общего gate 10.00 только для prototyping; приёмка 10.00
+остаётся PENDING, Game/World/production и 10.03 не трогать.
+
 Перед изменениями читай `README.md`, `ARCHITECTURE.md` и `godot/README.md`. Для physics/multiplayer/reconciliation/transport сверяйся с действующими контрактами server-side `ai_research/v3/game/docs/`, в частности `server-tick-authority.md`, `physics-state-contract.md`, `networked-locomotion-architecture.md` и `client-prediction-and-reconciliation.md`. Серверный MMO канон принадлежит совместному проекту; этот публичный client repo не является вторым независимым источником игровых правил.
 
 ## Unified Realm Tick — обязательный регламент с 2026-10-12
