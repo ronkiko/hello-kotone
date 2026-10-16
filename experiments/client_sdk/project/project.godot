@@ -1,0 +1,5 @@
+; Separate SDK smoke project; never opens the production Godot project.
+config_version=5
+
+[application]
+config/name="MMO Godot SDK Local Smoke"

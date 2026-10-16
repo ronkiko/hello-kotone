@@ -5,20 +5,30 @@
 Login/Lobby/Game/Storage/Worker процессы; [GitHub](https://github.com/ronkiko/ai_research/blob/main/ARCHITECTURE.md).
 Общие physics/wire/security contracts принадлежат серверному репозиторию.
 
-## Сеть серии 10 — PLANNED / DRAFT
+## Сетевая основа серии 10 — изолированный Godot SDK
 
-Этот Godot-клиент — часть multirepo вместе с `ronkiko/ai_research` и private
-`ronkiko/go-networking`. Новый сетевой репозиторий уже создан: содержит архитектурную карту, проверенный GNS↔Python IPC smoke и проверенный локальный Go GNC C ABI. **Godot runtime integration пока не подтверждена**;
-его [README](https://github.com/ronkiko/go-networking/blob/main/README.md) —
-каноническая карта GNC/GNS/GNPC. `hello-kotone` владеет только Godot native
-binding, интеграцией и упаковкой GNC; реализация Go-клиента, сервера и общего
-кодека сюда не копируется. MMO-авторитет остаётся в `ai_research`.
+**Решение Директора 2026-10-16:** Go GNC, C ABI и native harness удалены.
+Клиентская сеть развивается как обычный **GDScript SDK addon** по модели
+[Nakama Godot SDK](https://github.com/heroiclabs/nakama-godot).
+[Карта addon](addons/mmo_sdk/README.md) объясняет владение и локальный lifecycle;
+[изолированный smoke](experiments/client_sdk/README.md) проверяет его на Godot.
 
-Текущая игровая сеть ещё не использует Go: ниже описан **реальный Godot public
-v9**. Переход к GNC/GNS требует прохождения 10.00 и отдельного утверждения плана.
-[Решение и этапы](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/README.md).
+Приложение добавляет SDK node в SceneTree; factory создаёт дочерние клиенты.
+Каждый клиент владеет штатным HTTPRequest node и WebSocketPeer. Создание ничего
+не отправляет. Local health возвращает detached receipt и реальные локальные
+типы/состояния transport primitives; это не ответ сервера. Close и tree removal
+освобождают transport resources; закрытие одного клиента не закрывает другой.
 
-**10.02 (изолированный прототип):** [GNC native health Godot smoke](experiments/gnc_health/README.md) находится **в отдельном Godot test project**, вне основного `godot/`. Тонкая GDExtension-обёртка вызывает Go GNC через C ABI; Go/C локально PASS, настоящая проверка Godot пока PENDING. Игровые сцены, autoload, network v9 не изменены.
+Addon загружается GDScript preload, без Go runtime, native build, GDExtension,
+sidecar или обязательного autoload. Будущие async HTTP/WebSocket операции,
+wire, sessions и backend endpoints здесь ещё не реализованы. Это основа 10.02,
+не интеграция в действующую игру и не разрешение на 10.03.
+
+Go GNS и будущий server-side GNPC принадлежат private
+[`go-networking`](https://github.com/ronkiko/go-networking/blob/main/README.md);
+его README — каноническая карта серверной сети и будущего сетевого контракта.
+GDScript SDK принадлежит этому repo. MMO authority остаётся в `ai_research`.
+Ниже описан действующий public v9; SDK проверяется отдельно от `godot/`.
 
 ## Один клиентский процесс
 
@@ -136,4 +146,4 @@ Appearance mapping общий для Creator/owner/remote. Native SpriteFrames �
 Godot tests проверяют reducers, input, native geometry, presentation и TLS scenes;
 server-side cross-repo runners оркестрируют disposable integration. Asset tools
 имеют самостоятельные проверки. Старые reports не являются PASS текущего checkout.
-GNS↔Python isolated IPC smoke — локально проверенный эксперимент; **GNC/Godot, внешний GNPC wire и игровая интеграция PLANNED/DRAFT**. Никакой Go-код не обслуживает нынешний public v9.
+GNS↔Python isolated IPC smoke проверен отдельно. Godot SDK имеет отдельный local smoke; **внешний GNPC wire и игровая интеграция PLANNED/DRAFT**. Никакой Go-код не обслуживает нынешний public v9.

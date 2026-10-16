@@ -17,23 +17,16 @@ physics, сеть, сервисы и будущие подсистемы, а н�
 
 **[v3.main.10.00 — общий нулевой патч ревизии документации](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/00-documentation-revision.md)**
 проверяет все логические компоненты **двух исходных runtime-репозиториев**;
-**10.00 агентом сдана, приёмка Директора ещё PENDING.** Отдельно Директор
-разрешил узкий standalone 10.01 **Go GNS↔Python IPC smoke** только в
-`go-networking`, без Godot/игры/производственного кода; он прошёл локальный тест.
-**Следующее разрешение Директора:** автономный 10.02 Go GNC↔Godot local HEALTH,
-без изменения работающей игры. Go native C ABI протестирован, изолированный
-GDExtension smoke создан в `experiments/gnc_health/`, но Godot runtime PENDING.
-Это не приёмка 10.00, не разрешение на Game transport cutover.
-Последующие шаги отдельно согласуются.
-Не изменять runtime, стенды и сохранённые данные в ходе нулевой ревизии.
+**10.00 агентом сдана, приёмка Директора PENDING.** Узко разрешены
+standalone 10.01 GNS↔Python IPC и 10.02 Godot SDK local smoke;
+[текущее поручение](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/01-02-agent-corrective-handoff.md).
 
-
-**АКТИВНОЕ ПОРУЧЕНИЕ ДИРЕКТОРА:** пройти и завершить изолированные 10.01/10.02
-по [общему corrective handoff](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/01-02-agent-corrective-handoff.md).
-Разрешено чинить и тестировать только `experiments/gnc_health/` и локальный
-Go GNC/GNS smoke; для 10.02 **обязателен реальный headless Godot PASS**.
-Это исключение из старого общего gate 10.00 только для prototyping; приёмка 10.00
-остаётся PENDING, Game/World/production и 10.03 не трогать.
+**НОВОЕ РЕШЕНИЕ ДИРЕКТОРА 2026-10-16:** удалить Go GNC и весь native
+client smoke; сделать клиентский SDK **на GDScript по модели Nakama**.
+Canonical addon — `addons/mmo_sdk/`, isolated smoke — `experiments/client_sdk/`.
+Не восстанавливать Go client, C ABI, GDExtension, godot-cpp или sidecar.
+Проверки запускать на установленном пользовательском Godot. Никакого изменения
+основного `godot/`, стендов, данных, протокола v9 или реализации 10.03.
 
 Перед изменениями читай `README.md`, `ARCHITECTURE.md` и `godot/README.md`. Для physics/multiplayer/reconciliation/transport сверяйся с действующими контрактами server-side `ai_research/v3/game/docs/`, в частности `server-tick-authority.md`, `physics-state-contract.md`, `networked-locomotion-architecture.md` и `client-prediction-and-reconciliation.md`. Серверный MMO канон принадлежит совместному проекту; этот публичный client repo не является вторым независимым источником игровых правил.
 
@@ -47,37 +40,23 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 
 Перед изменением physics/wire/prediction/reducer читать серверный [канон Server Tick Authority](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/server-tick-authority.md), новую задачу 8.12 и действующий Godot README. Series 8 закрыта после emergency 8.14 с сохранённым 8.13 FAIL; старые 8.15/8.16 отменены. Series 9 принята 2026-10-16 с ограничениями, текущая работа — 10.00 docs audit. Любая техническая миграция только main и с exact SHA pair, не менять unrelated balance/canon и не запускать длинные gates до диагностики.
 
-## Series 10: обязательная документация Go Networking (черновик, не запускать реализацию без разрешения)
+## Series 10: Godot SDK и Go GNS
 
-Названия новых компонентов: **Go Networking Client (GNC)** на компьютере игрока,
-**Go Networking Server (GNS)** на сервере; общий контракт реализует
-**Go Networking Protocol Core (GNPC)**. **УТВЕРЖДЕНО:** GNC/GNS/GNPC
-будут одним Go-модулем в отдельном private `ronkiko/go-networking` (пока реализован только isolated GNS IPC smoke; GNC/GNPC external wire не реализованы).
-`hello-kotone` владеет только Godot native integration/packaging; нельзя
-копировать здесь самостоятельный Go codec/сеть. Серия 10 пока **DRAFT**;
-10.02 — изолированная GNC↔Godot local health проба (не закрыта до реального Godot PASS), затем GNC↔GNS публичный PING/PONG; не требовать преждевременно полной MMO-функциональности.
+Клиентский **Godot SDK** — GDScript addon в этом repo. **GNS** и будущий
+server-side **GNPC** находятся в private `ronkiko/go-networking`. Go GNC удалён
+по решению Директора. Не копировать старый native стек обратно.
+Каноническая карта GNS/сетевого контракта — Go README; карта SDK —
+[локальная архитектура](ARCHITECTURE.md) и [addon](addons/mmo_sdk/README.md);
+MMO-side authority — в `ai_research/v3/game/docs/go-networking/README.md`.
+Перед сетевыми изменениями читать общий DOCUMENTATION-CONTRACT.md в server repo.
 
-**Каноническая внутренняя карта Go Networking** находится в private
-[`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md). MMO-side boundary остаётся в
-[`ai_research/v3/game/docs/go-networking/README.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/README.md).
-При любых изменениях Godot ↔ GNC, публичного wire, сетевых API, native ABI,
-сериализации, connect/disconnect, протокольных событий или ошибок обязательно
-читать [Documentation Contract](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md).
-Документация должна объяснять **логическую схему работы**: границы
-Godot↔GNC↔GNS, поток сообщений, ответственность, состояния и отказы,
-а **не перечислять файлы, функции и внутренние методы**.
-При смысловом изменении клиентской сети согласованно обновлять живую главу
-в `ai_research` и её статус PLANNED/DESIGNED/IMPLEMENTED/VERIFIED.
-При чисто внутреннем рефакторинге глава может оставаться неизменной.
-Исходники, ABI-детали, точные Git SHA, команды тестов и evidence изучать
-в коде и отчёте патча, не переносить весь этот перечень в обзорные доки.
-**Нельзя сдавать patch DONE/PASS с несовпадающей логикой кода и документации.**
-Для совместимой server/client пары фиксировать оба Git SHA и версию ABI/wire
-в отчёте/приёмке патча.
-Не создавать независимую конкурирующую спецификацию в клиентском repo;
-локальные технические детали могут ссылаться на единый документ.
-Утверждённый текущий public v9 сохраняется до отдельно разрешённого cutover;
-на пользовательских стендах ничего не менять без отдельного решения.
+10.02 проверяет только создание SDK, native Godot transport primitives и
+локальный lifecycle. Remote API, connect/send, wire и серверные endpoints
+не реализуются до отдельного разрешения 10.03. Local health не является
+ответом сервера. Текущая игра продолжает использовать v9.
+
+Обновлять logical docs вместе со смысловыми изменениями. Source, команды и
+exact repo SHAs — в patch evidence; не заявлять PASS внешней сети по local smoke.
 
 ## Порядок изменений
 

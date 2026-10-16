@@ -1,8 +1,0 @@
-[configuration]
-entry_symbol = "gnc_health_gdextension_init"
-compatibility_minimum = "4.4"
-reloadable = false
-
-[libraries]
-linux.debug.x86_64 = "res://bin/libgnc_godot.so"
-linux.release.x86_64 = "res://bin/libgnc_godot.so"
