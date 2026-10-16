@@ -40,7 +40,10 @@ Godot `_physics_process()`, `CharacterBody2D` и prediction `local_ordinal` ос
 
 Названия новых компонентов: **Go Networking Client (GNC)** на компьютере игрока,
 **Go Networking Server (GNS)** на сервере; общий контракт реализует
-**Go Networking Protocol Core (GNPC)**. Серия 10 пока **DRAFT**;
+**Go Networking Protocol Core (GNPC)**. **УТВЕРЖДЕНО:** GNC/GNS/GNPC
+будут одним Go-модулем в отдельном `ronkiko/go-networking` (пока не создан).
+`hello-kotone` владеет только Godot native integration/packaging; нельзя
+копировать здесь самостоятельный Go codec/сеть. Серия 10 пока **DRAFT**;
 первый функциональный сетевой результат — минимальный бинарный **GNC↔GNS
 PING/PONG**, позже Godot↔GNC↔GNS; не требовать преждевременно полной MMO-функциональности.
 
