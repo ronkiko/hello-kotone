@@ -1,5 +1,7 @@
 # Hello Kotone
 
+**Series 10 network plan (DRAFT):** future **Go Networking Client (GNC)** paired with **Go Networking Server (GNS)** and the shared **Go Networking Protocol Core**. First proof is independent binary PING/PONG, then Godot integration; the current game still uses v9 TCP/TLS JSONL. The canonical [living technical manual](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/README.md) and [mandatory documentation contract](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md) live in `ai_research`; Godot-facing changes must update those documents in the same patch.
+
 RC3 is being developed as a new Godot 2D project. The previous browser game
 is archived unchanged as a runnable legacy implementation.
 
