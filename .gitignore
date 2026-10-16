@@ -16,3 +16,6 @@ godot/*.zip
 
 # Editor caches in every Godot project, including reference projects.
 **/.godot/
+
+# Local-only reference material.
+/references/
