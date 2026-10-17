@@ -23,9 +23,11 @@ peer; close/tree removal освобождают ресурсы. Обзор lifec
 
 По прямой команде Директора 2026-10-17 изолированный 10.03 реализует **бинарный
 TCP и source-based candidate SoulWorker framing**, без дополнительных
-полей header в выполненном 10.03. **Новые category/opcode и PING/PONG нашего SDK
-допускаются** как необязательное обратно совместимое расширение того же кадра:
-исходные пакеты не меняются и старый клиент расширения не получает.
+полей header в выполненном 10.03. **PING/PONG нашего SDK реализован и проверен** как явное расширение того же кадра:
+GNS отвечает только после PING этого peer. SDK сопоставляет единственный pending
+nonce, измеряет RTT monotonic time и выдаёт failure на неверный ответ/timeout/EOF.
+Повторные nonce ограничены replay guard клиента; состояние разных sockets независимо.
+Исходные пакеты не меняются и старый клиент расширения первым не получает.
 [Канонический wire](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
 принадлежит Go repo; SDK реализует GDScript-сторону. HTTP/WebSocket локальные
 заглушки 10.02 заменены; Go/native stack отсутствует. Проверка source fixtures и

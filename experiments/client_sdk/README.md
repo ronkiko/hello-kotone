@@ -36,3 +36,14 @@ two real Godot SDK clients, 24 reconnects, bounded send queue, independent lifet
 malformed/truncated/timeout input and actual GNS shutdown/IPC EOF disconnects.
 No main game project or protected stand is opened. Exact revisions/results are
 in the shared 10.03 evidence; original SoulWorker client compatibility is NOT TESTED.
+
+
+Corrective 10.03 adds `project/ping_smoke.gd` to the SAME Go-owned TCP runner.
+It checks extension golden bytes from the canonical JSON, two independent clients,
+concurrent and sequential PING/PONG/RTT, repeated nonce rejection, pending bounds,
+unknown opcode isolation, reconnect/close and pending failures at supervisor stop.
+Independent malicious TCP peers exercise wrong nonce/opcode/length, unsolicited,
+stale/duplicate/foreign replies, missing response, legacy response instead of PONG
+and real disconnect; the script asserts no false successful completion. The local
+10.02 runner remains network-free. Old evidence is historical; new corrective
+results are in the shared 03-ping-corrective report/log/JSON.

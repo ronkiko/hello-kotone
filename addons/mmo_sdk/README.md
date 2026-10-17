@@ -4,7 +4,10 @@ Isolated GDScript SDK, following the factory/owned-client organization of Nakama
 Godot. It contains no Nakama source/protocol, Go runtime, native binding, sidecar,
 autoload requirement or game integration. Active gameplay remains public v9.
 
-**10.03 corrective status (Director 2026-10-17):** source-based SDK↔GNS TCP fixture exchange is VERIFIED, but the patch remains **INCOMPLETE** because a real network PING/PONG was omitted. Complete it **within the same 10.03** by adding two project-specific SoulWorker-framed opcode commands to this SDK and GNS, preserving legacy fixtures. No production cutover. [Updated 10.03 task](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md).
+**10.03 corrective:** real network PING/PONG is implemented and verified alongside
+the unchanged source fixtures. Technical scope PASS; Director acceptance PENDING.
+The [canonical Go wire registry](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
+owns exact extension IDs/payload and limited collision-audit evidence.
 
 ## Ownership and message flow
 
@@ -19,8 +22,7 @@ Godot `_process` polls the peer, announces connect, drains partial writes and fe
 bounded received chunks to the codec. Complete validated frames emit detached
 `frame_received` dictionaries; application logic owns any future semantic handling.
 The canonical [candidate wire contract](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
-belongs to Go Networking. Current 10.03 implements only historical fixture
-opcodes and no extra header fields or JSON fallback. **Director clarification
+belongs to Go Networking. 10.03 implements historical fixture opcodes and optional Hello Kotone PING/PONG and no extra header fields or JSON fallback. **Director clarification
 2026-10-17:** our SDK MAY use project-specific category/opcode IDs and new
 PING/PONG commands **within this same SoulWorker frame**, provided old opcodes
 retain their meanings, extension IDs do not collide with a supported historical
@@ -67,3 +69,34 @@ Fixture response is inert diagnostic data, not a Login/server-list decision.
 MMO admission/session/Realm/State authority remains in Python; GNS remains a
 transport adapter. The addon is not installed in the main `godot/` project.
 10.00 and Director acceptance remain PENDING. Other platforms/exports are untested.
+
+## Explicit network PING lifecycle
+
+After `connected`, call `ping(nonce_bytes)` with exactly eight bytes in canonical
+big-endian uint64 order. PackedByteArray represents the full unsigned range without
+Godot signed-int64 truncation. There is no automatic probe or local PONG synthesis.
+GNS replies only to a received extension PING from that socket.
+
+One request can be pending per client. `ERR_BUSY` admits no second request;
+`ERR_ALREADY_EXISTS` rejects a nonce already enqueued in that client's lifetime,
+including failed attempts and reconnects. The bounded 256-entry replay guard then
+requires a new client node (`ERR_OUT_OF_MEMORY`); no history is silently evicted.
+These fixed diagnostic limits add no production config. Nonces are detached copies.
+Use `ping`, as raw `send_frame` refuses PING/PONG to prevent bypassing correlation.
+
+The SDK consumes extension responses before generic `frame_received`. Only an
+exact PONG opcode with the pending eight bytes emits `pong_received(nonce,rtt_usec)`.
+RTT uses monotonic time since enqueue, including local queue delay. A one-second
+PING deadline expires independently of unrelated frames. Malformed/wrong/unsolicited
+or stale PONG, wrong extension opcode, timeout, socket loss, close or tree removal
+closes the peer and emits `ping_failed(nonce,reason)` once if a request was pending.
+A duplicate PONG after completion is rejected without emitting another success.
+Per-client state is retained/reset deliberately: pending/writes clear on drop,
+replay history survives reconnect, and each client owns its own native socket.
+Identical nonces on two clients are valid and do not share a pending call.
+
+The Go-owned TCP runner supplies extension golden bytes as a second shared JSON,
+tests real two-client PING/PONG and RTT, actual GNS shutdown/parent EOF, and malicious
+TCP peers producing wrong/absent/replayed/cross-connection replies. Negative cases
+must produce no success for the affected attempt. See the separate
+[corrective report](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-ping-corrective-review.md).

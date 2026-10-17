@@ -35,7 +35,7 @@ server/client репозитории; `go-networking` содержит пров�
 [`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md);
 контракт синхронизации — в
 [`DOCUMENTATION-CONTRACT.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md).
-Go GNC удалён решением Директора 2026-10-16. [Godot SDK addon](addons/mmo_sdk/README.md) использует GDScript и штатные transport primitives Godot; [10.02 smoke](experiments/client_sdk/README.md) изолирован от игры. Изолированный 10.03 реализует source-based SoulWorker candidate codec и TCP fixture smoke; MMO integration остаётся **PLANNED/DRAFT**.
+Go GNC удалён решением Директора 2026-10-16. [Godot SDK addon](addons/mmo_sdk/README.md) использует GDScript и штатные transport primitives Godot; [10.02 smoke](experiments/client_sdk/README.md) изолирован от игры. Изолированный 10.03 реализует source-based SoulWorker candidate codec, TCP fixtures и обязательный сетевой PING/PONG; MMO integration остаётся **PLANNED/DRAFT**.
 
 ## Другие материалы
 

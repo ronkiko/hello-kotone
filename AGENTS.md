@@ -31,8 +31,8 @@ Canonical addon — `addons/mmo_sdk/`, isolated smoke — `experiments/client_sd
 SoulWorker-формат TCP smoke. **Corrective Директора: 10.03 нельзя считать
 завершённым без сетевого PING/PONG между GDScript SDK и Go GNS; это обязательная
 доработка ТОЙ ЖЕ 10.03, не новый номер.** Исходный fixture TCP smoke уже PASS,
-но новый PING/PONG требует своих новых opcode, отрицательных Godot тестов и
-отдельного evidence. Ссылка на задачу 10.03 ниже, основная игра не затрагивается.
+corrective PING/PONG теперь реализован с собственными opcode, отрицательными
+Godot тестами и отдельным evidence; Director acceptance остаётся PENDING. Ссылка на задачу 10.03 ниже, основная игра не затрагивается.
 
 Перед изменениями читай `README.md`, `ARCHITECTURE.md` и `godot/README.md`. Для physics/multiplayer/reconciliation/transport сверяйся с действующими контрактами server-side `ai_research/v3/game/docs/`, в частности `server-tick-authority.md`, `physics-state-contract.md`, `networked-locomotion-architecture.md` и `client-prediction-and-reconciliation.md`. Серверный MMO канон принадлежит совместному проекту; этот публичный client repo не является вторым независимым источником игровых правил.
 
@@ -87,3 +87,9 @@ exact repo SHAs — в patch evidence; не заявлять PASS внешней
 Replica, native owner predictor and remote timeline use the same Realm-scoped
 authoritative marker while client `local_ordinal` remains independent.
 Exact-pair acceptance is recorded in the shared server 12-validation.json.
+
+
+Same-patch corrective 10.03 PING/PONG is implemented and technically verified.
+Preserve canonical Go extension registry, socket-local pending correlation and
+negative outcomes, and historical fixtures. Director acceptance remains PENDING;
+10.04 and production integration are not authorized by this work.
