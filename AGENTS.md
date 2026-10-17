@@ -60,8 +60,12 @@ MMO-side authority — в `ai_research/v3/game/docs/go-networking/README.md`.
 [владеющая спецификация](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md).
 Организацию GDScript addon берём по Nakama, но НЕ её HTTP/WebSocket wire.
 Для SoulWorker-oriented реализации использовать штатный Godot StreamPeerTCP,
-без client Go/GDExtension. Не добавлять в header самостоятельные версию,
-request_id, group либо выдуманный SYSTEM PING/PONG opcode. Историческая
+без client Go/GDExtension. Не добавлять в общий header обязательные версию,
+request_id или group. **Уточнение Директора 2026-10-17:** SDK вправе
+использовать собственные category/opcode и новые команды PING/PONG
+**в том же SoulWorker формате**. Для legacy-клиента эти расширения
+не отправлять без доказанной поддержки; исторические opcode не менять.
+Историческая
 build-совместимость оригинального SoulWorker клиента — будущая цель,
 а не статус 10.03. Local health не является ответом сервера.
 Текущая игра продолжает использовать v9.
