@@ -17,7 +17,13 @@ Godot `_process` polls the peer, announces connect, drains partial writes and fe
 bounded received chunks to the codec. Complete validated frames emit detached
 `frame_received` dictionaries; application logic owns any future semantic handling.
 The canonical [candidate wire contract](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
-belongs to Go Networking. There are no invented opcode/header fields or JSON fallback.
+belongs to Go Networking. Current 10.03 implements only historical fixture
+opcodes and no extra header fields or JSON fallback. **Director clarification
+2026-10-17:** our SDK MAY use project-specific category/opcode IDs and new
+PING/PONG commands **within this same SoulWorker frame**, provided old opcodes
+retain their meanings, extension IDs do not collide with a supported historical
+profile, and old clients never receive unsupported extensions. No universal
+new version/request ID/group header field is required or allowed.
 
 ```gdscript
 const Sdk = preload("res://addons/mmo_sdk/mmo_sdk.gd")
