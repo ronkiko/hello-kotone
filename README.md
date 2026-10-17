@@ -9,7 +9,7 @@
 | --- | --- |
 | [`ai_research`](https://github.com/ronkiko/ai_research) | Авторитетные MMO-домены и Python-сервер: Login, Lobby, Game/Realm, State, Storage, game cards, общие игровые контракты и roadmap. |
 | `hello-kotone` — этот репозиторий | Godot-клиент: UI, ввод, локальные prediction/presentation, клиентские assets и GDScript SDK addon. Не владеет состоянием мира или реализацией Go-протокола. |
-| [`go-networking`](https://github.com/ronkiko/go-networking) — private | Один Go-модуль: Go Networking Server (GNS) и будущий server-side GNPC. Изолированный GNS↔Python IPC проверен; игровое подключение и публичный протокол ещё не реализованы. |
+| [`go-networking`](https://github.com/ronkiko/go-networking) — private | Один Go-модуль: Go Networking Server (GNS) и будущий server-side GNPC. Изолированный GNS↔Python IPC проверен; игровое подключение не реализовано; изолированный 10.03 имеет candidate codec/loopback fixture TCP. |
 
 Локально каталоги трёх репозиториев располагаются рядом в `/home/user/work2/`.
 Обзор разделения и карта серверной стороны находятся в
@@ -35,7 +35,7 @@ server/client репозитории; `go-networking` содержит пров�
 [`go-networking/README.md`](https://github.com/ronkiko/go-networking/blob/main/README.md);
 контракт синхронизации — в
 [`DOCUMENTATION-CONTRACT.md`](https://github.com/ronkiko/ai_research/blob/main/v3/game/docs/go-networking/DOCUMENTATION-CONTRACT.md).
-Go GNC удалён решением Директора 2026-10-16. [Godot SDK addon](addons/mmo_sdk/README.md) использует GDScript и штатные transport primitives Godot; [10.02 smoke](experiments/client_sdk/README.md) изолирован от игры. Внешняя сеть и MMO integration остаются **PLANNED/DRAFT**.
+Go GNC удалён решением Директора 2026-10-16. [Godot SDK addon](addons/mmo_sdk/README.md) использует GDScript и штатные transport primitives Godot; [10.02 smoke](experiments/client_sdk/README.md) изолирован от игры. Изолированный 10.03 реализует source-based SoulWorker candidate codec и TCP fixture smoke; MMO integration остаётся **PLANNED/DRAFT**.
 
 ## Другие материалы
 

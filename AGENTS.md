@@ -26,7 +26,9 @@ client smoke; сделать клиентский SDK **на GDScript по мо�
 Canonical addon — `addons/mmo_sdk/`, isolated smoke — `experiments/client_sdk/`.
 Не восстанавливать Go client, C ABI, GDExtension, godot-cpp или sidecar.
 Проверки запускать на установленном пользовательском Godot. Никакого изменения
-основного `godot/`, стендов, данных, протокола v9 или реализации 10.03.
+основного `godot/`, стендов, данных, протокола v9 или production-интеграции.
+Прямая команда Директора 2026-10-17 «делай 10 03» разрешила только изолированный
+source-based TCP fixture smoke по актуальному заданию 10.03.
 
 Перед изменениями читай `README.md`, `ARCHITECTURE.md` и `godot/README.md`. Для physics/multiplayer/reconciliation/transport сверяйся с действующими контрактами server-side `ai_research/v3/game/docs/`, в частности `server-tick-authority.md`, `physics-state-contract.md`, `networked-locomotion-architecture.md` и `client-prediction-and-reconciliation.md`. Серверный MMO канон принадлежит совместному проекту; этот публичный client repo не является вторым независимым источником игровых правил.
 
@@ -51,8 +53,8 @@ MMO-side authority — в `ai_research/v3/game/docs/go-networking/README.md`.
 Перед сетевыми изменениями читать общий DOCUMENTATION-CONTRACT.md в server repo.
 
 10.02 проверяет только создание SDK, native Godot transport primitives и
-локальный lifecycle. Remote API, connect/send, wire и серверные endpoints
-не реализуются до отдельного разрешения 10.03. **Дизайн 10.03 утверждён
+локальный lifecycle. Изолированные connect/send и candidate wire разрешены командой 10.03;
+игровые endpoints и production-интеграция по-прежнему не разрешены. **Дизайн 10.03 утверждён
 Директором 2026-10-17: бинарный TCP и исторический wire SoulWorker.**
 [03-soulworker-wire-first-network-smoke.md](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md);
 [владеющая спецификация](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md).

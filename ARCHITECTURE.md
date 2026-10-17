@@ -13,37 +13,25 @@ Login/Lobby/Game/Storage/Worker процессы; [GitHub](https://github.com/ro
 [Карта addon](addons/mmo_sdk/README.md) объясняет владение и локальный lifecycle;
 [изолированный smoke](experiments/client_sdk/README.md) проверяет его на Godot.
 
-Приложение добавляет SDK node в SceneTree; factory создаёт дочерние клиенты.
-Каждый клиент владеет штатным HTTPRequest node и WebSocketPeer. Создание ничего
-не отправляет. Local health возвращает detached receipt и реальные локальные
-типы/состояния transport primitives; это не ответ сервера. Close и tree removal
-освобождают transport resources; закрытие одного клиента не закрывает другой.
+Приложение добавляет SDK node в SceneTree; factory создаёт независимые дочерние
+клиенты, каждый со штатным StreamPeerTCP и bounded incremental codec. Создание
+ничего не открывает; local health остаётся локальным detached receipt. Явный
+loopback connect включает Godot polling, partial send/read и выдачу полностью
+проверенных кадров приложению. Timeout, malformed и EOF закрывают только этот
+peer; close/tree removal освобождают ресурсы. Обзор lifecycle/очередей/отказов —
+в [addon карте](addons/mmo_sdk/README.md).
 
-Addon загружается GDScript preload, без Go runtime, native build, GDExtension,
-sidecar или обязательного autoload. **HTTPRequest и WebSocketPeer 10.02 —
-лишь проверенные локальные примитивы/lifecycle, не обязательный внешний транспорт.**
-Remote connect/send, wire, sessions и backend endpoints ещё не реализованы;
-10.02 не интегрирован в действующую игру.
+По прямой команде Директора 2026-10-17 изолированный 10.03 реализует **бинарный
+TCP и source-based candidate SoulWorker framing**, без новых header/opcode полей.
+[Канонический wire](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
+принадлежит Go repo; SDK реализует GDScript-сторону. HTTP/WebSocket локальные
+заглушки 10.02 заменены; Go/native stack отсутствует. Проверка source fixtures и
+TCP не подтверждает original SoulWorker client, выбранный build, auth/handshake
+или игровые операции. Долгосрочная цель старого оригинального клиента сохраняется.
 
-**Решение Директора 2026-10-17 для внешней сети:** 10.03 использует
-**бинарный TCP и исторический формат SoulWorker**, а не новый header
-с `protocol_version`/global `request_id`/новой группой команд.
-Реализация GDScript SDK остаётся Godot-native по модели Nakama, но
-Nakama WebSocket/HTTP wire **не заимствуется**. Для настоящего SoulWorker
-TCP предусмотрен штатный `StreamPeerTCP`. Версии/поля внешнего протокола
-следуют [единой спецификации в Go repo](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md),
-а не создаются здесь заново.
-В перспективе наш сервер должен допускать доработку, позволяющую обслуживать
-**оригинальный SoulWorker-клиент старого конкретного билда**, после отдельной
-реализации исторического handshake/opcode/логина/сервисов.
-[Задание 10.03](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md)
-— пока DRAFT, код и исходные игровые сцены не менялись.
-
-Go GNS и будущий server-side GNPC принадлежат private
-[`go-networking`](https://github.com/ronkiko/go-networking/blob/main/README.md);
-его README — каноническая карта серверной сети и будущего сетевого контракта.
-GDScript SDK принадлежит этому repo. MMO authority остаётся в `ai_research`.
-Ниже описан действующий public v9; SDK проверен на установленном Linux Godot 4.7.2: три чистых импорта и local runtime/lifecycle PASS. Другие ОС, exports и внешняя сеть не проверены. SDK не установлен в `godot/`.
+Go GNS и будущий server-side GNPC принадлежат private `go-networking`;
+MMO authority — `ai_research`. Основной `godot/` не использует addon; ниже описан
+действующий public v9. 10.00 и Director acceptance остаются отдельными gates.
 
 ## Один клиентский процесс
 
@@ -161,4 +149,4 @@ Appearance mapping общий для Creator/owner/remote. Native SpriteFrames �
 Godot tests проверяют reducers, input, native geometry, presentation и TLS scenes;
 server-side cross-repo runners оркестрируют disposable integration. Asset tools
 имеют самостоятельные проверки. Старые reports не являются PASS текущего checkout.
-GNS↔Python isolated IPC smoke проверен отдельно. Godot SDK имеет отдельный local smoke; **внешний GNPC wire и игровая интеграция PLANNED/DRAFT**. Никакой Go-код не обслуживает нынешний public v9.
+GNS↔Python isolated IPC smoke проверен отдельно. Godot SDK имеет отдельный local smoke и source-based candidate TCP fixture smoke 10.03; **игровая интеграция PLANNED/DRAFT**. Никакой Go-код не обслуживает нынешний public v9.

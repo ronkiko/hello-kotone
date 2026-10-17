@@ -1,61 +1,61 @@
 # MMO Godot SDK addon
 
-**VERIFIED in isolated 10.02 on installed Linux Godot 4.7.2.** This package follows the
-[SDK structure used by Nakama](https://github.com/heroiclabs/nakama-godot): a
-GDScript factory creates owned client nodes using Godot's standard transport
-primitives. It does not include Nakama source or speak the Nakama protocol.
+Isolated GDScript SDK, following the factory/owned-client organization of Nakama
+Godot. It contains no Nakama source/protocol, Go runtime, native binding, sidecar,
+autoload requirement or game integration. Active gameplay remains public v9.
 
-## Ownership and local flow
+## Ownership and message flow
 
-The application adds one SDK node to its SceneTree. `create_client()` creates
-and parents an independent client; that client owns one native `HTTPRequest`
-child and one native `WebSocketPeer`. Construction opens no connection and
-sends no request. No Go runtime, C ABI, GDExtension, SDK build or client sidecar
-is involved. No autoload or editor plugin registration is needed.
+The application attaches the SDK node to SceneTree; its factory parents independent
+client nodes. Each owns a native `StreamPeerTCP` and incremental candidate codec.
+Construction opens no socket. Local health is a detached local API/nonce receipt
+with the actual TCP peer type/state; it never claims a remote server response.
+The old HTTPRequest/WebSocketPeer local placeholders were replaced in 10.03.
+
+An explicit `connect_loopback(port)` accepts only `127.0.0.1` and a valid port.
+Godot `_process` polls the peer, announces connect, drains partial writes and feeds
+bounded received chunks to the codec. Complete validated frames emit detached
+`frame_received` dictionaries; application logic owns any future semantic handling.
+The canonical [candidate wire contract](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
+belongs to Go Networking. There are no invented opcode/header fields or JSON fallback.
 
 ```gdscript
 const Sdk = preload("res://addons/mmo_sdk/mmo_sdk.gd")
 var sdk = Sdk.new()
 add_child(sdk)
 var client = sdk.create_client()
-var result = client.local_health(42)
-# result.scope == "local_sdk"; this is NOT a server response.
-client.close()
+client.frame_received.connect(_on_fixture_frame)
+client.connect_loopback(disposable_fixture_port)
+# Wait for connected; send_frame(sender, opcode, payload) queues bounded bytes.
 ```
 
-Local health checks addon API availability, returns a detached nonce receipt
-and the actual native transport types/states. It fails when the client is closed
-or detached. Closing cancels owned HTTP work, releases the peer, queues the HTTP
-node for deletion and emits `closed` once. Removing a client from the tree closes
-it; deleting the SDK releases its child clients. One client's close does not
-close another client. The factory refuses creation outside the tree.
+`send_frame` requires a connected client, validates codec inputs and bounds queued
+bytes to two maximum candidate frames. `ERR_BUSY` leaves the queue intact; no
+implicit retries or mutation replay occur. At most 4095 bytes are read per process
+frame; partial frame memory and decoded output per call are bounded. Two-second
+fixed smoke deadlines cover connect/idle/whole-frame read and queued writes;
+partial bytes do not indefinitely extend a frame deadline. These are diagnostic
+bounds, not configurable production network policy.
 
-## Scope and future integration
+Malformed frames, read/write errors, timeout and actual peer loss clear pending
+writes, close the socket and emit `disconnected(reason)` once. Partial EOF is
+reported as truncated. The client node may explicitly reconnect after disconnect;
+this resets codec/peer and never replays previous commands. `close()` is permanent,
+idempotent, releases the peer and emits `closed` once. Tree removal closes clients;
+SDK deletion releases its children. A client's lifetime does not close another.
 
-This 10.02 foundation provides factory, local health and lifecycle only.
-**It has no connect/send/remote-health API yet.** The current HTTPRequest and
-WebSocketPeer instances are local SDK lifecycle fixtures, **not** a mandate to
-use HTTP/WebSocket for the historical SoulWorker client.
+## Verification and limitations
 
-**Director-approved future wire direction (2026-10-17):** the 10.03 design
-targets **binary TCP frames compatible with the observed SoulWorker protocol**
-using native Godot `StreamPeerTCP` for the SDK client implementation.
-The SDK retains a Nakama-inspired **component organization only**, not its
-HTTP/WebSocket protocol. No invented on-wire protocol-version field, universal
-request ID, `group`, or fake `SYSTEM PING/PONG` opcode. Historical framing,
-transform, source-backed opcodes and packet layouts belong to the
-[canonical SoulWorker wire specification in go-networking](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md).
-[10.03 agent task](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md)
-is design-only until separately authorized. No existing 10.02 code is being
-claimed to implement TCP yet.
+[The isolated project](../../experiments/client_sdk/README.md) checks the installed
+Godot runtime, local lifecycle and independent source golden vectors; the Go-owned
+TCP runner copies the same JSON fixture into its temporary project and tests two
+real clients, repeated connect/close, faults and supervisor shutdown/EOF.
+There is no duplicate fixture catalog in this repository.
 
-**Long-term compatibility requirement:** preserve the possibility that a
-future, separately adapted Hello Kotone server can serve an **original old-build
-SoulWorker client**, after implementing the actual historical handshake and
-command semantics. Current local HEALTH proves only addon lifecycle.
-There is no fake successful remote operation.
-
-The addon is maintained in `hello-kotone`; Go GNS and its future canonical wire
-contract belong to `go-networking`; MMO authority remains in `ai_research`.
-The active game still uses its own public v9 path. This addon is tested in a
-separate project and has not been installed into that game.
+Profile: Lazarus KRSW/OnStove **candidate, exact build unverified**. Plaintext source
+samples and original reference Encrypt establish reconstructed fixture bytes;
+no original client ciphertext capture or original SoulWorker.exe test is claimed.
+Fixture response is inert diagnostic data, not a Login/server-list decision.
+MMO admission/session/Realm/State authority remains in Python; GNS remains a
+transport adapter. The addon is not installed in the main `godot/` project.
+10.00 and Director acceptance remain PENDING. Other platforms/exports are untested.

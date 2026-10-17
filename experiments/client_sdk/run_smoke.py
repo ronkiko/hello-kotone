@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ENGINE = str(Path(sys.argv[1]).resolve())
-MARKER = 'PASS: Godot GDScript SDK addon; native HTTPRequest/WebSocketPeer; local lifecycle'
+MARKER = 'PASS: Godot GDScript SDK addon; native StreamPeerTCP; local lifecycle'
 version = subprocess.check_output([ENGINE, '--version'], text=True, timeout=10).strip()
 print('Godot:', version, flush=True)
 assert version.startswith('4.'), 'Godot 4 required'
@@ -19,7 +19,7 @@ assert version.startswith('4.'), 'Godot 4 required'
 def run(project, args, expected=0):
     result = subprocess.run([ENGINE, '--headless', '--path', str(project),
                              '--log-file', str(project.parent / 'engine.log'), *args],
-                            env={**os.environ, 'XDG_DATA_HOME': str(project.parent / 'userdata')},
+                            env={**os.environ, 'XDG_DATA_HOME': str(project.parent / 'userdata'), 'XDG_CONFIG_HOME': str(project.parent / 'config'), 'XDG_CACHE_HOME': str(project.parent / 'cache')},
                             capture_output=True, text=True, timeout=30)
     output = result.stdout + result.stderr
     print(output, end='', flush=True)

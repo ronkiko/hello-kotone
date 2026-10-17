@@ -13,7 +13,7 @@ GODOT_BIN=/home/user/.local/bin/godot bash experiments/client_sdk/check.sh
 Only Godot and Python 3 are required. The runner copies the addon and project to
 a temporary directory, uses the engine's normal `--import`, and runs a SceneTree
 script on three fresh projects. Each must exit 0 and print the runtime PASS marker.
-It checks independent clients, native HTTPRequest/WebSocketPeer types and idle
+It checks independent clients, native StreamPeerTCP type and idle
 states, seven signed int64 nonces, detached results, close/idempotency, tree
 removal and absence of orphan nodes. Wrong API version, wrong nonce and a missing
 addon must fail. Every process has a timeout; temporary caches/projects are removed.
@@ -21,6 +21,18 @@ addon must fail. Every process has a timeout; temporary caches/projects are remo
 This replaces the retired `experiments/gnc_health` Go/C++ experiment by direct
 Director instruction. **It does not prove a Go GNC ABI, server health, external
 networking or production gameplay.** The 10.02 task/evidence records this changed
-criterion and the installed engine revision; 10.03 remains unstarted.
+criterion and the installed engine revision; 10.03 adds a separately supervised fixture/TCP test.
 
 Verified: installed `4.7.2.stable.official.ed1daf0bf`, Linux x86_64; all three cold imports/runs and all negative checks passed. Other platforms and exports are untested.
+
+
+The 10.02 local regression remains network-free; HTTP/WebSocket placeholders were
+replaced by TCP. The separate `project/wire_smoke.gd` runs only under Go Networking's
+`tests/tcp_smoke.py`, which supplies the canonical golden JSON and random loopback
+port in disposable projects. Run that script from `go-networking` with
+`--client-root ../hello-kotone --godot /home/user/.local/bin/godot`.
+It checks both codec implementations against the same original-reference fixture,
+two real Godot SDK clients, 24 reconnects, bounded send queue, independent lifetime,
+malformed/truncated/timeout input and actual GNS shutdown/IPC EOF disconnects.
+No main game project or protected stand is opened. Exact revisions/results are
+in the shared 10.03 evidence; original SoulWorker client compatibility is NOT TESTED.
