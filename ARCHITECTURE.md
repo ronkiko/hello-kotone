@@ -31,8 +31,9 @@ nonce, измеряет RTT monotonic time и выдаёт failure на неве
 [Канонический wire](https://github.com/ronkiko/go-networking/blob/main/docs/soulworker-wire-compatibility.md)
 принадлежит Go repo; SDK реализует GDScript-сторону. HTTP/WebSocket локальные
 заглушки 10.02 заменены; Go/native stack отсутствует. Проверка source fixtures и
-TCP не подтверждает original SoulWorker client, выбранный build, auth/handshake
-или игровые операции. Долгосрочная цель старого оригинального клиента сохраняется.
+TCP не подтверждает игровые операции. **Оригинальный SoulWorker-клиент
+не является целевой платформой**: исторический формат используется только
+как референс для собственного Godot SDK и наших игр.
 
 Go GNS и будущий server-side GNPC принадлежат private `go-networking`;
 MMO authority — `ai_research`. Основной `godot/` не использует addon; ниже описан
