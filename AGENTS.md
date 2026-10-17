@@ -27,8 +27,12 @@ Canonical addon — `addons/mmo_sdk/`, isolated smoke — `experiments/client_sd
 Не восстанавливать Go client, C ABI, GDExtension, godot-cpp или sidecar.
 Проверки запускать на установленном пользовательском Godot. Никакого изменения
 основного `godot/`, стендов, данных, протокола v9 или production-интеграции.
-Прямая команда Директора 2026-10-17 «делай 10 03» разрешила только изолированный
-source-based TCP fixture smoke по актуальному заданию 10.03.
+Прямая команда Директора 2026-10-17 «делай 10 03» разрешила изолированный
+SoulWorker-формат TCP smoke. **Corrective Директора: 10.03 нельзя считать
+завершённым без сетевого PING/PONG между GDScript SDK и Go GNS; это обязательная
+доработка ТОЙ ЖЕ 10.03, не новый номер.** Исходный fixture TCP smoke уже PASS,
+но новый PING/PONG требует своих новых opcode, отрицательных Godot тестов и
+отдельного evidence. Ссылка на задачу 10.03 ниже, основная игра не затрагивается.
 
 Перед изменениями читай `README.md`, `ARCHITECTURE.md` и `godot/README.md`. Для physics/multiplayer/reconciliation/transport сверяйся с действующими контрактами server-side `ai_research/v3/game/docs/`, в частности `server-tick-authority.md`, `physics-state-contract.md`, `networked-locomotion-architecture.md` и `client-prediction-and-reconciliation.md`. Серверный MMO канон принадлежит совместному проекту; этот публичный client repo не является вторым независимым источником игровых правил.
 
