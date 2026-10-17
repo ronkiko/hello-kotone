@@ -4,6 +4,8 @@ Isolated GDScript SDK, following the factory/owned-client organization of Nakama
 Godot. It contains no Nakama source/protocol, Go runtime, native binding, sidecar,
 autoload requirement or game integration. Active gameplay remains public v9.
 
+**10.03 corrective status (Director 2026-10-17):** source-based SDK↔GNS TCP fixture exchange is VERIFIED, but the patch remains **INCOMPLETE** because a real network PING/PONG was omitted. Complete it **within the same 10.03** by adding two project-specific SoulWorker-framed opcode commands to this SDK and GNS, preserving legacy fixtures. No production cutover. [Updated 10.03 task](https://github.com/ronkiko/ai_research/blob/main/v3/docs/roadmap/v3/main/10/03-soulworker-wire-first-network-smoke.md).
+
 ## Ownership and message flow
 
 The application attaches the SDK node to SceneTree; its factory parents independent
